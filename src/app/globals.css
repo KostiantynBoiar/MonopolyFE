@@ -1,3 +1,48 @@
 ﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --ink: #10182e;
+    --navy: #0c1730;
+    --navy-700: #15244a;
+    --blue: #1e47b0;
+    --blue-600: #2b57c6;
+    --blue-50: #eef2fb;
+    --gold: #c6951c;
+    --gold-600: #b0820f;
+    --gold-50: #f6eecf;
+    --paper: #faf9f6;
+    --surface: #ffffff;
+    --line: #e6e3db;
+    --line-2: #d4d0c4;
+    --muted: #5c6378;
+    --green: #1e7a52;
+    --red: #bd423a;
+    --r-sm: 6px;
+    --r: 10px;
+    --r-lg: 14px;
+  }
+
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+}
+
+@layer components {
+  .ic {
+    @apply inline-block h-5 w-5 shrink-0;
+  }
+
+  .sr-only {
+    @apply absolute -m-px h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot-ping {
+    animation: none !important;
+  }
+}

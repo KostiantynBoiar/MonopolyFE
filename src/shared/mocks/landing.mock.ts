@@ -1,0 +1,1 @@
+export const MOCK_ONLINE_PLAYER_COUNT = 1_284;
