@@ -23,6 +23,17 @@ Aligned with `.cursor/rules/frontend.mdc` (Next.js App Router, TypeScript strict
 
 ---
 
+## Directory & route naming
+
+Follow `.cursor/rules/frontend.mdc`:
+
+- Plain **kebab-case** folders only; no `(`, `)`, `[`, `]`, `@`, `$` in directory names.
+- No route groups (`(marketing)`), no dynamic segments (`[sessionId]`).
+- No vague names (`marketing`, `misc`, `temp`).
+- `sessionId` and other IDs use **search params** (e.g. `/game/room?sessionId=…`), not path segments.
+
+---
+
 ## Directory tree
 
 ```
@@ -36,15 +47,15 @@ MonopolyFE/
 │   │   ├── globals.css                # Tailwind @tailwind directives only
 │   │   ├── layout.tsx
 │   │   ├── providers.tsx              # QueryClient, theme, client providers
-│   │   ├── (marketing)/               # landing & static pages (RSC)
+│   │   ├── home/                      # landing & static pages (RSC) → /home
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
-│   │   ├── lobby/                     # session list / create (RSC shell + client widgets)
+│   │   ├── lobby/                     # session list / create → /lobby
 │   │   │   ├── page.tsx
 │   │   │   ├── loading.tsx
 │   │   │   └── error.tsx
 │   │   └── game/
-│   │       └── [sessionId]/           # live game room (client island)
+│   │       └── room/                  # live game (client island) → /game/room?sessionId=…
 │   │           ├── page.tsx
 │   │           ├── loading.tsx
 │   │           └── error.tsx
