@@ -27,6 +27,10 @@ export const bandColors: Record<PropertyColor, string> = {
   [PropertyColor.BLUE]: 'bg-band-blue',
 };
 
+// ─── Walking animation ────────────────────────────────────────────────────────
+
+export const WALK_STEP_DURATION_MS = 180; // CSS transition duration per board step
+
 // ─── Card flip animation ──────────────────────────────────────────────────────
 
 export const CARD_FLIP_TRIGGER_DELAY_MS = 400;

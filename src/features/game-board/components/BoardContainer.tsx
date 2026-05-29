@@ -5,7 +5,7 @@ import { MonopolyBoard } from './MonopolyBoard';
 import { BoardContainerProps } from '../game-board.types';
 import { BASE_PX } from '@/shared/config/constants';
 
-export function BoardContainer({ centerContent, spaces, players }: BoardContainerProps) {
+export function BoardContainer({ centerContent, spaces, players, walkingPlayers }: BoardContainerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -30,6 +30,7 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
         centerContent={centerContent}
         spaces={spaces}
         players={players}
+        walkingPlayers={walkingPlayers}
       />
     </div>
   );

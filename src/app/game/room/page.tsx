@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BoardContainer } from '@/features/game-board';
+import { BoardContainer, getWalkSteps } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
@@ -15,12 +15,12 @@ import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useSessionStore } from '@/stores/session-store';
 import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
-import type { BoardPlayer } from '@/features/game-board';
+import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
-import { TOKEN_ORDER } from '@/shared/config/constants';
+import { TOKEN_ORDER, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
@@ -160,6 +160,8 @@ function advanceTurn(prev: GameState): GameState {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+type WalkState = { playerId: string; currentPos: number };
+
 export default function GameRoomPage() {
   const router = useRouter();
   const { ready, token, user } = useRequireAuth();
@@ -262,24 +264,48 @@ export default function GameRoomPage() {
 
   const [gameState, setGameState] = useState<GameState>(MOCK_GAME_STATE);
   const [isRolling, setIsRolling] = useState(false);
+  const [walkState, setWalkState] = useState<WalkState | null>(null);
 
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
   const actions = gameState.turn.actionsAvailable;
 
+  // ── Auto-advance after post_roll ──────────────────────────────────────────
+  // When the viewer is the current player, reset to pre_roll for endless mock turns.
+
   useEffect(() => {
     if (gameState.turn.phase !== 'post_roll') return;
+    const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
       setGameState((prev) => {
         if (prev.turn.phase !== 'post_roll') return prev;
+        if (isViewerTurn) {
+          return {
+            ...prev,
+            turn: {
+              ...prev.turn,
+              phase: 'pre_roll',
+              diceRoll: null,
+              actionsAvailable: {
+                ...prev.turn.actionsAvailable,
+                canRoll: true,
+                canBuy: false,
+                canBuild: false,
+                canEndTurn: false,
+              },
+            },
+          };
+        }
         return advanceTurn(prev);
       });
-    }, 2500);
+    }, 1500);
     return () => clearTimeout(t);
-  }, [gameState.turn.phase, gameState.turn.turnNumber]);
+  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId]);
 
   const handleRoll = useCallback(async () => {
     if (!actions.canRoll || isRolling) return;
     setIsRolling(true);
+
+    // Phase 1: dice roll animation delay
     await new Promise<void>((r) => setTimeout(r, 1200));
 
     const die1 = Math.ceil(Math.random() * 6);
@@ -287,8 +313,43 @@ export default function GameRoomPage() {
     const isDoubles = die1 === die2;
     const total = die1 + die2;
     const newPos = (viewer.position + total) % 40;
-    const drawnCard = makeMockCard(newPos);
 
+    // Show dice result immediately, before walking
+    setGameState((prev) => ({
+      ...prev,
+      turn: {
+        ...prev.turn,
+        diceRoll: { die1, die2, isDoubles },
+        actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false },
+      },
+    }));
+
+    // Pause so the player can read the dice result before moving
+    await new Promise<void>((r) => setTimeout(r, 500));
+
+    // Phase 2: walk the token step-by-step
+    const steps = getWalkSteps(viewer.position, newPos);
+    await new Promise<void>((resolve) => {
+      let i = 0;
+      setWalkState({ playerId: viewer.id, currentPos: viewer.position });
+
+      function step() {
+        if (i >= steps.length) {
+          resolve();
+          return;
+        }
+        setWalkState({ playerId: viewer.id, currentPos: steps[i] });
+        i++;
+        setTimeout(step, WALK_STEP_DURATION_MS);
+      }
+
+      // Brief pause so the token renders at the start tile before transitioning
+      setTimeout(step, 80);
+    });
+
+    // Phase 3: commit final position and clear walk overlay
+    const drawnCard = makeMockCard(newPos);
+    setWalkState(null);
     setIsRolling(false);
     setGameState((prev) => ({
       ...prev,
@@ -299,7 +360,6 @@ export default function GameRoomPage() {
       turn: {
         ...prev.turn,
         phase: drawnCard ? 'drawing_card' : 'post_roll',
-        diceRoll: { die1, die2, isDoubles },
         doublesStreak: isDoubles ? prev.turn.doublesStreak + 1 : 0,
         actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false, canEndTurn: false },
       },
@@ -425,6 +485,14 @@ export default function GameRoomPage() {
     ? deriveTradeParticipant(gameState, gameState.trade.targetId)
     : undefined;
 
+  const walkingBoardPlayers: WalkingPlayer[] = walkState
+    ? [{
+        id: walkState.playerId,
+        currentPos: walkState.currentPos,
+        tokenColor: TOKEN_COLORS[gameState.players.find((p) => p.id === walkState.playerId)!.token],
+      }]
+    : [];
+
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
@@ -432,6 +500,7 @@ export default function GameRoomPage() {
         <BoardContainer
           spaces={gameState.spaces}
           players={deriveBoardPlayers(gameState)}
+          walkingPlayers={walkingBoardPlayers}
           centerContent={
             <BoardCenterPanel
               messages={logToChatMessages(gameState.log)}
