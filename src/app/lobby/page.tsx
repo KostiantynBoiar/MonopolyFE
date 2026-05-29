@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useLobby, SessionCard, JoinByCodeForm } from '@/features/lobby';
@@ -9,11 +10,17 @@ import { Button } from '@/shared/ui/Button';
 
 export default function LobbyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const wasKicked = searchParams.get('kicked') === '1';
+
   const { ready, token, user } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
 
-  const { sessions, loading, error, joiningId, refresh, join, joinWithCode } =
-    useLobby(token, user?.id);
+  const {
+    sessions, loading, error, joiningId,
+    nextCursor, isLoadingMore,
+    refresh, loadMore, join, joinWithCode,
+  } = useLobby(token, user?.id);
 
   async function handleJoin(sessionId: string) {
     if (!user) return;
@@ -37,6 +44,16 @@ export default function LobbyPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
+      {/* Kicked notice */}
+      {wasKicked && (
+        <div className="mb-6 flex items-center gap-3 rounded-sm border border-red/30 bg-red/5 px-4 py-3">
+          <span className="text-sm text-red">You were removed from the game by the host.</span>
+          <Button as="a" href="/lobby" variant="ghost" size="sm" className="ml-auto shrink-0">
+            Dismiss
+          </Button>
+        </div>
+      )}
+
       {/* Page header */}
       <div className="mb-8 flex items-start justify-between gap-4">
         <div>
@@ -102,6 +119,16 @@ export default function LobbyPage() {
                 isJoining={joiningId === s.id}
               />
             ))}
+
+            {nextCursor && (
+              <button
+                onClick={loadMore}
+                disabled={isLoadingMore}
+                className="mt-1 w-full rounded-sm border border-line-2 bg-surface py-2 text-sm font-semibold text-muted transition-colors hover:bg-paper hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            )}
           </div>
         )}
       </div>

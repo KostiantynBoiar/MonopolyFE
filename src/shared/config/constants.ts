@@ -37,5 +37,7 @@ export const CHEST_POSITIONS  = [2, 17, 33] as const;
 
 // ─── Session / lobby ──────────────────────────────────────────────────────────
 
-export const SESSION_MAX_PLAYERS       = 8;
+export const SESSION_MAX_PLAYERS          = 8;
 export const SESSION_MIN_PLAYERS_TO_START = 2;
+export const LOBBY_PAGE_SIZE              = 4;  // sessions per page; matches ?limit= param
+export const POLL_INTERVAL_MS = 10_000;

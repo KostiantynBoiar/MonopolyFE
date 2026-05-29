@@ -8,6 +8,7 @@
  */
 
 import { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums';
+import { LOBBY_PAGE_SIZE } from '@/shared/config/constants';
 import type {
   CreateSessionInput,
   JoinByCodeInput,
@@ -98,20 +99,99 @@ const MOCK_POOL: SessionDetail[] = [
     ],
     your_role: null,
   },
+  {
+    id: 'sess_005',
+    invite_code: 'TYC-N2P7',
+    status: SessionStatus.WAITING,
+    visibility: SessionVisibility.PUBLIC,
+    member_count: 4,
+    max_players: 8,
+    host: { id: 'u_max', display_name: 'Max' },
+    created_at: minutesAgo(52),
+    members: [
+      { user_id: 'u_max',  display_name: 'Max',  role: MemberRole.HOST,   joined_at: minutesAgo(52) },
+      { user_id: 'u_nina', display_name: 'Nina', role: MemberRole.PLAYER, joined_at: minutesAgo(48) },
+      { user_id: 'u_omar', display_name: 'Omar', role: MemberRole.PLAYER, joined_at: minutesAgo(45) },
+      { user_id: 'u_pia',  display_name: 'Pia',  role: MemberRole.PLAYER, joined_at: minutesAgo(40) },
+    ],
+    your_role: null,
+  },
+  {
+    id: 'sess_006',
+    invite_code: 'TYC-H5V3',
+    status: SessionStatus.WAITING,
+    visibility: SessionVisibility.PUBLIC,
+    member_count: 1,
+    max_players: 8,
+    host: { id: 'u_quinn', display_name: 'Quinn' },
+    created_at: minutesAgo(61),
+    members: [
+      { user_id: 'u_quinn', display_name: 'Quinn', role: MemberRole.HOST, joined_at: minutesAgo(61) },
+    ],
+    your_role: null,
+  },
+  {
+    id: 'sess_007',
+    invite_code: 'TYC-W8X1',
+    status: SessionStatus.WAITING,
+    visibility: SessionVisibility.PUBLIC,
+    member_count: 5,
+    max_players: 8,
+    host: { id: 'u_rosa', display_name: 'Rosa' },
+    created_at: minutesAgo(78),
+    members: [
+      { user_id: 'u_rosa',  display_name: 'Rosa',  role: MemberRole.HOST,   joined_at: minutesAgo(78) },
+      { user_id: 'u_sam',   display_name: 'Sam',   role: MemberRole.PLAYER, joined_at: minutesAgo(74) },
+      { user_id: 'u_tina',  display_name: 'Tina',  role: MemberRole.PLAYER, joined_at: minutesAgo(70) },
+      { user_id: 'u_ulric', display_name: 'Ulric', role: MemberRole.PLAYER, joined_at: minutesAgo(65) },
+      { user_id: 'u_vera',  display_name: 'Vera',  role: MemberRole.PLAYER, joined_at: minutesAgo(60) },
+    ],
+    your_role: null,
+  },
+  {
+    id: 'sess_008',
+    invite_code: 'TYC-D4F9',
+    status: SessionStatus.WAITING,
+    visibility: SessionVisibility.PUBLIC,
+    member_count: 3,
+    max_players: 8,
+    host: { id: 'u_will', display_name: 'Will' },
+    created_at: minutesAgo(90),
+    members: [
+      { user_id: 'u_will', display_name: 'Will', role: MemberRole.HOST,   joined_at: minutesAgo(90) },
+      { user_id: 'u_xena', display_name: 'Xena', role: MemberRole.PLAYER, joined_at: minutesAgo(85) },
+      { user_id: 'u_yuki', display_name: 'Yuki', role: MemberRole.PLAYER, joined_at: minutesAgo(80) },
+    ],
+    your_role: null,
+  },
 ];
 
 // ─── API functions ────────────────────────────────────────────────────────────
 
-/** GET /api/v1/sessions */
+/** GET /api/v1/sessions?limit=N[&cursor=...] */
 export async function listSessions(
   _token: string,
-  _cursor?: string,
+  cursor?: string,
+  limit: number = LOBBY_PAGE_SIZE,
 ): Promise<LobbyListResponse> {
   await delay(450);
-  return {
-    sessions: MOCK_POOL.map(({ members: _m, your_role: _r, ...s }) => s),
-    next_cursor: null,
-  };
+
+  const summaries = MOCK_POOL.map(({ members: _m, your_role: _r, ...s }) => s);
+
+  // Decode cursor: opaque string encoded as "<created_at>|<session_id>"
+  let startIdx = 0;
+  if (cursor) {
+    const sessionId = cursor.split('|')[1];
+    const idx = summaries.findIndex((s) => s.id === sessionId);
+    if (idx !== -1) startIdx = idx + 1;
+  }
+
+  const page = summaries.slice(startIdx, startIdx + limit);
+  const last = page.at(-1);
+  const hasMore = startIdx + limit < summaries.length;
+  const next_cursor = hasMore && last ? `${last.created_at}|${last.id}` : null;
+
+  return { sessions: page, next_cursor };
 }
 
 /** GET /api/v1/sessions/{id} */
