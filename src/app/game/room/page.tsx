@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BoardContainer, getWalkSteps } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
@@ -22,6 +22,9 @@ import type { ChatMessage } from '@/features/chat/chat.types';
 import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
 import { TOKEN_ORDER, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
+import { getDeedInfo } from '@/features/deed';
+import type { DeedInfo } from '@/features/deed';
+import type { AuctionPlayer } from '@/features/auction';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -265,6 +268,14 @@ export default function GameRoomPage() {
   const [gameState, setGameState] = useState<GameState>(MOCK_GAME_STATE);
   const [isRolling, setIsRolling] = useState(false);
   const [walkState, setWalkState] = useState<WalkState | null>(null);
+  const [activeDeed, setActiveDeed] = useState<DeedInfo | null>(null);
+
+  // Always-fresh ref so async callbacks (handleRoll) read current spaces without stale closure
+  const gameStateRef = useRef(gameState);
+  gameStateRef.current = gameState;
+
+  // Tracks whether Bob's auto-bid in the current auction has already fired
+  const autoBidFiredRef = useRef(false);
 
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
   const actions = gameState.turn.actionsAvailable;
@@ -274,6 +285,7 @@ export default function GameRoomPage() {
 
   useEffect(() => {
     if (gameState.turn.phase !== 'post_roll') return;
+    if (activeDeed !== null) return; // wait for buy/auction decision
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
       setGameState((prev) => {
@@ -299,7 +311,74 @@ export default function GameRoomPage() {
       });
     }, 1500);
     return () => clearTimeout(t);
-  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId]);
+  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed]);
+
+  // ── Auction countdown ──────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (gameState.turn.phase !== 'auction') {
+      autoBidFiredRef.current = false;
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setGameState((prev) => {
+        if (prev.turn.phase !== 'auction' || !prev.auction) return prev;
+
+        const newTime = Math.max(0, prev.auction.timeRemainingMs - 1000);
+        let next: GameState = { ...prev, auction: { ...prev.auction, timeRemainingMs: newTime } };
+
+        // Bob auto-bids at 7 s remaining
+        if (newTime <= 7000 && !autoBidFiredRef.current) {
+          autoBidFiredRef.current = true;
+          const property = BOARD[prev.auction.propertyPosition];
+          const bobBid = Math.floor((property?.price ?? 100) / 2);
+          const bob = prev.players.find((p) => p.id === 'bob');
+          if (bob && bobBid > prev.auction.highestBid) {
+            next = {
+              ...next,
+              auction: {
+                ...next.auction!,
+                bids: [...next.auction!.bids, { playerId: 'bob', amount: bobBid }],
+                highestBid: bobBid,
+                highestBidderId: 'bob',
+              },
+              log: [...next.log, { id: `log_bid_${Date.now()}`, kind: 'event' as const, text: `Bob bids M${bobBid}.`, ts: new Date().toISOString() }],
+            };
+          }
+        }
+
+        // Resolve when time runs out
+        if (newTime <= 0) {
+          const winner = next.auction!.highestBidderId;
+          const winAmount = next.auction!.highestBid;
+          const propertyPos = next.auction!.propertyPosition;
+          const winnerName = next.players.find((p) => p.id === winner)?.displayName ?? winner ?? 'Nobody';
+          const logText = winner
+            ? `${winnerName} won the auction for M${winAmount}.`
+            : 'No bids. Property returns to the bank.';
+          return {
+            ...next,
+            players: winner
+              ? next.players.map((p) =>
+                  p.id === winner
+                    ? { ...p, balance: p.balance - winAmount, ownedPositions: [...p.ownedPositions, propertyPos] }
+                    : p,
+                )
+              : next.players,
+            spaces: next.spaces.map((s, i) => (i === propertyPos ? { ...s, ownerId: winner ?? null } : s)),
+            auction: null,
+            turn: { ...next.turn, phase: 'post_roll', actionsAvailable: { ...next.turn.actionsAvailable, canBid: false } },
+            log: [...next.log, { id: `log_auction_end_${Date.now()}`, kind: 'event' as const, text: logText, ts: new Date().toISOString() }],
+          };
+        }
+
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gameState.turn.phase]);
 
   const handleRoll = useCallback(async () => {
     if (!actions.canRoll || isRolling) return;
@@ -349,6 +428,15 @@ export default function GameRoomPage() {
 
     // Phase 3: commit final position and clear walk overlay
     const drawnCard = makeMockCard(newPos);
+    const landedSpace = BOARD[newPos];
+    const isPurchasable =
+      landedSpace != null &&
+      (landedSpace.type === SpaceType.PROPERTY ||
+        landedSpace.type === SpaceType.RAILROAD ||
+        landedSpace.type === SpaceType.UTILITY);
+    const isUnowned = gameStateRef.current.spaces[newPos]?.ownerId === null;
+    const showDeed = !drawnCard && isPurchasable && isUnowned;
+
     setWalkState(null);
     setGameState((prev) => ({
       ...prev,
@@ -372,6 +460,10 @@ export default function GameRoomPage() {
         },
       ],
     }));
+
+    if (showDeed) {
+      setActiveDeed(getDeedInfo(newPos));
+    }
   }, [actions.canRoll, isRolling, viewer]);
 
   const handleCardProceed = useCallback(() => {
@@ -391,6 +483,94 @@ export default function GameRoomPage() {
     }));
   }, [viewer]);
 
+  // ── Buy property ──────────────────────────────────────────────────────────
+
+  const handleBuy = useCallback(() => {
+    if (!activeDeed) return;
+    const { position, price, name } = activeDeed;
+    setActiveDeed(null);
+    setGameState((prev) => ({
+      ...prev,
+      players: prev.players.map((p) =>
+        p.id === prev.viewerId
+          ? { ...p, balance: p.balance - price, ownedPositions: [...p.ownedPositions, position] }
+          : p,
+      ),
+      spaces: prev.spaces.map((s, i) => (i === position ? { ...s, ownerId: prev.viewerId } : s)),
+      log: [
+        ...prev.log,
+        {
+          id: `log_buy_${Date.now()}`,
+          kind: 'event' as const,
+          text: `${viewer.displayName} bought ${name} for M${price}.`,
+          ts: new Date().toISOString(),
+        },
+      ],
+    }));
+  }, [activeDeed, viewer.displayName]);
+
+  // ── Start auction ──────────────────────────────────────────────────────────
+
+  const handleAuction = useCallback(() => {
+    if (!activeDeed) return;
+    const { position, name } = activeDeed;
+    autoBidFiredRef.current = false;
+    setActiveDeed(null);
+    setGameState((prev) => ({
+      ...prev,
+      auction: {
+        propertyPosition: position,
+        bids: [],
+        highestBid: 0,
+        highestBidderId: null,
+        timeRemainingMs: 10_000,
+      },
+      turn: {
+        ...prev.turn,
+        phase: 'auction',
+        actionsAvailable: { ...prev.turn.actionsAvailable, canBid: true },
+      },
+      log: [
+        ...prev.log,
+        {
+          id: `log_auction_start_${Date.now()}`,
+          kind: 'event' as const,
+          text: `${name} goes to auction!`,
+          ts: new Date().toISOString(),
+        },
+      ],
+    }));
+  }, [activeDeed]);
+
+  // ── Place bid ──────────────────────────────────────────────────────────────
+
+  const handleBid = useCallback((amount: number) => {
+    setGameState((prev) => {
+      if (!prev.auction || amount <= prev.auction.highestBid) return prev;
+      return {
+        ...prev,
+        auction: {
+          ...prev.auction,
+          bids: [...prev.auction.bids, { playerId: prev.viewerId, amount }],
+          highestBid: amount,
+          highestBidderId: prev.viewerId,
+        },
+        log: [
+          ...prev.log,
+          {
+            id: `log_bid_${Date.now()}`,
+            kind: 'event' as const,
+            text: `${viewer.displayName} bids M${amount}.`,
+            ts: new Date().toISOString(),
+          },
+        ],
+      };
+    });
+  }, [viewer.displayName]);
+
+  // ── Trade handlers ─────────────────────────────────────────────────────────
+
+>>>>>>> 7ab62cf (feat: title deed display, Buy/Auction flow, mock auction countdown)
   const handleTrade = useCallback(() => {
     setGameState((prev) => ({
       ...prev,
@@ -492,6 +672,15 @@ export default function GameRoomPage() {
       }]
     : [];
 
+  const auctionPropertyName = gameState.auction
+    ? (BOARD[gameState.auction.propertyPosition]?.name ?? 'Property')
+    : '';
+
+  const auctionPlayers: AuctionPlayer[] = gameState.players.map((p) => ({
+    id: p.id,
+    name: p.displayName,
+  }));
+
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
@@ -514,6 +703,13 @@ export default function GameRoomPage() {
               onTrade={handleTrade}
               activeCard={gameState.activeCard}
               onCardProceed={handleCardProceed}
+              activeDeed={activeDeed}
+              onBuy={handleBuy}
+              onAuction={handleAuction}
+              auctionState={gameState.auction}
+              auctionPropertyName={auctionPropertyName}
+              auctionPlayers={auctionPlayers}
+              onBid={handleBid}
               tradeState={gameState.trade}
               tradeProposer={tradeProposer}
               tradeTarget={tradeTarget}

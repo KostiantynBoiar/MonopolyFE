@@ -6,6 +6,8 @@ import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { cn } from '@/shared/lib/cn';
 import { CardFlipOverlay } from '@/features/card';
 import { TradeWindow } from '@/features/trade';
+import { DeedCard } from '@/features/deed';
+import { AuctionPanel } from '@/features/auction';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
 
@@ -218,6 +220,12 @@ export function BoardCenterPanel({
   onSendMessage,
   activeCard = null,
   onCardProceed,
+  activeDeed = null,
+  onAuction,
+  auctionState = null,
+  auctionPropertyName = '',
+  auctionPlayers = [],
+  onBid,
   tradeState = null,
   tradeProposer,
   tradeTarget,
@@ -230,6 +238,7 @@ export function BoardCenterPanel({
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const isAuctionActive = auctionState !== null;
   const isTradeActive = tradeState !== null
     && (tradeState.status === 'pending' || tradeState.status === 'countered')
     && tradeProposer != null
@@ -269,8 +278,16 @@ export function BoardCenterPanel({
       className="relative flex h-full w-full flex-col overflow-hidden bg-gray-100"
       style={{ fontSize: '0.72em' }}
     >
-      {/* ── Trade window (swaps the whole log+actions area) ── */}
-      {isTradeActive ? (
+      {/* ── Auction panel (swaps whole area when auction is active) ── */}
+      {isAuctionActive ? (
+        <AuctionPanel
+          auctionState={auctionState!}
+          propertyName={auctionPropertyName}
+          viewerId={viewerId ?? ''}
+          players={auctionPlayers}
+          onBid={onBid ?? (() => {})}
+        />
+      ) : isTradeActive ? (
         <TradeWindow
           trade={tradeState!}
           proposer={tradeProposer!}
@@ -286,7 +303,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'flex min-h-0 flex-1 overflow-hidden transition-opacity duration-300',
-              activeCard ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             {/* Game log */}
@@ -343,7 +360,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
-              activeCard ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             <div className="flex items-center gap-1.5">
@@ -390,10 +407,21 @@ export function BoardCenterPanel({
         </>
       )}
 
-      {/* ── Card flip overlay (sits above log; log fades behind it) ── */}
+      {/* ── Card flip overlay ── */}
       {activeCard && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} />
+        </div>
+      )}
+
+      {/* ── Deed card overlay (unowned purchasable property) ── */}
+      {activeDeed && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <DeedCard
+            deed={activeDeed}
+            onBuy={onBuy ?? (() => {})}
+            onAuction={onAuction ?? (() => {})}
+          />
         </div>
       )}
     </div>
