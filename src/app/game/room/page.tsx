@@ -314,7 +314,8 @@ export default function GameRoomPage() {
     const total = die1 + die2;
     const newPos = (viewer.position + total) % 40;
 
-    // Show dice result immediately, before walking
+    // Stop dice spin and show result — walk starts after the player reads it
+    setIsRolling(false);
     setGameState((prev) => ({
       ...prev,
       turn: {
@@ -324,7 +325,6 @@ export default function GameRoomPage() {
       },
     }));
 
-    // Pause so the player can read the dice result before moving
     await new Promise<void>((r) => setTimeout(r, 500));
 
     // Phase 2: walk the token step-by-step
@@ -350,7 +350,6 @@ export default function GameRoomPage() {
     // Phase 3: commit final position and clear walk overlay
     const drawnCard = makeMockCard(newPos);
     setWalkState(null);
-    setIsRolling(false);
     setGameState((prev) => ({
       ...prev,
       players: prev.players.map((p) =>
