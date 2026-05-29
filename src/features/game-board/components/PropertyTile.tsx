@@ -18,6 +18,7 @@ type PropertyTileProps = {
   color: PropertyColor;
   mortgaged?: boolean;
   houseCount?: 0 | 1 | 2 | 3 | 4 | 5;
+  ownerColor?: string; // hex token color of the owning player
   flipped?: boolean;
   className?: string;
 };
@@ -28,6 +29,7 @@ export function PropertyTile({
   color,
   mortgaged = false,
   houseCount = 0,
+  ownerColor,
   flipped = false,
   className,
 }: PropertyTileProps) {
@@ -43,13 +45,14 @@ export function PropertyTile({
       {/* Color band */}
       <div
         className={cn(
-          'shrink-0',
+          'relative shrink-0',
           flipped ? 'border-t-[1.5px]' : 'border-b-[1.5px]',
           'border-ink',
           bandColors[color],
         )}
         style={{ height: '23%' }}
       >
+        {/* Houses */}
         {houseCount > 0 && houseCount < 5 && (
           <div className="flex h-full items-center justify-center gap-px">
             {Array.from({ length: houseCount }).map((_, i) => (
@@ -61,6 +64,23 @@ export function PropertyTile({
           <div className="flex h-full items-center justify-center">
             <div className="h-[60%] w-[30%] rounded-[1px] bg-red" />
           </div>
+        )}
+
+        {/* Owner dot — top-right corner of the band */}
+        {ownerColor && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 2,
+              right: 2,
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: ownerColor,
+              border: '1px solid rgba(255,255,255,0.85)',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.35)',
+            }}
+          />
         )}
       </div>
 

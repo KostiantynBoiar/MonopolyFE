@@ -27,10 +27,11 @@ const BOARD_PX = W * 2 + N * 9; // 686
 type TileContentProps = {
   space: BoardSpace;
   ownership?: SpaceOwnership;
+  ownerColor?: string;
   flipped?: boolean;
 };
 
-function TileContent({ space, ownership, flipped }: TileContentProps) {
+function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps) {
   if (space.type === 'corner') {
     return <CornerTile variant={space.corner!} />;
   }
@@ -43,6 +44,7 @@ function TileContent({ space, ownership, flipped }: TileContentProps) {
         color={space.color!}
         houseCount={houses}
         mortgaged={ownership?.isMortgaged}
+        ownerColor={ownerColor}
         flipped={flipped}
       />
     );
@@ -52,6 +54,8 @@ function TileContent({ space, ownership, flipped }: TileContentProps) {
       type={space.type}
       name={space.name}
       price={space.price}
+      mortgaged={ownership?.isMortgaged}
+      ownerColor={ownerColor}
       flipped={flipped}
     />
   );
@@ -158,6 +162,9 @@ export function MonopolyBoard({
           const edge = getTileEdge(space.pos);
           const flipped = edge === 'top';
           const ownership = spaces?.[space.pos];
+          const ownerColor = ownership?.ownerId
+            ? players.find((p) => p.id === ownership.ownerId)?.tokenColor
+            : undefined;
           const tokensHere = players.filter(
             (p) => p.position === space.pos && !p.isBankrupt,
           );
@@ -168,7 +175,7 @@ export function MonopolyBoard({
               style={{ gridColumn: col + 1, gridRow: row + 1, position: 'relative' }}
             >
               <EdgeWrapper edge={edge}>
-                <TileContent space={space} ownership={ownership} flipped={flipped} />
+                <TileContent space={space} ownership={ownership} ownerColor={ownerColor} flipped={flipped} />
               </EdgeWrapper>
               <TokenDots players={tokensHere} />
             </div>
