@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { Button, Container, Icon } from '@/shared/ui';
+import { useRouter } from 'next/navigation';
+import { Avatar, Button, Container, Icon } from '@/shared/ui';
+import { useAuthStore } from '@/stores/auth-store';
 
 const navLinks = [
   { href: '/how-to-play', label: 'How to play' },
@@ -11,6 +13,8 @@ const navLinks = [
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
 
   const close = () => setOpen(false);
 
@@ -45,12 +49,34 @@ export function MobileNav() {
               </Link>
             ))}
             <div className="mt-2 flex flex-col gap-2 border-t border-line pt-4">
-              <Button as="a" href="/login" variant="ghost" size="sm" onClick={close}>
-                Log in
-              </Button>
-              <Button as="a" href="/register" variant="dark" size="sm" onClick={close}>
-                Sign up
-              </Button>
+              {user ? (
+                <>
+                  <Button as="a" href="/me" variant="ghost" size="sm" onClick={close}>
+                    <Avatar name={user.display_name} />
+                    {user.display_name}
+                  </Button>
+                  <Button
+                    variant="dark"
+                    size="sm"
+                    onClick={() => {
+                      logout();
+                      close();
+                      router.push('/home');
+                    }}
+                  >
+                    Sign out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button as="a" href="/login" variant="ghost" size="sm" onClick={close}>
+                    Log in
+                  </Button>
+                  <Button as="a" href="/register" variant="dark" size="sm" onClick={close}>
+                    Sign up
+                  </Button>
+                </>
+              )}
             </div>
           </Container>
         </nav>

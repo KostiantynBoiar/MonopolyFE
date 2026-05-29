@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MobileNav } from './MobileNav';
-import { Badge, Button, Container } from '@/shared/ui';
+import { Badge, Container } from '@/shared/ui';
+import { UserMenu } from '@/features/auth/components/UserMenu';
 
 const navLinks = [
   { href: '/how-to-play', label: 'How to play' },
@@ -30,14 +31,7 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
-          <div className="flex items-center gap-2">
-            <Button as="a" href="/login" variant="ghost" size="sm">
-              Log in
-            </Button>
-            <Button as="a" href="/register" variant="dark" size="sm">
-              Sign up
-            </Button>
-          </div>
+          <UserMenu />
         </nav>
 
         <MobileNav />

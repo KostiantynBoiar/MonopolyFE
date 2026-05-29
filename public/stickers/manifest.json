@@ -1,0 +1,26 @@
+{
+  "packs": [
+    {
+      "id": "durak",
+      "name": "Durak",
+      "stickers": ["001.webp", "002.webp", "003.webp", "004.webp", "005.webp",
+      "006.webp", "007.webp", "008.webp", "009.webp", "010.webp", "011.webp",
+      "012.webp", "013.webp", "014.webp", "015.webp", "016.webp",
+      "017.webp", "018.webp", "019.webp", "020.webp", "021.webp", "022.webp",
+      "023.webp", "024.webp", "025.webp"
+      ]
+    },
+    {
+      "id": "kolobki",
+      "name": "Kolobki",
+      "stickers": [
+        "001.tgs", "002.tgs", "003.tgs", "004.tgs", "005.tgs",
+        "006.tgs", "007.tgs", "008.tgs", "009.tgs", "010.tgs",
+        "011.tgs", "012.tgs", "013.tgs", "014.tgs", "015.tgs",
+        "016.tgs", "017.tgs", "018.tgs", "019.tgs", "020.tgs",
+        "021.tgs", "022.tgs", "023.tgs", "024.tgs", "025.tgs",
+        "026.tgs", "027.tgs", "028.tgs", "029.tgs", "030.tgs"
+      ]
+    }
+  ]
+}
