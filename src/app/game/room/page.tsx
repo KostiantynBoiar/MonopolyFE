@@ -6,7 +6,7 @@ import { BoardContainer } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
-import { leaveSession, startGame } from '@/features/lobby/api';
+import { joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import type { SessionMember } from '@/features/lobby';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
@@ -162,8 +162,9 @@ function advanceTurn(prev: GameState): GameState {
 
 export default function GameRoomPage() {
   const router = useRouter();
-  const { ready, token } = useRequireAuth();
+  const { ready, token, user } = useRequireAuth();
   const { currentSession, clearSession, setSession } = useSessionStore();
+  const [resolvingCode, setResolvingCode] = useState(false);
 
   // ── WebSocket (active during waiting + in-game) ────────────────────────────
 
@@ -183,6 +184,31 @@ export default function GameRoomPage() {
     clearSession();
     router.push('/lobby?kicked=1');
   }, [wasKicked, clearSession, router]);
+
+  // Join-by-code entry point: /game/room?code=TYC-XXXX (from landing "Join with code").
+  // Resolve + join via the API, then drop into the waiting room.
+  useEffect(() => {
+    if (!ready || !token || currentSession) return;
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (!code) return;
+    setResolvingCode(true);
+    let cancelled = false;
+    joinByCode(token, { invite_code: code }, user?.id ?? '', user?.display_name ?? '')
+      .then(({ session }) => {
+        if (!cancelled) setSession(session);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setResolvingCode(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, token, currentSession, user, setSession, router]);
 
   // Auto-dismiss WS errors after 6 s
   useEffect(() => {
@@ -361,7 +387,7 @@ export default function GameRoomPage() {
 
   // ── Guards (all hooks above, returns below) ────────────────────────────────
 
-  if (!ready) return <FullScreenSpinner />;
+  if (!ready || resolvingCode) return <FullScreenSpinner />;
 
   if (isWaiting && currentSession) {
     return (
