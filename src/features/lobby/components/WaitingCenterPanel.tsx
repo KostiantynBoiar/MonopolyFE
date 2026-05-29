@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
-import { SESSION_MIN_PLAYERS_TO_START } from '@/shared/config/constants';
+import { SESSION_MIN_PLAYERS_TO_START, STATUS_DOT } from '@/shared/config/constants';
 import { MemberRole } from '../lobby.enums';
-import type { ChatMessage, StickerPack } from '@/features/chat/chat.types';
-import type { SessionDetail } from '../lobby.types';
-import type { SocketStatus } from '@/shared/socket';
+import type { StickerPack } from '@/features/chat/chat.types';
+import type { WaitingCenterPanelProps } from '../lobby.types';
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
 
@@ -149,28 +148,6 @@ function CopyButton({ text }: { text: string }) {
     </button>
   );
 }
-
-// ─── Socket status dot ────────────────────────────────────────────────────────
-
-const STATUS_DOT: Record<SocketStatus, string> = {
-  connecting: 'bg-gold animate-pulse',
-  open:       'bg-green',
-  error:      'bg-red',
-  closed:     'bg-muted',
-};
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type WaitingCenterPanelProps = {
-  session: SessionDetail;
-  messages: ChatMessage[];
-  onSendMessage?: (text: string) => void;
-  onLeave: () => void;
-  onStart: () => void;
-  isLeaving?: boolean;
-  isStarting?: boolean;
-  socketStatus?: SocketStatus;
-};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 

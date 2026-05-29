@@ -1,10 +1,18 @@
 import { PropertyColor } from '@/features/game-board/game-board.enums';
 export { PropertyColor };
 
-export type TokenColor =
-  | 'blue' | 'red' | 'green' | 'yellow'
-  | 'orange' | 'pink' | 'cyan' | 'brown'
-  | 'gold' | 'ink';
+export enum TokenColor {
+  BLUE = 'blue',
+  RED = 'red',
+  GREEN = 'green',
+  YELLOW = 'yellow',
+  ORANGE = 'orange',
+  PINK = 'pink',
+  CYAN = 'cyan',
+  BROWN = 'brown',
+  GOLD = 'gold',
+  INK = 'ink',
+}
 
 export type Player = {
   id: string;

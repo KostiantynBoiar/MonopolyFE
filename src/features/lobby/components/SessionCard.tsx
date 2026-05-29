@@ -1,7 +1,6 @@
 'use client';
 
 import { cn } from '@/shared/lib/cn';
-import { SESSION_MAX_PLAYERS } from '@/shared/config/constants';
 import type { SessionSummary } from '../lobby.types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

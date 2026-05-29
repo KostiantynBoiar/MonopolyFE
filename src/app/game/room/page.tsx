@@ -14,13 +14,14 @@ import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useSessionStore } from '@/stores/session-store';
 import { useGameSocket } from '@/shared/socket';
-import type { WsErrorPayload } from '@/shared/socket';
-import type { Player, TokenColor } from '@/features/player-panel';
+import type { Player } from '@/features/player-panel';
 import type { BoardPlayer } from '@/features/game-board';
 import type { GameState, ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
+import { TOKEN_ORDER } from '@/shared/config/constants';
+import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -47,10 +48,6 @@ function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
     isBankrupt: p.isBankrupt,
   }));
 }
-
-const TOKEN_ORDER: TokenColor[] = [
-  'blue', 'red', 'green', 'gold', 'orange', 'pink', 'cyan', 'brown',
-];
 
 function sessionMembersToPlayers(members: SessionMember[]): Player[] {
   return members.map((m, i) => ({
@@ -159,30 +156,6 @@ function advanceTurn(prev: GameState): GameState {
       },
     ],
   };
-}
-
-// ─── WS error banner ──────────────────────────────────────────────────────────
-
-function WsErrorBanner({ error, onDismiss }: { error: WsErrorPayload | null; onDismiss: () => void }) {
-  if (!error) return null;
-  return (
-    <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between gap-3 bg-red px-4 py-2 text-white shadow-md">
-      <span className="font-sans text-sm">
-        <span className="font-semibold capitalize">{error.code.replace(/_/g, ' ')}</span>
-        {' — '}
-        {error.message}
-      </span>
-      <button
-        onClick={onDismiss}
-        className="shrink-0 rounded p-0.5 hover:bg-white/20"
-        aria-label="Dismiss"
-      >
-        <svg viewBox="0 0 16 16" fill="none" className="h-4 w-4">
-          <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      </button>
-    </div>
-  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

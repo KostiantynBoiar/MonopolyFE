@@ -1,3 +1,5 @@
+import { SocketStatus } from '@/shared/socket';
+import { ChatMessage } from '../chat/chat.types';
 import type { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums';
 
 // ─── Wire types (snake_case matches backend REST/WS contract) ─────────────────
@@ -49,4 +51,15 @@ export type LobbyListResponse = {
 
 export type SessionResponse = {
   session: SessionDetail;
+};
+
+export type WaitingCenterPanelProps = {
+  session: SessionDetail;
+  messages: ChatMessage[];
+  onSendMessage?: (text: string) => void;
+  onLeave: () => void;
+  onStart: () => void;
+  isLeaving?: boolean;
+  isStarting?: boolean;
+  socketStatus?: SocketStatus;
 };
