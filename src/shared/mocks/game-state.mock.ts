@@ -1,4 +1,5 @@
 import type { GameState, SpaceOwnership } from '@/shared/protocol/game-state.schema';
+import { TokenColor } from '@/features/player-panel/player-panel.schema';
 
 // ─── Board ownership snapshot (40 spaces) ────────────────────────────────────
 // Positions that are never purchasable: 0,2,4,7,10,17,20,22,30,33,36,38
@@ -73,7 +74,7 @@ export const MOCK_GAME_STATE: GameState = {
       id: 'alice',
       userId: 'usr_alice',
       displayName: 'Alice',
-      token: 'blue',
+      token: TokenColor.BLUE,
       avatarUrl: null,
       turnOrder: 0,
       position: 9,           // Connecticut Ave
@@ -89,7 +90,7 @@ export const MOCK_GAME_STATE: GameState = {
       id: 'bob',
       userId: 'usr_bob',
       displayName: 'Bob',
-      token: 'red',
+      token: TokenColor.RED,
       avatarUrl: null,
       turnOrder: 1,
       position: 10,          // Just Visiting (Jail corner — visiting, not jailed)
@@ -105,7 +106,7 @@ export const MOCK_GAME_STATE: GameState = {
       id: 'carol',
       userId: 'usr_carol',
       displayName: 'Carol',
-      token: 'green',
+      token: TokenColor.GREEN,
       avatarUrl: null,
       turnOrder: 2,
       position: 10,          // In Jail
@@ -121,7 +122,7 @@ export const MOCK_GAME_STATE: GameState = {
       id: 'dave',
       userId: 'usr_dave',
       displayName: 'Dave',
-      token: 'gold',
+      token: TokenColor.GOLD,
       avatarUrl: null,
       turnOrder: 3,
       position: 39,          // Boardwalk
@@ -183,7 +184,7 @@ export const MOCK_GAME_STATE: GameState = {
       kind: 'chat',
       playerId: 'bob',
       playerName: 'Bob',
-      playerToken: 'red',
+      playerToken: TokenColor.RED,
       text: 'Nice hotel on New York 😏 good luck landing there',
       ts: '2026-05-29T18:18:45Z',
     },
@@ -212,7 +213,7 @@ export const MOCK_GAME_STATE: GameState = {
       kind: 'sticker',
       playerId: 'carol',
       playerName: 'Carol',
-      playerToken: 'green',
+      playerToken: TokenColor.GREEN,
       text: '[sticker:/stickers/kolobki/012.tgs]',
       stickerUrl: '/stickers/kolobki/012.tgs',
       ts: '2026-05-29T18:19:55Z',
@@ -236,7 +237,7 @@ export const MOCK_GAME_STATE: GameState = {
       kind: 'chat',
       playerId: 'dave',
       playerName: 'Dave',
-      playerToken: 'gold',
+      playerToken: TokenColor.GOLD,
       text: 'Boardwalk hotel. come visit 🏨',
       ts: '2026-05-29T18:20:35Z',
     },
@@ -246,7 +247,7 @@ export const MOCK_GAME_STATE: GameState = {
       kind: 'sticker',
       playerId: 'alice',
       playerName: 'Alice',
-      playerToken: 'blue',
+      playerToken: TokenColor.BLUE,
       text: '[sticker:/stickers/kolobki/007.tgs]',
       stickerUrl: '/stickers/kolobki/007.tgs',
       ts: '2026-05-29T18:20:40Z',
@@ -270,7 +271,7 @@ export const MOCK_GAME_STATE: GameState = {
       kind: 'sticker',
       playerId: 'bob',
       playerName: 'Bob',
-      playerToken: 'red',
+      playerToken: TokenColor.RED,
       text: '[sticker:/stickers/kolobki/003.tgs]',
       stickerUrl: '/stickers/kolobki/003.tgs',
       ts: '2026-05-29T18:21:08Z',
