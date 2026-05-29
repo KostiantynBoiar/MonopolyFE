@@ -1,5 +1,7 @@
 import { PropertyColor } from '@/features/game-board/game-board.enums';
 
+// ─── Board scaling ────────────────────────────────────────────────────────────
+
 /* Used for scaling the game board */
 export const BASE_PX = 686;
 
@@ -21,3 +23,14 @@ export const bandColors: Record<PropertyColor, string> = {
   [PropertyColor.GREEN]: 'bg-band-green',
   [PropertyColor.BLUE]: 'bg-band-blue',
 };
+
+// ─── Card flip animation ──────────────────────────────────────────────────────
+
+export const CARD_FLIP_TRIGGER_DELAY_MS = 400;
+export const CARD_FLIP_DURATION_MS = 600;
+export const CARD_PROCEED_APPEAR_DELAY_MS = CARD_FLIP_DURATION_MS + 150;
+
+// ─── Board space categories ───────────────────────────────────────────────────
+
+export const CHANCE_POSITIONS = [7, 22, 36] as const;
+export const CHEST_POSITIONS  = [2, 17, 33] as const;

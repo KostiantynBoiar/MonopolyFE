@@ -1,4 +1,6 @@
-import { type TokenColor } from '@/features/player-panel';
+import type { TokenColor } from '@/features/player-panel';
+import type { ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
+import type { TradeParticipant } from '@/features/trade';
 import { ActionKey } from './chat.enums';
 
 export type ChatMessage = {
@@ -47,4 +49,15 @@ export type BoardCenterPanelProps = {
   onBuild?: () => void;
   onTrade?: () => void;
   onSendMessage?: (text: string) => void;
+  // Card drawing overlay
+  activeCard?: ActiveCard | null;
+  onCardProceed?: () => void;
+  // Trade window (swaps chat container when active)
+  tradeState?: TradeState | null;
+  tradeProposer?: TradeParticipant;
+  tradeTarget?: TradeParticipant;
+  viewerId?: string;
+  onTradeAccept?: () => void;
+  onTradeReject?: () => void;
+  onTradeCancel?: () => void;
 };

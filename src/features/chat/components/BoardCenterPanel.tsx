@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
+import { cn } from '@/shared/lib/cn';
+import { CardFlipOverlay } from '@/features/card';
+import { TradeWindow } from '@/features/trade';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
 
@@ -57,14 +60,9 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
 
   return (
     <div className="flex items-start gap-1.5">
-      <span
-        className="mt-1 h-2 w-2 shrink-0 rounded-full"
-        style={{ background: color }}
-      />
+      <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
       <p className="min-w-0 font-sans text-[0.82em] leading-snug text-ink">
-        <span className="mr-1 font-semibold" style={{ color }}>
-          {author}
-        </span>
+        <span className="mr-1 font-semibold" style={{ color }}>{author}</span>
         {text}
       </p>
     </div>
@@ -86,19 +84,14 @@ function ActionBtn({
     <button
       onClick={handler}
       disabled={!enabled}
-      className={[
+      className={cn(
         'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors',
         'text-[0.62em]',
-        primary && enabled
-          ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
-          : primary && !enabled
-            ? 'cursor-not-allowed border-line bg-paper text-muted'
-            : enabled
-              ? 'border-line-2 bg-surface text-ink hover:bg-paper'
-              : 'cursor-not-allowed border-line bg-paper text-muted',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+        primary && enabled  ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
+        : primary           ? 'cursor-not-allowed border-line bg-paper text-muted'
+        : enabled           ? 'border-line-2 bg-surface text-ink hover:bg-paper'
+                            : 'cursor-not-allowed border-line bg-paper text-muted',
+      )}
       style={{ padding: '0.55em 0.4em' }}
     >
       {label}
@@ -112,10 +105,7 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
   const [displayed, setDisplayed] = useState(value);
 
   useEffect(() => {
-    if (!rolling) {
-      setDisplayed(value);
-      return;
-    }
+    if (!rolling) { setDisplayed(value); return; }
     const iv = setInterval(() => setDisplayed(Math.ceil(Math.random() * 6)), 80);
     return () => clearInterval(iv);
   }, [rolling, value]);
@@ -141,8 +131,6 @@ function StickerCell({
   onSelect: () => void;
 }) {
   const isTgs = file.endsWith('.tgs');
-  // Stagger TgsPlayer mounts so 30 lottie.loadAnimation() calls don't land
-  // on the main thread in the same frame. Webp images render immediately.
   const [mounted, setMounted] = useState(!isTgs);
 
   useEffect(() => {
@@ -158,7 +146,6 @@ function StickerCell({
       title={file}
     >
       {isTgs ? (
-        // loop={false}: animates once then idles — no ongoing RAF per cell
         mounted
           ? <TgsPlayer src={url} size={48} loop={false} />
           : <div style={{ width: 48, height: 48 }} />
@@ -183,25 +170,22 @@ function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
 
   return (
     <div className="flex flex-col">
-      {/* Pack tabs (only if >1 pack) */}
       {packs.length > 1 && (
         <div className="flex shrink-0 gap-1 border-b border-line px-2 py-1">
           {packs.map((p, i) => (
             <button
               key={p.id}
               onClick={() => setPackIdx(i)}
-              className={[
+              className={cn(
                 'rounded px-2 py-0.5 font-sans text-[0.7em]',
                 i === packIdx ? 'bg-ink text-white' : 'text-muted hover:text-ink',
-              ].join(' ')}
+              )}
             >
               {p.name}
             </button>
           ))}
         </div>
       )}
-
-      {/* Scrollable animated sticker grid */}
       <div
         className="grid grid-cols-4 gap-0.5 overflow-y-auto p-1.5"
         style={{ maxHeight: 220, scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
@@ -232,10 +216,24 @@ export function BoardCenterPanel({
   onBuild,
   onTrade,
   onSendMessage,
+  activeCard = null,
+  onCardProceed,
+  tradeState = null,
+  tradeProposer,
+  tradeTarget,
+  viewerId,
+  onTradeAccept,
+  onTradeReject,
+  onTradeCancel,
 }: BoardCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+
+  const isTradeActive = tradeState !== null
+    && (tradeState.status === 'pending' || tradeState.status === 'countered')
+    && tradeProposer != null
+    && tradeTarget != null;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -254,27 +252,9 @@ export function BoardCenterPanel({
   }
 
   const actions: Action[] = [
-    canBuild && {
-      key: ActionKey.BUILD,
-      label: 'Build House',
-      enabled: true,
-      handler: onBuild,
-    },
-
-    canBuy && {
-      key: ActionKey.BUY,
-      label: 'Buy Property',
-      enabled: true,
-      handler: onBuy,
-    },
-
-    canTrade && {
-      key: ActionKey.TRADE,
-      label: 'Trade',
-      enabled: true,
-      handler: onTrade,
-    },
-
+    canBuild && { key: ActionKey.BUILD, label: 'Build House', enabled: true, handler: onBuild },
+    canBuy   && { key: ActionKey.BUY,   label: 'Buy Property', enabled: true, handler: onBuy },
+    canTrade && { key: ActionKey.TRADE, label: 'Trade',        enabled: true, handler: onTrade },
     {
       key: ActionKey.ROLL,
       label: isRolling ? 'Rolling…' : 'Roll Dice',
@@ -286,113 +266,136 @@ export function BoardCenterPanel({
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden bg-gray-100"
+      className="relative flex h-full w-full flex-col overflow-hidden bg-gray-100"
       style={{ fontSize: '0.72em' }}
     >
-      {/* ── Log + Actions row ── */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-
-        {/* Game log */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
-            <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
-              Game Log
-            </span>
-          </div>
+      {/* ── Trade window (swaps the whole log+actions area) ── */}
+      {isTradeActive ? (
+        <TradeWindow
+          trade={tradeState!}
+          proposer={tradeProposer!}
+          target={tradeTarget!}
+          viewerId={viewerId ?? ''}
+          onAccept={onTradeAccept}
+          onReject={onTradeReject}
+          onCancel={onTradeCancel}
+        />
+      ) : (
+        <>
+          {/* ── Log + Actions row ── */}
           <div
-            className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
-            style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
-          >
-            {messages.map((msg) =>
-              msg.kind === 'event' ? (
-                <EventRow key={msg.id} text={msg.text} />
-              ) : (
-                <MessageRow key={msg.id} author={msg.author} token={msg.token} text={msg.text} />
-              ),
+            className={cn(
+              'flex min-h-0 flex-1 overflow-hidden transition-opacity duration-300',
+              activeCard ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
-            <div ref={bottomRef} />
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
-          <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
-            <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
-              Actions
-            </span>
-          </div>
-
-          <div className="flex flex-1 flex-col justify-end gap-1.5 p-2">
-            {/* Dice display */}
-            {(isRolling || diceRoll) && (
-              <div className="flex flex-col items-center gap-1 pb-1">
-                <div className="flex items-center gap-2">
-                  <DiceFace value={isRolling ? 1 : (diceRoll?.die1 ?? 1)} rolling={isRolling} />
-                  <DiceFace value={isRolling ? 1 : (diceRoll?.die2 ?? 1)} rolling={isRolling} />
-                </div>
-                {!isRolling && diceRoll && (
-                  <span className="font-mono text-[0.62em] text-muted">
-                    {diceRoll.die1 + diceRoll.die2}{diceRoll.isDoubles ? ' doubles!' : ''}
-                  </span>
+          >
+            {/* Game log */}
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
+                <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
+                  Game Log
+                </span>
+              </div>
+              <div
+                className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
+              >
+                {messages.map((msg) =>
+                  msg.kind === 'event' ? (
+                    <EventRow key={msg.id} text={msg.text} />
+                  ) : (
+                    <MessageRow key={msg.id} author={msg.author} token={msg.token} text={msg.text} />
+                  ),
                 )}
+                <div ref={bottomRef} />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
+              <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
+                <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
+                  Actions
+                </span>
+              </div>
+              <div className="flex flex-1 flex-col justify-end gap-1.5 p-2">
+                {(isRolling || diceRoll) && (
+                  <div className="flex flex-col items-center gap-1 pb-1">
+                    <div className="flex items-center gap-2">
+                      <DiceFace value={isRolling ? 1 : (diceRoll?.die1 ?? 1)} rolling={isRolling} />
+                      <DiceFace value={isRolling ? 1 : (diceRoll?.die2 ?? 1)} rolling={isRolling} />
+                    </div>
+                    {!isRolling && diceRoll && (
+                      <span className="font-mono text-[0.62em] text-muted">
+                        {diceRoll.die1 + diceRoll.die2}{diceRoll.isDoubles ? ' doubles!' : ''}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {actions.map(({ key, ...a }) => (
+                  <ActionBtn key={key} {...a} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Input bar ── */}
+          <div
+            className={cn(
+              'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
+              activeCard ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+            )}
+          >
+            <div className="flex items-center gap-1.5">
+              <input
+                className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
+                placeholder="Message…"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendText()}
+              />
+              <button
+                onClick={() => setShowPicker((v) => !v)}
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded border transition-colors',
+                  showPicker
+                    ? 'border-ink bg-ink text-white'
+                    : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
+                )}
+                title="Stickers"
+              >
+                <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                  <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="7.5" cy="8.5" r="1" fill="currentColor" />
+                  <circle cx="12.5" cy="8.5" r="1" fill="currentColor" />
+                  <path d="M7 12.5c.8 1.5 5.2 1.5 6 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                </svg>
+              </button>
+              <button
+                onClick={sendText}
+                disabled={!draft.trim()}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-blue bg-blue text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+              >
+                <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                  <path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+            {showPicker && (
+              <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
+                <StickerPicker onSticker={sendSticker} />
               </div>
             )}
-
-            {actions.map(({ key, ...a }) => (
-              <ActionBtn key={key} {...a} />
-            ))}
           </div>
+        </>
+      )}
+
+      {/* ── Card flip overlay (sits above log; log fades behind it) ── */}
+      {activeCard && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} />
         </div>
-      </div>
-
-      {/* ── Input bar ── */}
-      <div className="relative shrink-0 border-t border-line bg-gray-200 px-2 py-2">
-        <div className="flex items-center gap-1.5">
-          <input
-            className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-            placeholder="Message…"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendText()}
-          />
-
-          {/* Sticker picker toggle */}
-          <button
-            onClick={() => setShowPicker((v) => !v)}
-            className={[
-              'flex h-8 w-8 shrink-0 items-center justify-center rounded border transition-colors',
-              showPicker
-                ? 'border-ink bg-ink text-white'
-                : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
-            ].join(' ')}
-            title="Stickers"
-          >
-            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-              <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="7.5" cy="8.5" r="1" fill="currentColor" />
-              <circle cx="12.5" cy="8.5" r="1" fill="currentColor" />
-              <path d="M7 12.5c.8 1.5 5.2 1.5 6 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-          </button>
-
-          {/* Send text */}
-          <button
-            onClick={sendText}
-            disabled={!draft.trim()}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-blue bg-blue text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-          >
-            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-              <path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
-
-        {showPicker && (
-          <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
-            <StickerPicker onSticker={sendSticker} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

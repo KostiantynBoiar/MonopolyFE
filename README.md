@@ -1,46 +1,109 @@
-# Getting Started with Create React App
+# Monopoly Frontend — Tycoon
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Next.js 15 frontend for the Tycoon multiplayer Monopoly game.
 
-## Available Scripts
+## Tech stack
 
-In the project directory, you can run:
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 3 |
+| State | Zustand 5 |
+| Validation | Zod 3 |
+| Animation | Lottie Web (TGS stickers) |
 
-### `npm start`
+## Getting started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```bash
+npm install
+npm run dev       # http://localhost:3000
+```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```bash
+npm run build     # production build
+npm run lint      # ESLint
+npx tsc --noEmit  # type check
+```
 
-### `npm test`
+## Project structure
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+src/
+├── app/                        # Next.js App Router pages
+│   ├── (auth)/                 # Login / register
+│   ├── game/room/              # Main game board page
+│   ├── lobby/                  # Room browser + creation
+│   └── me/                     # Profile
+│
+├── features/                   # Domain modules
+│   ├── auth/                   # Auth forms, Telegram widget
+│   ├── card/                   # Chance / Community Chest card flip overlay
+│   ├── chat/                   # Game log, BoardCenterPanel, sticker picker
+│   ├── dice/                   # Dice rolling
+│   ├── game-board/             # Board tiles, BoardContainer, MonopolyBoard
+│   ├── player-panel/           # PlayerSidebar, PlayerCard
+│   ├── trade/                  # TradeWindow
+│   └── lobby/                  # Lobby components
+│
+├── shared/
+│   ├── config/
+│   │   ├── board-layout.ts     # BOARD[], getGridPos(), getTileEdge()
+│   │   ├── constants.ts        # Tile sizes, animation durations, space lists
+│   │   └── env.ts              # Runtime env vars
+│   ├── lib/                    # cn(), formatters, stats
+│   ├── mocks/                  # MOCK_GAME_STATE for local dev
+│   ├── protocol/               # GameState types, socket message schemas
+│   ├── socket/                 # WebSocket client + hooks
+│   └── ui/                     # Button, Input, Modal, Avatar, Spinner…
+│
+├── stores/                     # Zustand stores
+└── types/                      # Global ID aliases
+```
 
-### `npm run build`
+Each feature follows the same convention:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+features/<name>/
+├── <name>.enums.ts     # Enums (prefer over string unions)
+├── <name>.types.ts     # TypeScript types and interfaces
+├── <name>.schema.ts    # Zod schemas for runtime validation
+├── components/         # React components
+├── hooks/              # Feature-specific hooks
+└── index.ts            # Barrel export (public API)
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Coding conventions
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- **Constants** live in `shared/config/constants.ts` — no magic numbers in components.
+- **Enums** over string literals — defined in `<module>.enums.ts`.
+- **Types** in `<module>.types.ts`; Zod schemas in `<module>.schema.ts`.
+- **Board data** canonical location: `shared/config/board-layout.ts`. The `game-board/board-data.ts` file is a re-export shim.
+- `cn()` from `shared/lib/cn` for all className composition (clsx + tailwind-merge).
 
-### `npm run eject`
+## Key UI features
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Board center panel (`features/chat`)
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+The board's center grid hosts `BoardCenterPanel`, which has three display modes:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+| Mode | Trigger | What shows |
+|---|---|---|
+| Normal | Default | Game log (left 73%) + action buttons / dice (right 27%) |
+| Card draw | `activeCard != null` | Card flip animation overlaid; log fades behind it |
+| Trade | `tradeState` is `pending` or `countered` | `TradeWindow` replaces the entire panel |
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Card flip overlay (`features/card`)
 
-## Learn More
+CSS 3D flip (`perspective` + `rotateY`) auto-triggers `CARD_FLIP_TRIGGER_DELAY_MS` after mount. The **Proceed** button fades in once the flip completes. The game log dims to `opacity-[0.12]` while the overlay is active.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Trade window (`features/trade`)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Two-column layout separated by a `⇄` divider. Labels are framed from the viewer's perspective ("You give" / "Bob gives back"). Properties render as color-coded chips. The action bar shows role-appropriate controls: Accept + Reject for the target, Withdraw for the proposer.
+
+## Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Backend API base URL |
+| `NEXT_PUBLIC_TELEGRAM_BOT_NAME` | — | Telegram Login Widget bot name |
