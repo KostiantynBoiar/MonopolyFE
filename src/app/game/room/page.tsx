@@ -1,15 +1,24 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { BoardContainer } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
+import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
+import { leaveSession, startGame } from '@/features/lobby/api';
+import type { SessionMember } from '@/features/lobby';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
-import type { Player } from '@/features/player-panel';
+import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
+import { FullScreenSpinner } from '@/shared/ui/Spinner';
+import { useSessionStore } from '@/stores/session-store';
+import { useGameSocket } from '@/shared/socket';
+import type { Player, TokenColor } from '@/features/player-panel';
 import type { BoardPlayer } from '@/features/game-board';
 import type { GameState, ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
 import type { TradeParticipant } from '@/features/trade';
+import type { ChatMessage } from '@/features/chat/chat.types';
 import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
@@ -35,6 +44,24 @@ function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
     position: p.position,
     tokenColor: TOKEN_COLORS[p.token],
     isBankrupt: p.isBankrupt,
+  }));
+}
+
+const TOKEN_ORDER: TokenColor[] = [
+  'blue', 'red', 'green', 'gold', 'orange', 'pink', 'cyan', 'brown',
+];
+
+function sessionMembersToPlayers(members: SessionMember[]): Player[] {
+  return members.map((m, i) => ({
+    id: m.user_id,
+    name: m.display_name,
+    balance: 0,
+    position: 0,
+    token: TOKEN_ORDER[i % TOKEN_ORDER.length],
+    ownedPositions: [],
+    isActive: false,
+    isBankrupt: false,
+    inJail: false,
   }));
 }
 
@@ -83,16 +110,8 @@ function makeMockTrade(gs: GameState): TradeState {
     id: `trade_${Date.now()}`,
     proposerId: gs.viewerId,
     targetId: 'bob',
-    proposerOffer: {
-      money: 100,
-      positions: [1, 3],
-      getOutOfJailCards: 0,
-    },
-    targetRequest: {
-      money: 0,
-      positions: [5],
-      getOutOfJailCards: 0,
-    },
+    proposerOffer: { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
+    targetRequest: { money: 0, positions: [5], getOutOfJailCards: 0 },
     status: 'pending',
     expiresAt: new Date(Date.now() + 120_000).toISOString(),
   };
@@ -144,33 +163,78 @@ function advanceTurn(prev: GameState): GameState {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function GameRoomPage() {
+  const router = useRouter();
+  const { ready, token } = useRequireAuth();
+  const { currentSession, clearSession, setSession } = useSessionStore();
+
+  // ── WebSocket (active during waiting + in-game) ────────────────────────────
+
+  const { status: socketStatus, messages: wsMessages, sendChat, sendSticker } =
+    useGameSocket(currentSession?.id ?? null);
+
+  // ── Waiting room mode ──────────────────────────────────────────────────────
+
+  const isWaiting = currentSession?.status === SessionStatus.WAITING;
+
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+
+  // Convert WS chat entries to ChatMessage format for the panel
+  const waitingMessages: ChatMessage[] = wsMessages.map((m) => ({
+    id: m.id,
+    kind: m.kind === 'sticker' ? 'chat' : 'chat',
+    author: m.display_name,
+    text: m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
+    ts: new Date(m.ts).getTime(),
+  }));
+
+  function handleWaitingMessage(text: string) {
+    const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
+    if (stickerMatch) {
+      sendSticker(stickerMatch[1]);
+    } else {
+      sendChat(text);
+    }
+  }
+
+  async function handleLeave() {
+    setIsLeaving(true);
+    if (token && currentSession) await leaveSession(token, currentSession.id);
+    clearSession();
+    router.push('/lobby');
+  }
+
+  async function handleStart() {
+    setIsStarting(true);
+    if (token && currentSession) {
+      await startGame(token, currentSession.id);
+      setSession({ ...currentSession, status: SessionStatus.IN_PROGRESS });
+    }
+    setIsStarting(false);
+  }
+
+  // ── Game board mode ────────────────────────────────────────────────────────
+
   const [gameState, setGameState] = useState<GameState>(MOCK_GAME_STATE);
   const [isRolling, setIsRolling] = useState(false);
 
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
   const actions = gameState.turn.actionsAvailable;
 
-  // ── Auto-advance after post_roll (unless drawing a card) ──────────────────
-
   useEffect(() => {
     if (gameState.turn.phase !== 'post_roll') return;
-
     const t = setTimeout(() => {
       setGameState((prev) => {
         if (prev.turn.phase !== 'post_roll') return prev;
         return advanceTurn(prev);
       });
     }, 2500);
-
     return () => clearTimeout(t);
   }, [gameState.turn.phase, gameState.turn.turnNumber]);
-
-  // ── Roll dice ──────────────────────────────────────────────────────────────
 
   const handleRoll = useCallback(async () => {
     if (!actions.canRoll || isRolling) return;
     setIsRolling(true);
-
     await new Promise<void>((r) => setTimeout(r, 1200));
 
     const die1 = Math.ceil(Math.random() * 6);
@@ -192,11 +256,7 @@ export default function GameRoomPage() {
         phase: drawnCard ? 'drawing_card' : 'post_roll',
         diceRoll: { die1, die2, isDoubles },
         doublesStreak: isDoubles ? prev.turn.doublesStreak + 1 : 0,
-        actionsAvailable: {
-          ...prev.turn.actionsAvailable,
-          canRoll: false,
-          canEndTurn: false,
-        },
+        actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false, canEndTurn: false },
       },
       log: [
         ...prev.log,
@@ -209,8 +269,6 @@ export default function GameRoomPage() {
       ],
     }));
   }, [actions.canRoll, isRolling, viewer]);
-
-  // ── Card proceed ───────────────────────────────────────────────────────────
 
   const handleCardProceed = useCallback(() => {
     setGameState((prev) => ({
@@ -229,8 +287,6 @@ export default function GameRoomPage() {
     }));
   }, [viewer]);
 
-  // ── Trade handlers ─────────────────────────────────────────────────────────
-
   const handleTrade = useCallback(() => {
     setGameState((prev) => ({
       ...prev,
@@ -244,15 +300,7 @@ export default function GameRoomPage() {
       ...prev,
       trade: prev.trade ? { ...prev.trade, status: 'accepted' } : null,
       turn: { ...prev.turn, phase: 'post_roll' },
-      log: [
-        ...prev.log,
-        {
-          id: `log_trade_accept_${Date.now()}`,
-          kind: 'event' as const,
-          text: 'Trade accepted.',
-          ts: new Date().toISOString(),
-        },
-      ],
+      log: [...prev.log, { id: `log_trade_accept_${Date.now()}`, kind: 'event' as const, text: 'Trade accepted.', ts: new Date().toISOString() }],
     }));
     setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
   }, []);
@@ -262,60 +310,71 @@ export default function GameRoomPage() {
       ...prev,
       trade: prev.trade ? { ...prev.trade, status: 'rejected' } : null,
       turn: { ...prev.turn, phase: 'post_roll' },
-      log: [
-        ...prev.log,
-        {
-          id: `log_trade_reject_${Date.now()}`,
-          kind: 'event' as const,
-          text: 'Trade rejected.',
-          ts: new Date().toISOString(),
-        },
-      ],
+      log: [...prev.log, { id: `log_trade_reject_${Date.now()}`, kind: 'event' as const, text: 'Trade rejected.', ts: new Date().toISOString() }],
     }));
     setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
   }, []);
 
   const handleTradeCancel = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: null,
-      turn: { ...prev.turn, phase: 'pre_roll' },
-    }));
+    setGameState((prev) => ({ ...prev, trade: null, turn: { ...prev.turn, phase: 'pre_roll' } }));
   }, []);
 
-  // ── Send message / sticker ─────────────────────────────────────────────────
+  const handleSendMessage = useCallback((text: string) => {
+    const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
+    const isSticker = stickerMatch !== null;
+    setGameState((prev) => ({
+      ...prev,
+      log: [
+        ...prev.log,
+        {
+          id: `log_chat_${Date.now()}`,
+          kind: isSticker ? ('sticker' as const) : ('chat' as const),
+          playerId: prev.viewerId,
+          playerName: viewer.displayName,
+          playerToken: viewer.token,
+          text,
+          stickerUrl: stickerMatch?.[1],
+          ts: new Date().toISOString(),
+        },
+      ],
+    }));
+  }, [viewer]);
 
-  const handleSendMessage = useCallback(
-    (text: string) => {
-      const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
-      const isSticker = stickerMatch !== null;
+  // ── Guards (all hooks above, returns below) ────────────────────────────────
 
-      setGameState((prev) => ({
-        ...prev,
-        log: [
-          ...prev.log,
-          {
-            id: `log_chat_${Date.now()}`,
-            kind: isSticker ? ('sticker' as const) : ('chat' as const),
-            playerId: prev.viewerId,
-            playerName: viewer.displayName,
-            playerToken: viewer.token,
-            text,
-            stickerUrl: stickerMatch?.[1],
-            ts: new Date().toISOString(),
-          },
-        ],
-      }));
-    },
-    [viewer],
-  );
+  if (!ready) return <FullScreenSpinner />;
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  if (isWaiting && currentSession) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-paper">
+        <div className="flex-1 overflow-hidden p-4">
+          <BoardContainer
+            centerContent={
+              <WaitingCenterPanel
+                session={currentSession}
+                messages={waitingMessages}
+                onSendMessage={handleWaitingMessage}
+                onLeave={handleLeave}
+                onStart={handleStart}
+                isLeaving={isLeaving}
+                isStarting={isStarting}
+                socketStatus={socketStatus}
+              />
+            }
+          />
+        </div>
+        <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
+          <PlayerSidebar players={sessionMembersToPlayers(currentSession.members)} />
+        </aside>
+      </div>
+    );
+  }
+
+  // ── Game board ─────────────────────────────────────────────────────────────
 
   const tradeProposer = gameState.trade
     ? deriveTradeParticipant(gameState, gameState.trade.proposerId)
     : undefined;
-
   const tradeTarget = gameState.trade
     ? deriveTradeParticipant(gameState, gameState.trade.targetId)
     : undefined;

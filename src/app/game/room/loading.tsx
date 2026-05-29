@@ -1,7 +1,9 @@
+import { Spinner } from '@/shared/ui/Spinner';
+
 export default function GameRoomLoading() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center p-8">
-      <p className="text-sm text-muted">Loading game room…</p>
+    <div className="flex h-screen items-center justify-center bg-paper">
+      <Spinner size="lg" />
     </div>
   );
 }

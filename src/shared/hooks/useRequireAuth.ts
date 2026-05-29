@@ -1,0 +1,37 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/auth-store';
+
+/**
+ * Guards a client page behind authentication.
+ *
+ * Returns `{ ready, token, user }`.
+ * - `ready = false` while Zustand is rehydrating from localStorage (first render).
+ *   Show a spinner during this window to prevent the white-flash redirect.
+ * - Once hydrated: if no token, silently replaces to /login.
+ * - Once hydrated and authenticated: `ready = true`, safe to render the page.
+ */
+export function useRequireAuth() {
+  const { token, user } = useAuthStore();
+  const [hydrated, setHydrated] = useState(false);
+  const router = useRouter();
+
+  // Mark client-side hydration complete after first paint
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated && !token) {
+      router.replace('/login');
+    }
+  }, [hydrated, token, router]);
+
+  return {
+    ready:  hydrated && !!token,
+    token:  token  ?? null,
+    user:   user   ?? null,
+  };
+}

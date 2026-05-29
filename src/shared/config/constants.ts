@@ -34,3 +34,8 @@ export const CARD_PROCEED_APPEAR_DELAY_MS = CARD_FLIP_DURATION_MS + 150;
 
 export const CHANCE_POSITIONS = [7, 22, 36] as const;
 export const CHEST_POSITIONS  = [2, 17, 33] as const;
+
+// ─── Session / lobby ──────────────────────────────────────────────────────────
+
+export const SESSION_MAX_PLAYERS       = 8;
+export const SESSION_MIN_PLAYERS_TO_START = 2;

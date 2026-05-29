@@ -1,7 +1,9 @@
+import { Spinner } from '@/shared/ui/Spinner';
+
 export default function LobbyLoading() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center p-8">
-      <p className="text-sm text-muted">Loading lobby…</p>
+    <div className="flex min-h-screen items-center justify-center bg-paper">
+      <Spinner size="lg" />
     </div>
   );
 }
