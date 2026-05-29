@@ -59,6 +59,10 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
   const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
 
   if (stickerMatch) {
+    const url = stickerMatch[1];
+    const media = url.endsWith('.tgs')
+      ? <TgsPlayer src={url} size={72} />
+      : <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'contain' }} />;
     return (
       <div className="flex items-start gap-1.5">
         <span className="mt-2 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
@@ -66,7 +70,7 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
           <span className="block font-sans text-[0.82em] font-semibold leading-snug" style={{ color }}>
             {author}
           </span>
-          <TgsPlayer src={stickerMatch[1]} size={72} />
+          {media}
         </div>
       </div>
     );
@@ -149,13 +153,24 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
 function StickerCell({
   url,
   file,
+  index,
   onSelect,
 }: {
   url: string;
   file: string;
+  index: number;
   onSelect: () => void;
 }) {
   const isTgs = file.endsWith('.tgs');
+  // Stagger TgsPlayer mounts so 30 lottie.loadAnimation() calls don't land
+  // on the main thread in the same frame. Webp images render immediately.
+  const [mounted, setMounted] = useState(!isTgs);
+
+  useEffect(() => {
+    if (!isTgs) return;
+    const t = setTimeout(() => setMounted(true), index * 25);
+    return () => clearTimeout(t);
+  }, [isTgs, index]);
 
   return (
     <button
@@ -164,7 +179,10 @@ function StickerCell({
       title={file}
     >
       {isTgs ? (
-        <TgsPlayer src={url} size={48} />
+        // loop={false}: animates once then idles — no ongoing RAF per cell
+        mounted
+          ? <TgsPlayer src={url} size={48} loop={false} />
+          : <div style={{ width: 48, height: 48 }} />
       ) : (
         <img src={url} alt={file} className="h-12 w-12 object-contain" />
       )}
@@ -209,10 +227,10 @@ function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
         className="grid grid-cols-4 gap-0.5 overflow-y-auto p-1.5"
         style={{ maxHeight: 220, scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
       >
-        {pack?.stickers.map((file) => {
+        {pack?.stickers.map((file, i) => {
           const url = `/stickers/${pack.id}/${file}`;
           return (
-            <StickerCell key={file} url={url} file={file} onSelect={() => onSticker(url)} />
+            <StickerCell key={file} url={url} file={file} index={i} onSelect={() => onSticker(url)} />
           );
         })}
       </div>

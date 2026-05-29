@@ -213,8 +213,8 @@ export const MOCK_GAME_STATE: GameState = {
       playerId: 'carol',
       playerName: 'Carol',
       playerToken: 'green',
-      text: '[sticker:/stickers/kolobki/012___.tgs]',
-      stickerUrl: '/stickers/kolobki/012___.tgs',
+      text: '[sticker:/stickers/kolobki/012.tgs]',
+      stickerUrl: '/stickers/kolobki/012.tgs',
       ts: '2026-05-29T18:19:55Z',
     },
     // Dave lands on Boardwalk (his own), builds hotel
@@ -247,8 +247,8 @@ export const MOCK_GAME_STATE: GameState = {
       playerId: 'alice',
       playerName: 'Alice',
       playerToken: 'blue',
-      text: '[sticker:/stickers/kolobki/007___.tgs]',
-      stickerUrl: '/stickers/kolobki/007___.tgs',
+      text: '[sticker:/stickers/kolobki/007.tgs]',
+      stickerUrl: '/stickers/kolobki/007.tgs',
       ts: '2026-05-29T18:20:40Z',
     },
     // Bob pays rent on Carol's red group
@@ -271,8 +271,8 @@ export const MOCK_GAME_STATE: GameState = {
       playerId: 'bob',
       playerName: 'Bob',
       playerToken: 'red',
-      text: '[sticker:/stickers/kolobki/003___.tgs]',
-      stickerUrl: '/stickers/kolobki/003___.tgs',
+      text: '[sticker:/stickers/kolobki/003.tgs]',
+      stickerUrl: '/stickers/kolobki/003.tgs',
       ts: '2026-05-29T18:21:08Z',
     },
     // Round 5 starts
