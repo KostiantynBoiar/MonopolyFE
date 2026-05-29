@@ -1,21 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { cn } from '@/shared/lib/cn';
-import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
-
-export type ChatMessage = {
-  id: string;
-  kind: 'chat' | 'event';
-  author?: string;
-  token?: TokenColor;
-  text: string;
-  ts: number;
-};
-
-type ChatLogProps = {
-  messages: ChatMessage[];
-};
+import { TOKEN_COLORS } from '@/features/player-panel';
+import type { ChatMessage, ChatLogProps } from '../chat.types';
 
 export function ChatLog({ messages }: ChatLogProps) {
   const bottomRef = useRef<HTMLDivElement>(null);

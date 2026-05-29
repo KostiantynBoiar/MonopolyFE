@@ -1,17 +1,9 @@
 'use client';
 
-import { useRef, useEffect, useState, type ReactNode } from 'react';
-import type { SpaceOwnership } from '@/shared/protocol/game-state.schema';
-import type { BoardPlayer } from '../board-data';
+import { useRef, useEffect, useState } from 'react';
 import { MonopolyBoard } from './MonopolyBoard';
-
-const BASE_PX = 686;
-
-type BoardContainerProps = {
-  centerContent?: ReactNode;
-  spaces?: SpaceOwnership[];
-  players?: BoardPlayer[];
-};
+import { BoardContainerProps } from '../game-board.types';
+import { BASE_PX } from '@/shared/config/constants';
 
 export function BoardContainer({ centerContent, spaces, players }: BoardContainerProps) {
   const ref = useRef<HTMLDivElement>(null);

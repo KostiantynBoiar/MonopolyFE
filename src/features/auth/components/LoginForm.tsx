@@ -7,16 +7,15 @@ import { useAuthStore } from '@/stores/auth-store';
 import { loginSchema } from '../auth.schema';
 import { TelegramLoginWidget } from './TelegramLoginWidget';
 import { env } from '@/shared/config/env';
-
-type Fields = { email: string; password: string };
+import { LoginFields } from '../auth.types';
 
 export function LoginForm() {
   const router = useRouter();
   const { login, isLoading, error, clearError } = useAuthStore();
-  const [fields, setFields] = useState<Fields>({ email: '', password: '' });
-  const [fieldErrors, setFieldErrors] = useState<Partial<Fields>>({});
+  const [fields, setFields] = useState<LoginFields>({ email: '', password: '' });
+  const [fieldErrors, setFieldErrors] = useState<Partial<LoginFields>>({});
 
-  function handleChange(key: keyof Fields) {
+  function handleChange(key: keyof LoginFields) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       setFields((f) => ({ ...f, [key]: e.target.value }));
       if (fieldErrors[key]) setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
@@ -24,13 +23,13 @@ export function LoginForm() {
     };
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const parsed = loginSchema.safeParse(fields);
     if (!parsed.success) {
-      const fe: Partial<Fields> = {};
+      const fe: Partial<LoginFields> = {};
       for (const err of parsed.error.errors) {
-        fe[err.path[0] as keyof Fields] = err.message;
+        fe[err.path[0] as keyof LoginFields] = err.message;
       }
       setFieldErrors(fe);
       return;

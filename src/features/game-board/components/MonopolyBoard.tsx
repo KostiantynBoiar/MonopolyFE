@@ -1,35 +1,19 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import {
   BOARD,
   getGridPos,
   getTileEdge,
-  type BoardSpace,
   type TileEdge,
   type BoardPlayer,
 } from '../board-data';
-import type { SpaceOwnership } from '@/shared/protocol/game-state.schema';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
-
-// Tile pixel dimensions
-const N = 56;  // narrow edge
-const W = 91;  // wide edge (corner size)
-
-const gridCols = `${W}px repeat(9, ${N}px) ${W}px`;
-const gridRows = `${W}px repeat(9, ${N}px) ${W}px`;
-const BOARD_PX = W * 2 + N * 9; // 686
+import { N, W, gridCols, gridRows, BOARD_PX } from '@/shared/config/constants';
+import type { TileContentProps, MonopolyBoardProps } from '../game-board.types';
 
 // ─── Tile rendering ───────────────────────────────────────────────────────────
-
-type TileContentProps = {
-  space: BoardSpace;
-  ownership?: SpaceOwnership;
-  ownerColor?: string;
-  flipped?: boolean;
-};
 
 function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps) {
   if (space.type === 'corner') {
@@ -124,13 +108,6 @@ function TokenDots({ players }: { players: BoardPlayer[] }) {
 }
 
 // ─── Board ────────────────────────────────────────────────────────────────────
-
-type MonopolyBoardProps = {
-  scale?: number;
-  centerContent?: ReactNode;
-  spaces?: SpaceOwnership[];
-  players?: BoardPlayer[];
-};
 
 export function MonopolyBoard({
   scale = 1,

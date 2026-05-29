@@ -1,22 +1,38 @@
 import { cn } from '@/shared/lib/cn';
-import type { SpaceType } from '../board-data';
+import type { SpecialTileProps, TileStyleConfig, SpecialTileType } from '../game-board.types';
+import { TileSymbol, TileTopStyle, TileTopText, SpaceType } from '../game-board.enums';
 
-type SpecialTileProps = {
-  type: Exclude<SpaceType, 'corner' | 'property'>;
-  name: string;
-  price?: number;
-  mortgaged?: boolean;
-  ownerColor?: string; // hex token color of the owning player
-  flipped?: boolean;
-  className?: string;
-};
 
-const typeStyle: Record<SpecialTileProps['type'], { top: string; symbol: string; topText: string }> = {
-  railroad: { top: 'bg-ink',         symbol: '🚂', topText: '' },
-  utility:  { top: 'bg-ink',         symbol: '⚡', topText: '' },
-  chance:   { top: 'bg-band-orange', symbol: '?',  topText: 'CHANCE' },
-  chest:    { top: 'bg-band-cyan',   symbol: '📦', topText: 'COMMUNITY CHEST' },
-  tax:      { top: 'bg-red',         symbol: '$',  topText: '' },
+export const typeStyle: Record<SpecialTileType, TileStyleConfig> = {
+  [SpaceType.RAILROAD]: {
+    top: TileTopStyle.INK,
+    symbol: TileSymbol.RAILROAD,
+    topText: TileTopText.NONE,
+  },
+
+  [SpaceType.UTILITY]: {
+    top: TileTopStyle.INK,
+    symbol: TileSymbol.UTILITY,
+    topText: TileTopText.NONE,
+  },
+
+  [SpaceType.CHANCE]: {
+    top: TileTopStyle.ORANGE,
+    symbol: TileSymbol.CHANCE,
+    topText: TileTopText.CHANCE,
+  },
+
+  [SpaceType.CHEST]: {
+    top: TileTopStyle.CYAN,
+    symbol: TileSymbol.CHEST,
+    topText: TileTopText.CHEST,
+  },
+
+  [SpaceType.TAX]: {
+    top: TileTopStyle.RED,
+    symbol: TileSymbol.TAX,
+    topText: TileTopText.NONE,
+  },
 };
 
 export function SpecialTile({

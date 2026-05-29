@@ -3,29 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type ChatMessage = {
-  id: string;
-  kind: 'chat' | 'event';
-  author?: string;
-  token?: TokenColor;
-  text: string;
-  ts: number;
-};
-
-export type DiceRoll = {
-  die1: number;
-  die2: number;
-  isDoubles: boolean;
-};
-
-type StickerPack = {
-  id: string;
-  name: string;
-  stickers: string[];
-};
+import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
+import { ActionKey } from '../chat.enums';
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
 
@@ -240,21 +219,6 @@ function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-type BoardCenterPanelProps = {
-  messages: ChatMessage[];
-  diceRoll?: DiceRoll | null;
-  isRolling?: boolean;
-  canRoll?: boolean;
-  canBuy?: boolean;
-  canBuild?: boolean;
-  canTrade?: boolean;
-  onRoll?: () => void;
-  onBuy?: () => void;
-  onBuild?: () => void;
-  onTrade?: () => void;
-  onSendMessage?: (text: string) => void;
-};
-
 export function BoardCenterPanel({
   messages,
   diceRoll = null,
@@ -289,12 +253,36 @@ export function BoardCenterPanel({
     setShowPicker(false);
   }
 
-  const actions = [
-    canBuild && { key: 'build', label: 'Build House',  enabled: true, handler: onBuild },
-    canBuy   && { key: 'buy',   label: 'Buy Property', enabled: true, handler: onBuy   },
-    canTrade && { key: 'trade', label: 'Trade',        enabled: true, handler: onTrade  },
-               { key: 'roll',  label: isRolling ? 'Rolling…' : 'Roll Dice', primary: true, enabled: canRoll && !isRolling, handler: onRoll },
-  ].filter(Boolean) as { key: string; label: string; primary?: boolean; enabled: boolean; handler?: () => void }[];
+  const actions: Action[] = [
+    canBuild && {
+      key: ActionKey.BUILD,
+      label: 'Build House',
+      enabled: true,
+      handler: onBuild,
+    },
+
+    canBuy && {
+      key: ActionKey.BUY,
+      label: 'Buy Property',
+      enabled: true,
+      handler: onBuy,
+    },
+
+    canTrade && {
+      key: ActionKey.TRADE,
+      label: 'Trade',
+      enabled: true,
+      handler: onTrade,
+    },
+
+    {
+      key: ActionKey.ROLL,
+      label: isRolling ? 'Rolling…' : 'Roll Dice',
+      primary: true,
+      enabled: canRoll && !isRolling,
+      handler: onRoll,
+    },
+  ].filter(Boolean) as Action[];
 
   return (
     <div

@@ -1,27 +1,6 @@
 import { cn } from '@/shared/lib/cn';
-import type { PropertyColor } from '../board-data';
-
-const bandColors: Record<PropertyColor, string> = {
-  brown: 'bg-band-brown',
-  cyan: 'bg-band-cyan',
-  pink: 'bg-band-pink',
-  orange: 'bg-band-orange',
-  red: 'bg-band-red',
-  yellow: 'bg-band-yellow',
-  green: 'bg-band-green',
-  blue: 'bg-band-blue',
-};
-
-type PropertyTileProps = {
-  name: string;
-  price: number;
-  color: PropertyColor;
-  mortgaged?: boolean;
-  houseCount?: 0 | 1 | 2 | 3 | 4 | 5;
-  ownerColor?: string; // hex token color of the owning player
-  flipped?: boolean;
-  className?: string;
-};
+import type { PropertyTileProps } from '../game-board.types';
+import { bandColors } from '@/shared/config/constants';
 
 export function PropertyTile({
   name,

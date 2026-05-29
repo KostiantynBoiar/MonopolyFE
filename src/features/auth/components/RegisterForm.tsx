@@ -7,20 +7,19 @@ import { useAuthStore } from '@/stores/auth-store';
 import { registerSchema } from '../auth.schema';
 import { TelegramLoginWidget } from './TelegramLoginWidget';
 import { env } from '@/shared/config/env';
-
-type Fields = { email: string; password: string; display_name: string };
+import { RegisterFields } from '../auth.types';
 
 export function RegisterForm() {
   const router = useRouter();
   const { register, isLoading, error, clearError } = useAuthStore();
-  const [fields, setFields] = useState<Fields>({
+  const [fields, setFields] = useState<RegisterFields>({
     email: '',
     password: '',
     display_name: '',
   });
-  const [fieldErrors, setFieldErrors] = useState<Partial<Fields>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<RegisterFields>>({});
 
-  function handleChange(key: keyof Fields) {
+  function handleChange(key: keyof RegisterFields) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       setFields((f) => ({ ...f, [key]: e.target.value }));
       if (fieldErrors[key]) setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
@@ -28,13 +27,13 @@ export function RegisterForm() {
     };
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     const parsed = registerSchema.safeParse(fields);
     if (!parsed.success) {
-      const fe: Partial<Fields> = {};
+      const fe: Partial<RegisterFields> = {};
       for (const err of parsed.error.errors) {
-        fe[err.path[0] as keyof Fields] = err.message;
+        fe[err.path[0] as keyof RegisterFields] = err.message;
       }
       setFieldErrors(fe);
       return;

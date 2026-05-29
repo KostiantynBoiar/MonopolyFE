@@ -1,5 +1,6 @@
 import { cn } from '@/shared/lib/cn';
 import type { CornerVariant } from '../board-data';
+import type { CornerTileProps } from '../game-board.types';
 
 const configs: Record<CornerVariant, { bg: string; label: string; sub?: string; accent: string }> = {
   go: {
@@ -25,11 +26,6 @@ const configs: Record<CornerVariant, { bg: string; label: string; sub?: string; 
     sub: 'Go directly to jail',
     accent: 'text-ink',
   },
-};
-
-type CornerTileProps = {
-  variant: CornerVariant;
-  className?: string;
 };
 
 export function CornerTile({ variant, className }: CornerTileProps) {
