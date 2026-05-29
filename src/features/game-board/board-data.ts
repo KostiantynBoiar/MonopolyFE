@@ -3,6 +3,15 @@ export type PropertyColor = 'brown' | 'cyan' | 'pink' | 'orange' | 'red' | 'yell
 export type CornerVariant = 'go' | 'jail' | 'parking' | 'gotojail';
 export type TileEdge = 'bottom' | 'left' | 'top' | 'right' | 'corner';
 
+/** Minimal player data the board needs to render tokens. Resolved to hex by the caller
+ *  so the game-board feature has no runtime dep on player-panel (which imports from here). */
+export type BoardPlayer = {
+  id: string;
+  position: number;
+  tokenColor: string; // resolved hex, e.g. '#2B57C6'
+  isBankrupt: boolean;
+};
+
 export type BoardSpace = {
   pos: number;
   type: SpaceType;

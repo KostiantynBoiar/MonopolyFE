@@ -1,12 +1,20 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { BOARD, getGridPos, getTileEdge, type BoardSpace, type TileEdge } from '../board-data';
+import {
+  BOARD,
+  getGridPos,
+  getTileEdge,
+  type BoardSpace,
+  type TileEdge,
+  type BoardPlayer,
+} from '../board-data';
+import type { SpaceOwnership } from '@/shared/protocol/game-state.schema';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
 
-// Tile pixel dimensions (half of Figma's 112/182)
+// Tile pixel dimensions
 const N = 56;  // narrow edge
 const W = 91;  // wide edge (corner size)
 
@@ -14,31 +22,48 @@ const gridCols = `${W}px repeat(9, ${N}px) ${W}px`;
 const gridRows = `${W}px repeat(9, ${N}px) ${W}px`;
 const BOARD_PX = W * 2 + N * 9; // 686
 
-function TileContent({ space }: { space: BoardSpace }) {
+// ─── Tile rendering ───────────────────────────────────────────────────────────
+
+type TileContentProps = {
+  space: BoardSpace;
+  ownership?: SpaceOwnership;
+  flipped?: boolean;
+};
+
+function TileContent({ space, ownership, flipped }: TileContentProps) {
   if (space.type === 'corner') {
     return <CornerTile variant={space.corner!} />;
   }
   if (space.type === 'property') {
-    return <PropertyTile name={space.name} price={space.price!} color={space.color!} />;
+    const houses = ownership?.hasHotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
+    return (
+      <PropertyTile
+        name={space.name}
+        price={space.price!}
+        color={space.color!}
+        houseCount={houses}
+        mortgaged={ownership?.isMortgaged}
+        flipped={flipped}
+      />
+    );
   }
-  return <SpecialTile type={space.type} name={space.name} price={space.price} />;
+  return (
+    <SpecialTile
+      type={space.type}
+      name={space.name}
+      price={space.price}
+      flipped={flipped}
+    />
+  );
 }
 
+// ─── Edge wrapper ─────────────────────────────────────────────────────────────
+
 function EdgeWrapper({ edge, children }: { edge: TileEdge; children: React.ReactNode }) {
-  if (edge === 'corner' || edge === 'bottom') {
+  if (edge === 'corner' || edge === 'bottom' || edge === 'top') {
     return <div className="h-full w-full">{children}</div>;
   }
 
-  if (edge === 'top') {
-    // Cell is N×W (narrow×wide), rotate 180° in place
-    return (
-      <div className="h-full w-full" style={{ transform: 'rotate(180deg)' }}>
-        {children}
-      </div>
-    );
-  }
-
-  // left / right columns: cell is W×N, content is N×W rotated
   const rotation = edge === 'left' ? 'rotate(90deg)' : 'rotate(-90deg)';
   return (
     <div className="relative overflow-hidden" style={{ width: W, height: N }}>
@@ -58,12 +83,57 @@ function EdgeWrapper({ edge, children }: { edge: TileEdge; children: React.React
   );
 }
 
+// ─── Player token dots ────────────────────────────────────────────────────────
+
+function TokenDots({ players }: { players: BoardPlayer[] }) {
+  if (players.length === 0) return null;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        gap: 2,
+        padding: '3px 2px',
+        pointerEvents: 'none',
+        zIndex: 10,
+      }}
+    >
+      {players.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: '50%',
+            background: p.tokenColor,
+            border: '1.5px solid white',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+            flexShrink: 0,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Board ────────────────────────────────────────────────────────────────────
+
 type MonopolyBoardProps = {
   scale?: number;
   centerContent?: ReactNode;
+  spaces?: SpaceOwnership[];
+  players?: BoardPlayer[];
 };
 
-export function MonopolyBoard({ scale = 1, centerContent }: MonopolyBoardProps) {
+export function MonopolyBoard({
+  scale = 1,
+  centerContent,
+  spaces,
+  players = [],
+}: MonopolyBoardProps) {
   return (
     <div
       style={{
@@ -86,18 +156,21 @@ export function MonopolyBoard({ scale = 1, centerContent }: MonopolyBoardProps) 
         {BOARD.map((space) => {
           const { col, row } = getGridPos(space.pos);
           const edge = getTileEdge(space.pos);
+          const flipped = edge === 'top';
+          const ownership = spaces?.[space.pos];
+          const tokensHere = players.filter(
+            (p) => p.position === space.pos && !p.isBankrupt,
+          );
 
           return (
             <div
               key={space.pos}
-              style={{
-                gridColumn: col + 1,
-                gridRow: row + 1,
-              }}
+              style={{ gridColumn: col + 1, gridRow: row + 1, position: 'relative' }}
             >
               <EdgeWrapper edge={edge}>
-                <TileContent space={space} />
+                <TileContent space={space} ownership={ownership} flipped={flipped} />
               </EdgeWrapper>
+              <TokenDots players={tokensHere} />
             </div>
           );
         })}

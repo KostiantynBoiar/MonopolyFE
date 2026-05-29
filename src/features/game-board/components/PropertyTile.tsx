@@ -18,6 +18,7 @@ type PropertyTileProps = {
   color: PropertyColor;
   mortgaged?: boolean;
   houseCount?: 0 | 1 | 2 | 3 | 4 | 5;
+  flipped?: boolean;
   className?: string;
 };
 
@@ -27,18 +28,28 @@ export function PropertyTile({
   color,
   mortgaged = false,
   houseCount = 0,
+  flipped = false,
   className,
 }: PropertyTileProps) {
   return (
     <div
       className={cn(
-        'relative flex h-full w-full flex-col border-[1.5px] border-ink bg-paper',
+        'relative flex h-full w-full overflow-hidden border-[1.5px] border-ink bg-paper',
+        flipped ? 'flex-col-reverse' : 'flex-col',
         mortgaged && 'opacity-40',
         className,
       )}
     >
       {/* Color band */}
-      <div className={cn('shrink-0 border-b-[1.5px] border-ink', bandColors[color])} style={{ height: '23%' }}>
+      <div
+        className={cn(
+          'shrink-0',
+          flipped ? 'border-t-[1.5px]' : 'border-b-[1.5px]',
+          'border-ink',
+          bandColors[color],
+        )}
+        style={{ height: '23%' }}
+      >
         {houseCount > 0 && houseCount < 5 && (
           <div className="flex h-full items-center justify-center gap-px">
             {Array.from({ length: houseCount }).map((_, i) => (
@@ -54,14 +65,19 @@ export function PropertyTile({
       </div>
 
       {/* Name */}
-      <div className="flex flex-1 items-center justify-center overflow-hidden px-[6%]">
-        <p className="text-center font-display text-[0.45em] font-semibold uppercase leading-tight tracking-wide text-ink">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden px-[6%]">
+        <p className="line-clamp-4 text-center font-display text-[0.45em] font-semibold uppercase leading-tight tracking-wide text-ink">
           {name}
         </p>
       </div>
 
       {/* Price */}
-      <div className="flex shrink-0 items-center justify-center gap-[2%] pb-[6%]">
+      <div
+        className={cn(
+          'flex shrink-0 items-center justify-center gap-[2%]',
+          flipped ? 'pt-[6%]' : 'pb-[6%]',
+        )}
+      >
         <span className="font-mono text-[0.42em] font-bold text-ink">M</span>
         <span className="font-mono text-[0.42em] text-ink">{price}</span>
       </div>

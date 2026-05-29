@@ -15,15 +15,19 @@ export type ChatMessage = {
   ts: number;
 };
 
+export type DiceRoll = {
+  die1: number;
+  die2: number;
+  isDoubles: boolean;
+};
+
 type StickerPack = {
   id: string;
   name: string;
-  stickers: string[]; // filenames inside /stickers/{id}/
+  stickers: string[];
 };
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
-
-const EMOJI_SET = ['🎲', '🏠', '🏨', '💰', '💸', '🎩', '🚗', '🐕', '⚓', '🎯', '🤝', '😤', '🤑', '😬', '🏦'];
 
 function useStickerPacks() {
   const [packs, setPacks] = useState<StickerPack[]>([]);
@@ -119,103 +123,99 @@ function ActionBtn({
   );
 }
 
-// ─── Picker ───────────────────────────────────────────────────────────────────
+// ─── Dice face ────────────────────────────────────────────────────────────────
 
-type PickerTab = 'emoji' | 'stickers';
+function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
+  const [displayed, setDisplayed] = useState(value);
 
-function Picker({
-  onEmoji,
-  onSticker,
+  useEffect(() => {
+    if (!rolling) {
+      setDisplayed(value);
+      return;
+    }
+    const iv = setInterval(() => setDisplayed(Math.ceil(Math.random() * 6)), 80);
+    return () => clearInterval(iv);
+  }, [rolling, value]);
+
+  return (
+    <div className="flex h-9 w-9 items-center justify-center rounded-md border-2 border-ink bg-white shadow-sm">
+      <span className="font-display text-[1.1em] font-bold leading-none text-ink">{displayed}</span>
+    </div>
+  );
+}
+
+// ─── Sticker picker ───────────────────────────────────────────────────────────
+
+function StickerCell({
+  url,
+  file,
+  onSelect,
 }: {
-  onEmoji: (e: string) => void;
-  onSticker: (url: string) => void;
+  url: string;
+  file: string;
+  onSelect: () => void;
 }) {
-  const [tab, setTab] = useState<PickerTab>('emoji');
+  const isTgs = file.endsWith('.tgs');
+
+  return (
+    <button
+      className="flex items-center justify-center rounded p-0.5 hover:bg-gray-300 active:scale-95"
+      onClick={onSelect}
+      title={file}
+    >
+      {isTgs ? (
+        <TgsPlayer src={url} size={48} />
+      ) : (
+        <img src={url} alt={file} className="h-12 w-12 object-contain" />
+      )}
+    </button>
+  );
+}
+
+function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
   const [packIdx, setPackIdx] = useState(0);
   const packs = useStickerPacks();
 
-  return (
-    <div
-      className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md"
-      style={{ fontSize: '1em' }}
-    >
-      {/* Tabs */}
-      <div className="flex border-b border-line">
-        {(['emoji', 'stickers'] as PickerTab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={[
-              'flex-1 py-1.5 font-mono text-[0.68em] uppercase tracking-wider transition-colors',
-              tab === t ? 'border-b-2 border-ink font-bold text-ink' : 'text-muted hover:text-ink',
-            ].join(' ')}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+  if (packs.length === 0) {
+    return (
+      <p className="p-4 text-center font-sans text-[0.75em] text-muted">No sticker packs yet.</p>
+    );
+  }
 
-      {tab === 'emoji' && (
-        <div className="grid grid-cols-5 gap-0.5 p-2">
-          {EMOJI_SET.map((e) => (
+  const pack = packs[packIdx];
+
+  return (
+    <div className="flex flex-col">
+      {/* Pack tabs (only if >1 pack) */}
+      {packs.length > 1 && (
+        <div className="flex shrink-0 gap-1 border-b border-line px-2 py-1">
+          {packs.map((p, i) => (
             <button
-              key={e}
-              onClick={() => onEmoji(e)}
-              className="rounded p-1 text-center hover:bg-paper"
-              style={{ fontSize: '1.1em' }}
+              key={p.id}
+              onClick={() => setPackIdx(i)}
+              className={[
+                'rounded px-2 py-0.5 font-sans text-[0.7em]',
+                i === packIdx ? 'bg-ink text-white' : 'text-muted hover:text-ink',
+              ].join(' ')}
             >
-              {e}
+              {p.name}
             </button>
           ))}
         </div>
       )}
 
-      {tab === 'stickers' && (
-        <div>
-          {packs.length === 0 ? (
-            <p className="p-4 text-center font-sans text-[0.75em] text-muted">No sticker packs yet.</p>
-          ) : (
-            <>
-              {/* Pack tabs */}
-              {packs.length > 1 && (
-                <div className="flex gap-1 border-b border-line px-2 py-1">
-                  {packs.map((p, i) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setPackIdx(i)}
-                      className={[
-                        'rounded px-2 py-0.5 font-sans text-[0.7em]',
-                        i === packIdx ? 'bg-ink text-white' : 'text-muted hover:text-ink',
-                      ].join(' ')}
-                    >
-                      {p.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* Sticker grid */}
-              <div className="grid grid-cols-4 gap-1 p-2">
-                {packs[packIdx]?.stickers.map((file) => {
-                  const url = `/stickers/${packs[packIdx].id}/${file}`;
-                  return (
-                    <button
-                      key={file}
-                      onClick={() => onSticker(url)}
-                      className="flex items-center justify-center rounded p-1 hover:bg-paper"
-                    >
-                      {file.endsWith('.tgs') ? (
-                        <TgsPlayer src={url} size={48} />
-                      ) : (
-                        <img src={url} alt={file} className="h-12 w-12 object-contain" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+      {/* Scrollable animated sticker grid */}
+      <div
+        className="grid grid-cols-4 gap-0.5 overflow-y-auto p-1.5"
+        style={{ maxHeight: 220, scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
+      >
+        {pack?.stickers.map((file) => {
+          const url = `/stickers/${pack.id}/${file}`;
+          return (
+            <StickerCell key={file} url={url} file={file} onSelect={() => onSticker(url)} />
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -224,31 +224,31 @@ function Picker({
 
 type BoardCenterPanelProps = {
   messages: ChatMessage[];
+  diceRoll?: DiceRoll | null;
+  isRolling?: boolean;
   canRoll?: boolean;
   canBuy?: boolean;
   canBuild?: boolean;
   canTrade?: boolean;
-  canEndTurn?: boolean;
   onRoll?: () => void;
   onBuy?: () => void;
   onBuild?: () => void;
   onTrade?: () => void;
-  onEndTurn?: () => void;
   onSendMessage?: (text: string) => void;
 };
 
 export function BoardCenterPanel({
   messages,
+  diceRoll = null,
+  isRolling = false,
   canRoll = false,
   canBuy = false,
   canBuild = false,
   canTrade = false,
-  canEndTurn = false,
   onRoll,
   onBuy,
   onBuild,
   onTrade,
-  onEndTurn,
   onSendMessage,
 }: BoardCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -259,21 +259,23 @@ export function BoardCenterPanel({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  function send(text?: string) {
-    const t = (text ?? draft).trim();
+  function sendText() {
+    const t = draft.trim();
     if (!t) return;
     onSendMessage?.(t);
     setDraft('');
+  }
+
+  function sendSticker(url: string) {
+    onSendMessage?.(`[sticker:${url}]`);
     setShowPicker(false);
   }
 
-  // Actions grow from the bottom; Roll Dice always anchors at the bottom
   const actions = [
-    canBuild   && { key: 'build', label: 'Build House',  enabled: true,     handler: onBuild },
-    canBuy     && { key: 'buy',   label: 'Buy Property', enabled: true,     handler: onBuy   },
-    canTrade   && { key: 'trade', label: 'Trade',         enabled: true,    handler: onTrade  },
-    canEndTurn && { key: 'end',   label: 'End Turn',      enabled: true,    handler: onEndTurn },
-                  { key: 'roll',  label: 'Roll Dice',     primary: true, enabled: canRoll, handler: onRoll },
+    canBuild && { key: 'build', label: 'Build House',  enabled: true, handler: onBuild },
+    canBuy   && { key: 'buy',   label: 'Buy Property', enabled: true, handler: onBuy   },
+    canTrade && { key: 'trade', label: 'Trade',        enabled: true, handler: onTrade  },
+               { key: 'roll',  label: isRolling ? 'Rolling…' : 'Roll Dice', primary: true, enabled: canRoll && !isRolling, handler: onRoll },
   ].filter(Boolean) as { key: string; label: string; primary?: boolean; enabled: boolean; handler?: () => void }[];
 
   return (
@@ -313,7 +315,23 @@ export function BoardCenterPanel({
               Actions
             </span>
           </div>
+
           <div className="flex flex-1 flex-col justify-end gap-1.5 p-2">
+            {/* Dice display */}
+            {(isRolling || diceRoll) && (
+              <div className="flex flex-col items-center gap-1 pb-1">
+                <div className="flex items-center gap-2">
+                  <DiceFace value={isRolling ? 1 : (diceRoll?.die1 ?? 1)} rolling={isRolling} />
+                  <DiceFace value={isRolling ? 1 : (diceRoll?.die2 ?? 1)} rolling={isRolling} />
+                </div>
+                {!isRolling && diceRoll && (
+                  <span className="font-mono text-[0.62em] text-muted">
+                    {diceRoll.die1 + diceRoll.die2}{diceRoll.isDoubles ? ' doubles!' : ''}
+                  </span>
+                )}
+              </div>
+            )}
+
             {actions.map(({ key, ...a }) => (
               <ActionBtn key={key} {...a} />
             ))}
@@ -329,14 +347,19 @@ export function BoardCenterPanel({
             placeholder="Message…"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && send()}
+            onKeyDown={(e) => e.key === 'Enter' && sendText()}
           />
 
-          {/* Emoji / sticker picker */}
+          {/* Sticker picker toggle */}
           <button
             onClick={() => setShowPicker((v) => !v)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-line-2 bg-surface text-muted transition-colors hover:border-line hover:text-ink"
-            title="Emoji & stickers"
+            className={[
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded border transition-colors',
+              showPicker
+                ? 'border-ink bg-ink text-white'
+                : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
+            ].join(' ')}
+            title="Stickers"
           >
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
@@ -346,9 +369,9 @@ export function BoardCenterPanel({
             </svg>
           </button>
 
-          {/* Send */}
+          {/* Send text */}
           <button
-            onClick={() => send()}
+            onClick={sendText}
             disabled={!draft.trim()}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-blue bg-blue text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
           >
@@ -359,10 +382,9 @@ export function BoardCenterPanel({
         </div>
 
         {showPicker && (
-          <Picker
-            onEmoji={(e) => { setDraft((d) => d + e); setShowPicker(false); }}
-            onSticker={(url) => { send(`[sticker:${url}]`); }}
-          />
+          <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
+            <StickerPicker onSticker={sendSticker} />
+          </div>
         )}
       </div>
     </div>

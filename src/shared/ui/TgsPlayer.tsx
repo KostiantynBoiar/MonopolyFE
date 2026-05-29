@@ -3,12 +3,15 @@
 import { useEffect, useRef } from 'react';
 import lottie, { type AnimationItem } from 'lottie-web';
 
+// Module-level cache — decompressed Lottie JSON is shared across all TgsPlayer
+// instances pointing at the same URL, so 30 picker cells only fetch+decompress once.
+const tgsCache = new Map<string, Promise<object>>();
+
 async function decompressTgs(url: string): Promise<object> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch sticker: ${res.status}`);
   const buf = await res.arrayBuffer();
 
-  // .tgs is gzip-compressed Lottie JSON — decompress natively in modern browsers
   const ds = new DecompressionStream('gzip');
   const writer = ds.writable.getWriter();
   writer.write(new Uint8Array(buf));
@@ -16,6 +19,13 @@ async function decompressTgs(url: string): Promise<object> {
 
   const decompressed = await new Response(ds.readable).arrayBuffer();
   return JSON.parse(new TextDecoder().decode(decompressed));
+}
+
+function loadTgs(url: string): Promise<object> {
+  if (!tgsCache.has(url)) {
+    tgsCache.set(url, decompressTgs(url));
+  }
+  return tgsCache.get(url)!;
 }
 
 type TgsPlayerProps = {
@@ -42,7 +52,7 @@ export function TgsPlayer({
 
     let cancelled = false;
 
-    decompressTgs(src)
+    loadTgs(src)
       .then((animationData) => {
         if (cancelled || !containerRef.current) return;
         animRef.current = lottie.loadAnimation({
