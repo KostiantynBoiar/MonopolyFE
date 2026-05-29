@@ -1,5 +1,5 @@
 import { cn } from '@/shared/lib/cn';
-import type { CornerVariant } from '../board-data';
+import type { CornerVariant } from '../game-board.enums';
 import type { CornerTileProps } from '../game-board.types';
 
 const configs: Record<CornerVariant, { bg: string; label: string; sub?: string; accent: string }> = {

@@ -1,12 +1,8 @@
 'use client';
 
-import {
-  BOARD,
-  getGridPos,
-  getTileEdge,
-  type TileEdge,
-  type BoardPlayer,
-} from '../board-data';
+import { BOARD, getGridPos, getTileEdge } from '../board-data';
+import type { TileEdge } from '../game-board.enums';
+import type { BoardPlayer } from '../game-board.types';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';

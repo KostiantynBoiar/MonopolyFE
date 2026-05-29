@@ -1,5 +1,5 @@
-import type { PropertyColor } from '@/features/game-board';
-export type { PropertyColor };
+import { PropertyColor } from '@/features/game-board/game-board.enums';
+export { PropertyColor };
 
 export type TokenColor =
   | 'blue' | 'red' | 'green' | 'yellow'
@@ -33,16 +33,23 @@ export const TOKEN_COLORS: Record<TokenColor, string> = {
 };
 
 export const COLOR_GROUP: Record<number, PropertyColor> = {
-  1: 'brown', 3: 'brown',
-  6: 'cyan',  8: 'cyan',  9: 'cyan',
-  11: 'pink', 13: 'pink', 14: 'pink',
-  16: 'orange', 18: 'orange', 19: 'orange',
-  21: 'red',  23: 'red',  24: 'red',
-  26: 'yellow', 27: 'yellow', 29: 'yellow',
-  31: 'green', 32: 'green', 34: 'green',
-  37: 'blue', 39: 'blue',
+  1: PropertyColor.BROWN, 3: PropertyColor.BROWN,
+  6: PropertyColor.CYAN,  8: PropertyColor.CYAN,  9: PropertyColor.CYAN,
+  11: PropertyColor.PINK, 13: PropertyColor.PINK, 14: PropertyColor.PINK,
+  16: PropertyColor.ORANGE, 18: PropertyColor.ORANGE, 19: PropertyColor.ORANGE,
+  21: PropertyColor.RED,  23: PropertyColor.RED,  24: PropertyColor.RED,
+  26: PropertyColor.YELLOW, 27: PropertyColor.YELLOW, 29: PropertyColor.YELLOW,
+  31: PropertyColor.GREEN, 32: PropertyColor.GREEN, 34: PropertyColor.GREEN,
+  37: PropertyColor.BLUE, 39: PropertyColor.BLUE,
 };
 
 export const COLOR_GROUP_ORDER: PropertyColor[] = [
-  'brown', 'cyan', 'pink', 'orange', 'red', 'yellow', 'green', 'blue',
+  PropertyColor.BROWN,
+  PropertyColor.CYAN,
+  PropertyColor.PINK,
+  PropertyColor.ORANGE,
+  PropertyColor.RED,
+  PropertyColor.YELLOW,
+  PropertyColor.GREEN,
+  PropertyColor.BLUE,
 ];

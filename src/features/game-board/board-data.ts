@@ -334,3 +334,5 @@ export function getTileEdge(pos: number): TileEdge {
 
   return TileEdge.RIGHT;
 }
+
+export { CornerVariant, TileEdge };

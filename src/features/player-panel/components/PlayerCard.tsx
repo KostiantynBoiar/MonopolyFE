@@ -1,16 +1,16 @@
 import { cn } from '@/shared/lib/cn';
-import type { Player, PropertyColor } from '../player-panel.schema';
-import { TOKEN_COLORS, COLOR_GROUP, COLOR_GROUP_ORDER } from '../player-panel.schema';
+import { PropertyColor, TOKEN_COLORS, COLOR_GROUP, COLOR_GROUP_ORDER } from '../player-panel.schema';
+import type { Player } from '../player-panel.schema';
 
 const BAND_BG: Record<PropertyColor, string> = {
-  brown:  'bg-band-brown',
-  cyan:   'bg-band-cyan',
-  pink:   'bg-band-pink',
-  orange: 'bg-band-orange',
-  red:    'bg-band-red',
-  yellow: 'bg-band-yellow',
-  green:  'bg-band-green',
-  blue:   'bg-band-blue',
+  [PropertyColor.BROWN]:  'bg-band-brown',
+  [PropertyColor.CYAN]:   'bg-band-cyan',
+  [PropertyColor.PINK]:   'bg-band-pink',
+  [PropertyColor.ORANGE]: 'bg-band-orange',
+  [PropertyColor.RED]:    'bg-band-red',
+  [PropertyColor.YELLOW]: 'bg-band-yellow',
+  [PropertyColor.GREEN]:  'bg-band-green',
+  [PropertyColor.BLUE]:   'bg-band-blue',
 };
 
 function groupOwned(positions: number[]): Map<PropertyColor, number[]> {
@@ -27,8 +27,14 @@ function groupOwned(positions: number[]): Map<PropertyColor, number[]> {
 }
 
 const GROUP_SIZE: Record<PropertyColor, number> = {
-  brown: 2, cyan: 3, pink: 3, orange: 3,
-  red: 3, yellow: 3, green: 3, blue: 2,
+  [PropertyColor.BROWN]: 2,
+  [PropertyColor.CYAN]: 3,
+  [PropertyColor.PINK]: 3,
+  [PropertyColor.ORANGE]: 3,
+  [PropertyColor.RED]: 3,
+  [PropertyColor.YELLOW]: 3,
+  [PropertyColor.GREEN]: 3,
+  [PropertyColor.BLUE]: 2,
 };
 
 type PlayerCardProps = {
