@@ -243,6 +243,7 @@ export function BoardCenterPanel({
   viewerId,
   onTradeAccept,
   onTradeReject,
+  onTradeCounter,
   onTradeCancel,
 }: BoardCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -307,6 +308,7 @@ export function BoardCenterPanel({
           viewerId={viewerId ?? ''}
           onAccept={onTradeAccept}
           onReject={onTradeReject}
+          onCounter={onTradeCounter}
           onCancel={onTradeCancel}
         />
       ) : (

@@ -86,5 +86,6 @@ export type BoardCenterPanelProps = {
   viewerId?: string;
   onTradeAccept?: () => void;
   onTradeReject?: () => void;
+  onTradeCounter?: () => void;
   onTradeCancel?: () => void;
 };

@@ -16,6 +16,7 @@ export type PlayerPermissions = {
 
   canMortgage:    boolean;
   canUnmortgage:  boolean;
+  canSellProperty: boolean;
 
   canTrade:       boolean;
 
@@ -34,6 +35,7 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
   canBuildHotel:  false,
   canMortgage:    false,
   canUnmortgage:  false,
+  canSellProperty: false,
   canTrade:       false,
   canBidAuction:  false,
   canPayJailFine: false,

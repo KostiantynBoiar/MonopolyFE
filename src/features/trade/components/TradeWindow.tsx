@@ -131,6 +131,7 @@ export function TradeWindow({
   viewerId,
   onAccept,
   onReject,
+  onCounter,
   onCancel,
 }: TradeWindowProps) {
   const viewerRole = resolveViewerRole(viewerId, trade.proposerId, trade.targetId);
@@ -201,6 +202,15 @@ export function TradeWindow({
             >
               Reject
             </button>
+            {onCounter && (
+              <button
+                onClick={onCounter}
+                className="rounded border border-line-2 bg-surface font-display text-[0.62em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
+                style={{ padding: '0.55em 0.9em' }}
+              >
+                Counter
+              </button>
+            )}
             <button
               onClick={onAccept}
               className="rounded border border-gold-600 bg-gold font-display text-[0.62em] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-gold-600"

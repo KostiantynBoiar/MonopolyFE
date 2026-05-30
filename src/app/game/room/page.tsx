@@ -21,7 +21,7 @@ import { CommandType } from '@/shared/protocol/commands';
 import {
   tickAuction, advanceTurnEvent, startAuctionEvent,
 } from '@/shared/mocks/mock-server';
-import { runOpponentTurn } from '@/shared/mocks/opponent-ai';
+import { runOpponentTurn, opponentRespondToTrade } from '@/shared/mocks/opponent-ai';
 import { getPlayerPositions, getPlayerProperties, getPropertyRent } from '@/shared/protocol/selectors';
 import { ManagePropertiesModal } from '@/features/manage';
 import type { ManageProperty } from '@/features/manage';
@@ -219,6 +219,19 @@ export default function GameRoomPage() {
     return () => { timers.forEach(clearTimeout); opponentTurnRef.current = false; };
   }, [gameState.turn.currentPlayerId, gameState.turn.phase, gameState.viewerId, applyServerMessage]);
 
+  // An opponent who is the target of the viewer's pending trade auto-responds.
+  useEffect(() => {
+    const trade = gameState.trade;
+    if (!trade || trade.status !== 'pending') return;
+    if (trade.targetId === gameState.viewerId) return;   // human is the target → they decide
+    const t = setTimeout(() => {
+      for (const msg of opponentRespondToTrade(useGameStore.getState().snapshot.game)) {
+        applyServerMessage(msg);
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [gameState.trade, gameState.viewerId, applyServerMessage]);
+
   // Auction countdown — simulates server ticks
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.AUCTION) {
@@ -284,6 +297,7 @@ export default function GameRoomPage() {
   const handleSellHotel   = useCallback((position: number) => dispatch({ type: CommandType.SellHotel, position }),  [dispatch]);
   const handleMortgage    = useCallback((position: number) => dispatch({ type: CommandType.Mortgage, position }),   [dispatch]);
   const handleUnmortgage  = useCallback((position: number) => dispatch({ type: CommandType.Unmortgage, position }), [dispatch]);
+  const handleSellProperty = useCallback((position: number) => dispatch({ type: CommandType.SellProperty, position }), [dispatch]);
 
   const handleTrade = useCallback(() => {
     dispatch({
@@ -306,6 +320,19 @@ export default function GameRoomPage() {
     dispatch({ type: CommandType.RejectTrade, tradeId });
     setTimeout(() => updateGame((g) => (g.trade?.id === tradeId ? { ...g, trade: null } : g)), 800);
   }, [dispatch, updateGame]);
+
+  const handleTradeCounter = useCallback(() => {
+    // Mock counter: the target mirrors the deal back (gives what was requested,
+    // requests what was offered). A real builder UI would let them edit the terms.
+    const trade = useGameStore.getState().snapshot.game.trade;
+    if (!trade) return;
+    dispatch({
+      type: CommandType.CounterTrade,
+      tradeId: trade.id,
+      offer:   trade.targetRequest,
+      request: trade.proposerOffer,
+    });
+  }, [dispatch]);
 
   const handleTradeCancel = useCallback(() => {
     updateGame((g) => ({ ...g, trade: null, turn: { ...g.turn, phase: TurnPhase.PRE_ROLL } }));
@@ -447,6 +474,7 @@ export default function GameRoomPage() {
               viewerId={gameState.viewerId}
               onTradeAccept={handleTradeAccept}
               onTradeReject={handleTradeReject}
+              onTradeCounter={handleTradeCounter}
               onTradeCancel={handleTradeCancel}
             />
           }
@@ -472,6 +500,7 @@ export default function GameRoomPage() {
               onSellHotel={handleSellHotel}
               onMortgage={handleMortgage}
               onUnmortgage={handleUnmortgage}
+              onSellProperty={permissions.canSellProperty ? handleSellProperty : undefined}
               onClose={() => setOpenedModal(null)}
             />
           </div>

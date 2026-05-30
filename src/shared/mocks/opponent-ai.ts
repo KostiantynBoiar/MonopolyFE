@@ -9,13 +9,14 @@
  * Declining-to-auction and debt resolution are intentionally simple here.
  */
 
-import type { GameState } from '@/shared/protocol/game-state';
-import { TurnPhase } from '@/shared/protocol/game-state';
+import type { GameState, TradeOffer } from '@/shared/protocol/game-state';
+import { TurnPhase, TradeStatus } from '@/shared/protocol/game-state';
 import type { ServerMessage } from '@/shared/protocol/network';
 import { CommandType } from '@/shared/protocol/commands';
 import { getOwner } from '@/shared/protocol/selectors';
+import { PRICE } from '@/shared/protocol/board-data';
 import { processCommand } from './command-processor';
-import { makeSnapshot } from './mock-server';
+import { makeSnapshot, dispatchToMockServer } from './mock-server';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
 
@@ -73,4 +74,28 @@ export function runOpponentTurn(state: GameState): ServerMessage[] {
   }
 
   return messages;
+}
+
+/** Rough cash value of a trade offer (money + property prices + jail cards). */
+function offerValue(offer: TradeOffer): number {
+  return offer.money
+    + offer.positions.reduce((n, pos) => n + (PRICE[pos] ?? 0), 0)
+    + offer.getOutOfJailCards * 50;
+}
+
+/**
+ * An opponent who is the target of a pending trade accepts when the deal favors them
+ * (receives ≥ gives), else rejects. Lets the human's proposals actually resolve.
+ */
+export function opponentRespondToTrade(state: GameState): ServerMessage[] {
+  const trade = state.trade;
+  if (!trade || trade.status !== TradeStatus.PENDING) return [];
+
+  const receives = offerValue(trade.proposerOffer);  // target receives what proposer offers
+  const gives    = offerValue(trade.targetRequest);  // target gives what proposer requests
+  const cmd = receives >= gives
+    ? { type: CommandType.AcceptTrade as const, tradeId: trade.id }
+    : { type: CommandType.RejectTrade as const, tradeId: trade.id };
+
+  return dispatchToMockServer(state, cmd);
 }

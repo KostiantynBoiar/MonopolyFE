@@ -14,6 +14,7 @@ import {
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
 import { getActivePlayers } from '@/shared/protocol/selectors';
+import { mortgageValue } from '@/shared/protocol/board-data';
 import { appendEvents } from '@/shared/protocol/log';
 import { applyMovement, resolveLanding, sendToJail } from './resolve-landing';
 import { drawCard } from './card-decks';
@@ -89,6 +90,42 @@ function drawForSpace(
   if (spaceType === SpaceType.CHANCE) return drawCard(state, CardKind.CHANCE, drawerId);
   if (spaceType === SpaceType.CHEST)  return drawCard(state, CardKind.COMMUNITY_CHEST, drawerId);
   return null;
+}
+
+/**
+ * Apply an accepted trade: swap money, properties, and jail cards between the
+ * proposer and target. proposerOffer flows proposer → target; targetRequest flows
+ * target → proposer.
+ */
+function applyTrade(state: GameState, trade: GameState['trade']): GameState {
+  if (!trade) return state;
+  const { proposerId, targetId, proposerOffer, targetRequest } = trade;
+
+  const players = state.players.map((p) => {
+    if (p.id === proposerId) {
+      return {
+        ...p,
+        balance: p.balance - proposerOffer.money + targetRequest.money,
+        getOutOfJailCards: p.getOutOfJailCards - proposerOffer.getOutOfJailCards + targetRequest.getOutOfJailCards,
+      };
+    }
+    if (p.id === targetId) {
+      return {
+        ...p,
+        balance: p.balance - targetRequest.money + proposerOffer.money,
+        getOutOfJailCards: p.getOutOfJailCards - targetRequest.getOutOfJailCards + proposerOffer.getOutOfJailCards,
+      };
+    }
+    return p;
+  });
+
+  const spaces = state.spaces.map((s) => {
+    if (proposerOffer.positions.includes(s.position)) return { ...s, ownerId: targetId };
+    if (targetRequest.positions.includes(s.position)) return { ...s, ownerId: proposerId };
+    return s;
+  });
+
+  return { ...state, players, spaces };
 }
 
 // ── Main processor ────────────────────────────────────────────────────────────
@@ -309,13 +346,17 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         turn: { ...state.turn, phase: TurnPhase.TRADE_NEGOTIATION },
       };
 
-    case CommandType.AcceptTrade:
+    case CommandType.AcceptTrade: {
+      if (!state.trade) return state;
+      // Actually move the assets, then mark the trade accepted.
+      const settled = applyTrade(state, state.trade);
       return {
-        ...state,
-        trade: state.trade ? { ...state.trade, status: TradeStatus.ACCEPTED } : null,
-        turn:  { ...state.turn, phase: TurnPhase.POST_ROLL },
-        log:   log(state, { type: GameEventType.TradeResolved, tradeId: state.trade?.id ?? '', accepted: true }),
+        ...settled,
+        trade: { ...state.trade, status: TradeStatus.ACCEPTED },
+        turn:  { ...settled.turn, phase: TurnPhase.POST_ROLL },
+        log:   log(settled, { type: GameEventType.TradeResolved, tradeId: state.trade.id, accepted: true }),
       };
+    }
 
     case CommandType.RejectTrade:
       return {
@@ -324,6 +365,39 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         turn:  { ...state.turn, phase: TurnPhase.POST_ROLL },
         log:   log(state, { type: GameEventType.TradeResolved, tradeId: state.trade?.id ?? '', accepted: false }),
       };
+
+    case CommandType.CounterTrade: {
+      if (!state.trade) return state;
+      // The counter-er (current target) becomes the new proposer; roles swap.
+      return {
+        ...state,
+        trade: {
+          ...state.trade,
+          proposerId:    state.trade.targetId,
+          targetId:      state.trade.proposerId,
+          proposerOffer: cmd.offer,
+          targetRequest: cmd.request,
+          status:        TradeStatus.COUNTERED,
+        },
+      };
+    }
+
+    case CommandType.SellProperty: {
+      const refund = mortgageValue(cmd.position);   // bank buys back at the mortgage value
+      return {
+        ...state,
+        players: state.players.map((p) =>
+          p.id === actorId ? { ...p, balance: p.balance + refund } : p,
+        ),
+        spaces: state.spaces.map((s) =>
+          s.position === cmd.position ? { ...s, ownerId: null, houses: 0 as const, hotel: false, isMortgaged: false } : s,
+        ),
+        log: log(state, {
+          type: GameEventType.PropertySold, playerId: actorId, playerName: actorName,
+          position: cmd.position, propertyName: spaceName(cmd.position), refund,
+        }),
+      };
+    }
 
     case CommandType.BidAuction: {
       // The human (viewer) is the bidder — even during an auction triggered by an

@@ -55,9 +55,10 @@ export function computePermissions(state: GameState): PlayerPermissions {
   const canBuildHotel  = isViewerTurn && phase === TurnPhase.POST_ROLL &&
     colorGroupProps.some((s) => s.houses === 4);
 
-  // ── canMortgage / canUnmortgage ────────────────────────────────────────────
+  // ── canMortgage / canUnmortgage / canSellProperty ──────────────────────────
   const canMortgage   = isViewerTurn && viewerProps.some((s) => !s.isMortgaged && s.houses === 0 && !s.hotel);
   const canUnmortgage = isViewerTurn && viewerProps.some((s) => s.isMortgaged);
+  const canSellProperty = isViewerTurn && viewerProps.some((s) => !s.hotel && s.houses === 0);
 
   // ── canTrade ──────────────────────────────────────────────────────────────
   const canTrade = isViewerTurn && (phase === TurnPhase.POST_ROLL || phase === TurnPhase.PRE_ROLL);
@@ -73,6 +74,7 @@ export function computePermissions(state: GameState): PlayerPermissions {
 
     canMortgage,
     canUnmortgage,
+    canSellProperty,
 
     canTrade,
 

@@ -19,9 +19,12 @@ export enum CommandType {
   Mortgage    = 'mortgage',
   Unmortgage  = 'unmortgage',
 
-  StartTrade  = 'start_trade',
-  AcceptTrade = 'accept_trade',
-  RejectTrade = 'reject_trade',
+  StartTrade   = 'start_trade',
+  AcceptTrade  = 'accept_trade',
+  RejectTrade  = 'reject_trade',
+  CounterTrade = 'counter_trade',
+
+  SellProperty = 'sell_property',
 
   BidAuction  = 'bid_auction',
 
@@ -58,6 +61,14 @@ export type StartTradeCommand  = {
 };
 export type AcceptTradeCommand = { type: CommandType.AcceptTrade; tradeId: string };
 export type RejectTradeCommand = { type: CommandType.RejectTrade; tradeId: string };
+export type CounterTradeCommand = {
+  type:    CommandType.CounterTrade;
+  tradeId: string;
+  offer:   TradeOffer;   // what the counter-er (new proposer) gives
+  request: TradeOffer;   // what they want back
+};
+
+export type SellPropertyCommand = { type: CommandType.SellProperty; position: number };
 
 export type BidAuctionCommand  = { type: CommandType.BidAuction;  amount: number };
 
@@ -83,6 +94,8 @@ export type ClientCommand =
   | StartTradeCommand
   | AcceptTradeCommand
   | RejectTradeCommand
+  | CounterTradeCommand
+  | SellPropertyCommand
   | BidAuctionCommand
   | PayJailFineCommand
   | UseJailCardCommand
