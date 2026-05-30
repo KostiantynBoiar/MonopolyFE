@@ -113,16 +113,21 @@ export function tickAuction(
       text: logText, ts: new Date().toISOString(),
     };
 
+    // Only deduct balance and assign ownership when there was a valid property position.
+    // Non-PROPERTY auctions (house/hotel supply) set pos = -1: skip both mutations.
+    const isPropertyAuction = pos !== -1;
     const resolved: GameState = {
       ...next,
-      players: winner
+      players: winner && isPropertyAuction
         ? next.players.map((p) =>
             p.id === winner ? { ...p, balance: p.balance - winAmount } : p,
           )
         : next.players,
-      spaces: next.spaces.map((s, i) =>
-        i === pos ? { ...s, ownerId: winner ?? null } : s,
-      ),
+      spaces: isPropertyAuction
+        ? next.spaces.map((s, i) =>
+            i === pos ? { ...s, ownerId: winner ?? null } : s,
+          )
+        : next.spaces,
       auction: null,
       turn: { ...next.turn, phase: TurnPhase.POST_ROLL },
       log: [...next.log, entry],

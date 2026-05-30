@@ -173,7 +173,6 @@ export default function GameRoomPage() {
 
   // ── Game board mode ───────────────────────────────────────────────────────
 
-  const viewer          = gameState.players.find((p) => p.id === gameState.viewerId)!;
   const autoBidFiredRef = useRef(false);
 
   const { dispatch } = useGameDispatch();
@@ -182,11 +181,13 @@ export default function GameRoomPage() {
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
     if (activeDeed !== null) return;
-    const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
+      // Re-read isViewerTurn from fresh store state — never use a stale closure value
+      // captured at effect time, because the turn may have changed during the 1500 ms window.
       const current = useGameStore.getState().snapshot.game;
+      const isViewerTurnNow = current.turn.currentPlayerId === current.viewerId;
       applyServerMessage(
-        isViewerTurn ? resetViewerTurnEvent(current) : advanceTurnEvent(current),
+        isViewerTurnNow ? resetViewerTurnEvent(current) : advanceTurnEvent(current),
       );
     }, 1500);
     return () => clearTimeout(t);
@@ -217,6 +218,11 @@ export default function GameRoomPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
+  // viewer is derived here (after all hooks) rather than at the top of the component,
+  // so an unmatched viewerId (e.g. during initialization) doesn't crash before the
+  // !ready / isWaiting guards below.
+  const viewer = gameState.players.find((p) => p.id === gameState.viewerId) ?? null;
+
   const handleRoll = useCallback(() => {
     if (!permissions.canRoll || isRolling) return;
     dispatch({ type: CommandType.RollDice });
@@ -230,11 +236,11 @@ export default function GameRoomPage() {
       turn: { ...g.turn, phase: TurnPhase.POST_ROLL },
       log: [...g.log, {
         id: `log_card_${Date.now()}`, kind: LogKind.EVENT,
-        text: `${viewer.displayName} drew: "${cardText}"`,
+        text: `${viewer?.displayName ?? ''} drew: "${cardText}"`,
         ts: new Date().toISOString(),
       }],
     }));
-  }, [viewer.displayName, updateGame]);
+  }, [viewer?.displayName, updateGame]);
 
   const handleBuy = useCallback(() => {
     if (!activeDeed) return;
@@ -264,13 +270,15 @@ export default function GameRoomPage() {
   const handleTradeAccept = useCallback(() => {
     const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
     dispatch({ type: CommandType.AcceptTrade, tradeId });
-    setTimeout(() => updateGame((g) => ({ ...g, trade: null })), 800);
+    // Clear the resolved trade after the result animation — but only if it's still
+    // the same trade. A newer trade/counter-offer arriving in the window is left intact.
+    setTimeout(() => updateGame((g) => (g.trade?.id === tradeId ? { ...g, trade: null } : g)), 800);
   }, [dispatch, updateGame]);
 
   const handleTradeReject = useCallback(() => {
     const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
     dispatch({ type: CommandType.RejectTrade, tradeId });
-    setTimeout(() => updateGame((g) => ({ ...g, trade: null })), 800);
+    setTimeout(() => updateGame((g) => (g.trade?.id === tradeId ? { ...g, trade: null } : g)), 800);
   }, [dispatch, updateGame]);
 
   const handleTradeCancel = useCallback(() => {
@@ -286,14 +294,14 @@ export default function GameRoomPage() {
         id: `log_chat_${Date.now()}`,
         kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
         playerId:    g.viewerId,
-        playerName:  viewer.displayName,
-        playerToken: viewer.token,
+        playerName:  viewer?.displayName,
+        playerToken: viewer?.token,
         text,
         stickerUrl:  stickerMatch?.[1],
         ts: new Date().toISOString(),
       }],
     }));
-  }, [viewer.displayName, viewer.token, updateGame]);
+  }, [viewer?.displayName, viewer?.token, updateGame]);
 
   // ── Guards ────────────────────────────────────────────────────────────────
 
@@ -333,14 +341,11 @@ export default function GameRoomPage() {
   const tradeTarget = gameState.trade
     ? deriveTradeParticipant(gameState, gameState.trade.targetId)   : undefined;
 
-  const walkingBoardPlayers: WalkingPlayer[] = walkState
-    ? [{
-        id:         walkState.playerId,
-        currentPos: walkState.currentPos,
-        tokenColor: TOKEN_COLORS[
-          gameState.players.find((p) => p.id === walkState.playerId)!.token
-        ],
-      }]
+  const walkingToken = walkState
+    ? gameState.players.find((p) => p.id === walkState.playerId)?.token
+    : undefined;
+  const walkingBoardPlayers: WalkingPlayer[] = walkState && walkingToken
+    ? [{ id: walkState.playerId, currentPos: walkState.currentPos, tokenColor: TOKEN_COLORS[walkingToken] }]
     : [];
 
   const auctionPropertyName = gameState.auction

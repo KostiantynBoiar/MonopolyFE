@@ -76,11 +76,13 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
   switch (cmd.type) {
 
     case CommandType.RollDice: {
+      const viewer = state.players.find((p) => p.id === state.viewerId);
+      if (!viewer) return state;   // viewerId not in players — no-op rather than crash
+
       const die1 = Math.ceil(Math.random() * 6);
       const die2 = Math.ceil(Math.random() * 6);
       const isDoubles = die1 === die2;
       const total = die1 + die2;
-      const viewer = state.players.find((p) => p.id === state.viewerId)!;
       const newPos = (viewer.position + total) % 40;
       const drawnCard = mockCard(state, newPos);
 

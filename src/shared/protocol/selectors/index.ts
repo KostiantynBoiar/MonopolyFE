@@ -88,10 +88,16 @@ const UTILITY_POSITIONS  = [12, 28] as const;
 type HasSpaces = Pick<GameState, 'spaces'>;
 
 // ── Property access selectors ─────────────────────────────────────────────────
+//
+// All property lookups go through getProperty, which matches on the `position`
+// FIELD rather than the array index. The protocol contract specifies a dense
+// position-indexed array, but matching on the field keeps these selectors correct
+// even if the backend ever sends a sparse, filtered, or reordered spaces array —
+// the failure mode (silently returning the wrong space) is eliminated at the root.
 
-/** PropertyState at `position`, or null if the position is out of range. */
+/** PropertyState at board `position`, or null if no space carries that position. */
 export function getProperty(state: HasSpaces, position: number): PropertyState | null {
-  return state.spaces[position] ?? null;
+  return state.spaces.find((s) => s.position === position) ?? null;
 }
 
 /**
@@ -99,7 +105,7 @@ export function getProperty(state: HasSpaces, position: number): PropertyState |
  * Prefer this over `space.ownerId` — the name communicates intent.
  */
 export function getOwner(state: HasSpaces, position: number): string | null {
-  return state.spaces[position]?.ownerId ?? null;
+  return getProperty(state, position)?.ownerId ?? null;
 }
 
 /**
@@ -107,7 +113,7 @@ export function getOwner(state: HasSpaces, position: number): string | null {
  * Mortgaged properties collect no rent.
  */
 export function isMortgaged(state: HasSpaces, position: number): boolean {
-  return state.spaces[position]?.isMortgaged ?? false;
+  return getProperty(state, position)?.isMortgaged ?? false;
 }
 
 // ── Player selectors ──────────────────────────────────────────────────────────
@@ -135,7 +141,7 @@ export function getPlayerPositions(state: GameState, playerId: string): number[]
 /** True if the player owns every property of the given color. */
 export function hasMonopoly(state: GameState, playerId: string, color: PropertyColor): boolean {
   const positions = COLOR_POSITIONS[color];
-  return positions.every((pos) => state.spaces[pos]?.ownerId === playerId);
+  return positions.every((pos) => getOwner(state, pos) === playerId);
 }
 
 /**
@@ -144,19 +150,19 @@ export function hasMonopoly(state: GameState, playerId: string, color: PropertyC
  * For utilities, returns the dice-roll multiplier (4 or 10); multiply by the dice sum at the call site.
  */
 export function getPropertyRent(state: GameState, position: number): number {
-  const space = state.spaces[position];
+  const space = getProperty(state, position);
   if (!space || space.ownerId === null || space.isMortgaged) return 0;
 
   if ((RAILROAD_POSITIONS as readonly number[]).includes(position)) {
     const owned = RAILROAD_POSITIONS.filter(
-      (p) => state.spaces[p]?.ownerId === space.ownerId,
+      (p) => getOwner(state, p) === space.ownerId,
     ).length;
     return 25 * Math.pow(2, owned - 1);
   }
 
   if ((UTILITY_POSITIONS as readonly number[]).includes(position)) {
     const owned = UTILITY_POSITIONS.filter(
-      (p) => state.spaces[p]?.ownerId === space.ownerId,
+      (p) => getOwner(state, p) === space.ownerId,
     ).length;
     return owned === 2 ? 10 : 4; // multiplier — caller multiplies by dice roll
   }
