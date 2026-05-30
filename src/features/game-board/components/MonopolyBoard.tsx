@@ -3,6 +3,7 @@
 import { BOARD, getGridPos, getTileEdge, getTileCenter } from '../board-data';
 import type { TileEdge } from '../game-board.enums';
 import type { BoardPlayer, WalkingPlayer } from '../game-board.types';
+import { getProperty, getOwner, isMortgaged } from '@/shared/protocol/selectors';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
@@ -177,9 +178,11 @@ export function MonopolyBoard({
           const { col, row } = getGridPos(space.pos);
           const edge = getTileEdge(space.pos);
           const flipped = edge === 'top';
-          const ownership = spaces?.[space.pos];
-          const ownerColor = ownership?.ownerId
-            ? players.find((p) => p.id === ownership.ownerId)?.tokenColor
+          const spaceCtx  = { spaces: spaces ?? [] };
+          const ownership = getProperty(spaceCtx, space.pos);
+          const ownerId   = getOwner(spaceCtx, space.pos);
+          const ownerColor = ownerId
+            ? players.find((p) => p.id === ownerId)?.tokenColor
             : undefined;
           const tokensHere = players.filter(
             (p) => p.position === space.pos && !p.isBankrupt && !walkingIds.has(p.id),

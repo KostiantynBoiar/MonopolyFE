@@ -81,6 +81,35 @@ const POSITION_COLOR: Readonly<Partial<Record<number, PropertyColor>>> = Object.
 const RAILROAD_POSITIONS = [5, 15, 25, 35] as const;
 const UTILITY_POSITIONS  = [12, 28] as const;
 
+// ── Minimal shape needed by property selectors ───────────────────────────────
+// Using Pick instead of full GameState lets board components call these
+// selectors with { spaces } alone — no need to thread the whole state.
+
+type HasSpaces = Pick<GameState, 'spaces'>;
+
+// ── Property access selectors ─────────────────────────────────────────────────
+
+/** PropertyState at `position`, or null if the position is out of range. */
+export function getProperty(state: HasSpaces, position: number): PropertyState | null {
+  return state.spaces[position] ?? null;
+}
+
+/**
+ * Owner ID at `position`, or null if the space is unowned or non-purchasable.
+ * Prefer this over `space.ownerId` — the name communicates intent.
+ */
+export function getOwner(state: HasSpaces, position: number): string | null {
+  return state.spaces[position]?.ownerId ?? null;
+}
+
+/**
+ * True when the space at `position` is mortgaged.
+ * Mortgaged properties collect no rent.
+ */
+export function isMortgaged(state: HasSpaces, position: number): boolean {
+  return state.spaces[position]?.isMortgaged ?? false;
+}
+
 // ── Player selectors ──────────────────────────────────────────────────────────
 
 export function getPlayer(state: GameState, id: string): PlayerState | null {
