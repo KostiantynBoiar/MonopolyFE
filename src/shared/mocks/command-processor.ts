@@ -16,6 +16,7 @@ import { CommandType } from '@/shared/protocol/commands';
 import { getActivePlayers } from '@/shared/protocol/selectors';
 import { mortgageValue } from '@/shared/protocol/board-data';
 import { appendEvents } from '@/shared/protocol/log';
+import { buildCost, sellRefund, unmortgageCost } from '@/shared/lib/property-costs';
 import { applyMovement, resolveLanding, sendToJail } from './resolve-landing';
 import { drawCard } from './card-decks';
 import { resolveCardEffect } from './resolve-card-effect';
@@ -35,6 +36,12 @@ function playerName(state: GameState, playerId: string): string {
 
 function spaceName(position: number): string {
   return BOARD[position]?.name ?? `#${position}`;
+}
+
+function rollDice() {
+  const die1 = Math.ceil(Math.random() * 6);
+  const die2 = Math.ceil(Math.random() * 6);
+  return { die1, die2, isDoubles: die1 === die2, total: die1 + die2 };
 }
 
 function advanceTurn(state: GameState): GameState {
@@ -156,10 +163,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       const actor = state.players.find((p) => p.id === actorId);
       if (!actor) return state;
 
-      const die1 = Math.ceil(Math.random() * 6);
-      const die2 = Math.ceil(Math.random() * 6);
-      const isDoubles = die1 === die2;
-      const total  = die1 + die2;
+      const { die1, die2, isDoubles, total } = rollDice();
       const oldPos = actor.position;
       const newPos = (oldPos + total) % 40;
       const newStreak = isDoubles ? state.turn.doublesStreak + 1 : 0;
@@ -231,7 +235,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
 
     case CommandType.BuildHouse: {
       const space = BOARD[cmd.position];
-      const cost  = (space && 'price' in space) ? Math.floor((space.price ?? 0) / 2) : 50;
+      const cost  = (space && 'price' in space) ? buildCost(space.price ?? 0) : 50;
       return {
         ...state,
         players: state.players.map((p) =>
@@ -251,7 +255,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
 
     case CommandType.BuildHotel: {
       const space = BOARD[cmd.position];
-      const cost  = (space && 'price' in space) ? Math.floor((space.price ?? 0) / 2) : 50;
+      const cost  = (space && 'price' in space) ? buildCost(space.price ?? 0) : 50;
       return {
         ...state,
         players: state.players.map((p) =>
@@ -271,7 +275,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
 
     case CommandType.SellHouse: {
       const space  = BOARD[cmd.position];
-      const refund = (space && 'price' in space) ? Math.floor((space.price ?? 0) / 4) : 25;
+      const refund = (space && 'price' in space) ? sellRefund(space.price ?? 0) : 25;
       return {
         ...state,
         players: state.players.map((p) =>
@@ -291,7 +295,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
 
     case CommandType.SellHotel: {
       const space  = BOARD[cmd.position];
-      const refund = (space && 'price' in space) ? Math.floor((space.price ?? 0) / 4) : 50;
+      const refund = (space && 'price' in space) ? sellRefund(space.price ?? 0) : 50;
       return {
         ...state,
         players: state.players.map((p) =>
@@ -310,37 +314,36 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
     }
 
     case CommandType.Mortgage: {
-      const space         = BOARD[cmd.position];
-      const mortgageValue = (space && 'price' in space) ? Math.floor((space.price ?? 0) / 2) : 0;
+      const value = mortgageValue(cmd.position);
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === actorId ? { ...p, balance: p.balance + mortgageValue } : p,
+          p.id === actorId ? { ...p, balance: p.balance + value } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, isMortgaged: true } : s,
         ),
         log: log(state, {
           type: GameEventType.Mortgaged, playerId: actorId, playerName: actorName,
-          position: cmd.position, propertyName: spaceName(cmd.position), amount: mortgageValue,
+          position: cmd.position, propertyName: spaceName(cmd.position), amount: value,
         }),
       };
     }
 
     case CommandType.Unmortgage: {
       const space          = BOARD[cmd.position];
-      const unmortgageCost = (space && 'price' in space) ? Math.ceil((space.price ?? 0) * 0.55) : 0;
+      const cost           = (space && 'price' in space) ? unmortgageCost(space.price ?? 0) : 0;
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === actorId ? { ...p, balance: p.balance - unmortgageCost } : p,
+          p.id === actorId ? { ...p, balance: p.balance - cost } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, isMortgaged: false } : s,
         ),
         log: log(state, {
           type: GameEventType.Unmortgaged, playerId: actorId, playerName: actorName,
-          position: cmd.position, propertyName: spaceName(cmd.position), cost: unmortgageCost,
+          position: cmd.position, propertyName: spaceName(cmd.position), cost,
         }),
       };
     }
@@ -518,10 +521,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       const actor = state.players.find((p) => p.id === actorId);
       if (!actor || !actor.jailStatus) return state;
 
-      const die1 = Math.ceil(Math.random() * 6);
-      const die2 = Math.ceil(Math.random() * 6);
-      const isDoubles = die1 === die2;
-      const total = die1 + die2;
+      const { die1, die2, isDoubles, total } = rollDice();
       const attempt = actor.jailStatus.attempts + 1;
 
       let next: GameState = {
