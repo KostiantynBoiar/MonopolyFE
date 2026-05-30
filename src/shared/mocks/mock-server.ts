@@ -5,14 +5,17 @@
  */
 
 import type { GameState, LogEntry } from '@/shared/protocol/game-state';
-import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
+import { TurnPhase, AuctionTargetKind, GameEventType } from '@/shared/protocol/game-state';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
 import type { ServerMessage, SnapshotMessage, PatchMessage, LogMessage } from '@/shared/protocol/network';
 import { ServerEventType } from '@/shared/protocol/network';
+import { makeEventEntry } from '@/shared/protocol/log';
 import { BOARD } from '@/shared/config/board-layout';
 import { processCommand } from './command-processor';
 import { computePermissions } from './compute-permissions';
+
+const spaceName = (position: number) => BOARD[position]?.name ?? `#${position}`;
 
 // ── Sequence counter ──────────────────────────────────────────────────────────
 
@@ -80,10 +83,9 @@ export function tickAuction(
     const bob        = state.players.find((p) => p.id === 'bob');
 
     if (bob && bobBid > state.auction.highestBid) {
-      const entry: LogEntry = {
-        id: `log_bid_bob_${Date.now()}`, kind: LogKind.EVENT,
-        text: `Bob bids M${bobBid}.`, ts: new Date().toISOString(),
-      };
+      const entry = makeEventEntry({
+        type: GameEventType.AuctionBid, playerId: 'bob', playerName: bob.displayName, amount: bobBid,
+      });
       next = {
         ...next,
         auction: {
@@ -104,14 +106,10 @@ export function tickAuction(
     const pos       = next.auction!.target.kind === AuctionTargetKind.PROPERTY
       ? next.auction!.target.position : -1;
     const winnerName = next.players.find((p) => p.id === winner)?.displayName ?? winner ?? 'Nobody';
-    const logText = winner
-      ? `${winnerName} won the auction for M${winAmount}.`
-      : 'No bids. Property returns to the bank.';
-
-    const entry: LogEntry = {
-      id: `log_auction_end_${Date.now()}`, kind: LogKind.EVENT,
-      text: logText, ts: new Date().toISOString(),
-    };
+    const entry = makeEventEntry({
+      type: GameEventType.AuctionWon,
+      winnerId: winner, winnerName, position: pos, propertyName: spaceName(pos), amount: winAmount,
+    });
 
     // Only deduct balance and assign ownership when there was a valid property position.
     // Non-PROPERTY auctions (house/hotel supply) set pos = -1: skip both mutations.
@@ -147,11 +145,9 @@ export function advanceTurnEvent(state: GameState): SnapshotMessage {
 }
 
 export function startAuctionEvent(state: GameState, position: number): SnapshotMessage {
-  const entry: LogEntry = {
-    id: `log_auction_start_${Date.now()}`, kind: LogKind.EVENT,
-    text: `${BOARD[position]?.name ?? `#${position}`} goes to auction!`,
-    ts: new Date().toISOString(),
-  };
+  const entry = makeEventEntry({
+    type: GameEventType.AuctionStarted, position, propertyName: spaceName(position),
+  });
   const next: GameState = {
     ...state,
     auction: {

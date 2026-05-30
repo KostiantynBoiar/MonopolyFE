@@ -6,25 +6,35 @@
  * Permissions are computed separately by computePermissions() after every transition.
  */
 
-import type { GameState, ActiveCard } from '@/shared/protocol/game-state';
+import type { GameState, ActiveCard, GameEvent } from '@/shared/protocol/game-state';
 import {
-  TurnPhase, LogKind, CardKind, CardEffectType,
-  AuctionTargetKind, TradeStatus,
+  TurnPhase, CardKind, CardEffectType,
+  AuctionTargetKind, TradeStatus, GameEventType,
 } from '@/shared/protocol/game-state';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
 import { getActivePlayers } from '@/shared/protocol/selectors';
+import { appendEvents } from '@/shared/protocol/log';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function log(state: GameState, text: string): GameState['log'] {
-  return [...state.log, { id: `log_${Date.now()}`, kind: LogKind.EVENT, text, ts: new Date().toISOString() }];
+/** Append a typed game event to the log, returning the new log array. */
+function log(state: GameState, ...events: GameEvent[]): GameState['log'] {
+  return appendEvents(state.log, ...events);
 }
 
 function viewerName(state: GameState): string {
-  return state.players.find((p) => p.id === state.viewerId)?.displayName ?? 'Player';
+  return playerName(state, state.viewerId);
+}
+
+function playerName(state: GameState, playerId: string): string {
+  return state.players.find((p) => p.id === playerId)?.displayName ?? 'Player';
+}
+
+function spaceName(position: number): string {
+  return BOARD[position]?.name ?? `#${position}`;
 }
 
 function advanceTurn(state: GameState): GameState {
@@ -43,7 +53,9 @@ function advanceTurn(state: GameState): GameState {
       doublesStreak:   0,
     },
     activeCard: null,
-    log: log(state, `${next.displayName}'s turn.`),
+    log: log(state, {
+      type: GameEventType.TurnStarted, playerId: next.id, playerName: next.displayName,
+    }),
   };
 }
 
@@ -83,7 +95,8 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       const die2 = Math.ceil(Math.random() * 6);
       const isDoubles = die1 === die2;
       const total = die1 + die2;
-      const newPos = (viewer.position + total) % 40;
+      const oldPos = viewer.position;
+      const newPos = (oldPos + total) % 40;
       const drawnCard = mockCard(state, newPos);
 
       return {
@@ -100,9 +113,9 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         },
         log: log(
           state,
-          `${viewer.displayName} rolled ${die1} + ${die2} = ${total}` +
-          `${isDoubles ? ' (doubles!)' : ''}. ` +
-          `Moved to ${BOARD[newPos]?.name ?? `space ${newPos}`}.`,
+          { type: GameEventType.DiceRolled, playerId: viewer.id, playerName: viewer.displayName, die1, die2, isDoubles },
+          { type: GameEventType.PlayerMoved, playerId: viewer.id, playerName: viewer.displayName,
+            from: oldPos, to: newPos, toName: spaceName(newPos), passedGo: false, teleport: false },
         ),
       };
     }
@@ -121,7 +134,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, ownerId: state.viewerId } : s,
         ),
-        log: log(state, `${viewerName(state)} bought ${space?.name ?? `#${cmd.position}`} for M${price}.`),
+        log: log(state, {
+          type: GameEventType.PropertyBought, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), price,
+        }),
       };
     }
 
@@ -138,7 +154,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             ? { ...s, houses: (s.houses + 1) as 0 | 1 | 2 | 3 | 4 }
             : s,
         ),
-        log: log(state, `${viewerName(state)} built a house on ${BOARD[cmd.position]?.name ?? `#${cmd.position}`} (M${cost}).`),
+        log: log(state, {
+          type: GameEventType.HouseBuilt, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), cost,
+        }),
       };
     }
 
@@ -155,7 +174,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             ? { ...s, houses: 0 as const, hotel: true }
             : s,
         ),
-        log: log(state, `${viewerName(state)} upgraded ${BOARD[cmd.position]?.name ?? `#${cmd.position}`} to a hotel (M${cost}).`),
+        log: log(state, {
+          type: GameEventType.HotelBuilt, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), cost,
+        }),
       };
     }
 
@@ -172,7 +194,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             ? { ...s, houses: (s.houses - 1) as 0 | 1 | 2 | 3 | 4 }
             : s,
         ),
-        log: log(state, `${viewerName(state)} sold a house on ${BOARD[cmd.position]?.name ?? `#${cmd.position}`} for M${refund}.`),
+        log: log(state, {
+          type: GameEventType.HouseSold, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), refund,
+        }),
       };
     }
 
@@ -189,7 +214,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             ? { ...s, hotel: false, houses: 4 as const }
             : s,
         ),
-        log: log(state, `${viewerName(state)} sold hotel on ${BOARD[cmd.position]?.name ?? `#${cmd.position}`} for M${refund}.`),
+        log: log(state, {
+          type: GameEventType.HotelSold, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), refund,
+        }),
       };
     }
 
@@ -204,7 +232,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, isMortgaged: true } : s,
         ),
-        log: log(state, `${viewerName(state)} mortgaged ${BOARD[cmd.position]?.name ?? `#${cmd.position}`} for M${mortgageValue}.`),
+        log: log(state, {
+          type: GameEventType.Mortgaged, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), amount: mortgageValue,
+        }),
       };
     }
 
@@ -219,7 +250,10 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, isMortgaged: false } : s,
         ),
-        log: log(state, `${viewerName(state)} unmortgaged ${BOARD[cmd.position]?.name ?? `#${cmd.position}`} for M${unmortgageCost}.`),
+        log: log(state, {
+          type: GameEventType.Unmortgaged, playerId: state.viewerId, playerName: viewerName(state),
+          position: cmd.position, propertyName: spaceName(cmd.position), cost: unmortgageCost,
+        }),
       };
     }
 
@@ -243,7 +277,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         ...state,
         trade: state.trade ? { ...state.trade, status: TradeStatus.ACCEPTED } : null,
         turn:  { ...state.turn, phase: TurnPhase.POST_ROLL },
-        log:   log(state, 'Trade accepted.'),
+        log:   log(state, { type: GameEventType.TradeResolved, tradeId: state.trade?.id ?? '', accepted: true }),
       };
 
     case CommandType.RejectTrade:
@@ -251,7 +285,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         ...state,
         trade: state.trade ? { ...state.trade, status: TradeStatus.REJECTED } : null,
         turn:  { ...state.turn, phase: TurnPhase.POST_ROLL },
-        log:   log(state, 'Trade rejected.'),
+        log:   log(state, { type: GameEventType.TradeResolved, tradeId: state.trade?.id ?? '', accepted: false }),
       };
 
     case CommandType.BidAuction: {
@@ -264,7 +298,9 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
           highestBid:      cmd.amount,
           highestBidderId: state.viewerId,
         },
-        log: log(state, `${viewerName(state)} bids M${cmd.amount}.`),
+        log: log(state, {
+          type: GameEventType.AuctionBid, playerId: state.viewerId, playerName: viewerName(state), amount: cmd.amount,
+        }),
       };
     }
 
@@ -275,7 +311,9 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
           p.id === state.viewerId ? { ...p, balance: p.balance - 50, jailStatus: null } : p,
         ),
         turn: { ...state.turn, phase: TurnPhase.PRE_ROLL },
-        log:  log(state, `${viewerName(state)} paid M50 to get out of jail.`),
+        log:  log(state, {
+          type: GameEventType.LeftJail, playerId: state.viewerId, playerName: viewerName(state), method: 'fine',
+        }),
       };
 
     case CommandType.UseJailCard:
@@ -287,7 +325,9 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             : p,
         ),
         turn: { ...state.turn, phase: TurnPhase.PRE_ROLL },
-        log:  log(state, `${viewerName(state)} used a Get Out of Jail Free card.`),
+        log:  log(state, {
+          type: GameEventType.LeftJail, playerId: state.viewerId, playerName: viewerName(state), method: 'card',
+        }),
       };
 
     default:

@@ -16,7 +16,8 @@ import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, TradeState } from '@/shared/protocol/game-state.schema';
-import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
+import { TurnPhase, LogKind, AuctionTargetKind, GameEventType, CardKind } from '@/shared/protocol/game-state';
+import { makeEventEntry } from '@/shared/protocol/log';
 import { CommandType } from '@/shared/protocol/commands';
 import {
   tickAuction, advanceTurnEvent, startAuctionEvent, resetViewerTurnEvent,
@@ -229,16 +230,16 @@ export default function GameRoomPage() {
   }, [permissions.canRoll, isRolling, dispatch]);
 
   const handleCardProceed = useCallback(() => {
-    const cardText = useGameStore.getState().snapshot.game.activeCard?.text ?? '';
+    const card = useGameStore.getState().snapshot.game.activeCard;
     updateGame((g) => ({
       ...g,
       activeCard: null,
       turn: { ...g.turn, phase: TurnPhase.POST_ROLL },
-      log: [...g.log, {
-        id: `log_card_${Date.now()}`, kind: LogKind.EVENT,
-        text: `${viewer?.displayName ?? ''} drew: "${cardText}"`,
-        ts: new Date().toISOString(),
-      }],
+      log: [...g.log, makeEventEntry({
+        type: GameEventType.CardDrawn,
+        playerId: g.viewerId, playerName: viewer?.displayName ?? '',
+        cardKind: card?.kind ?? CardKind.CHANCE, text: card?.text ?? '',
+      })],
     }));
   }, [viewer?.displayName, updateGame]);
 

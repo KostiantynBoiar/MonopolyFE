@@ -141,6 +141,75 @@ export enum LogKind {
 }
 
 // ======================================================
+// TYPED GAME EVENTS
+// ======================================================
+// Every EVENT-kind LogEntry carries a machine-readable `event` payload alongside
+// its human `text`. Events denormalize the display strings they need (playerName,
+// propertyName) so renderEvent stays a pure (event) => string — and so the log is
+// a self-contained, replayable activity feed independent of current state.
+
+export enum GameEventType {
+  TurnStarted     = 'turn_started',
+  RoundStarted    = 'round_started',
+  DiceRolled      = 'dice_rolled',
+  PlayerMoved     = 'player_moved',
+  PassedGo        = 'passed_go',
+  PropertyBought  = 'property_bought',
+  PropertySold    = 'property_sold',
+  RentPaid        = 'rent_paid',
+  TaxPaid         = 'tax_paid',
+  CardDrawn       = 'card_drawn',
+  CardResolved    = 'card_resolved',
+  SentToJail      = 'sent_to_jail',
+  LeftJail        = 'left_jail',
+  HouseBuilt      = 'house_built',
+  HotelBuilt      = 'hotel_built',
+  HouseSold       = 'house_sold',
+  HotelSold       = 'hotel_sold',
+  Mortgaged       = 'mortgaged',
+  Unmortgaged     = 'unmortgaged',
+  AuctionStarted  = 'auction_started',
+  AuctionBid      = 'auction_bid',
+  AuctionWon      = 'auction_won',
+  TradeProposed   = 'trade_proposed',
+  TradeResolved   = 'trade_resolved',
+  DebtIncurred    = 'debt_incurred',
+  Bankrupted      = 'bankrupted',
+  GameOver        = 'game_over',
+}
+
+export type JailExitMethod = 'fine' | 'card' | 'doubles';
+
+export type GameEvent =
+  | { type: GameEventType.TurnStarted;    playerId: string; playerName: string }
+  | { type: GameEventType.RoundStarted;   roundNumber: number }
+  | { type: GameEventType.DiceRolled;     playerId: string; playerName: string; die1: number; die2: number; isDoubles: boolean }
+  | { type: GameEventType.PlayerMoved;    playerId: string; playerName: string; from: number; to: number; toName: string; passedGo: boolean; teleport: boolean }
+  | { type: GameEventType.PassedGo;       playerId: string; playerName: string; amount: number }
+  | { type: GameEventType.PropertyBought; playerId: string; playerName: string; position: number; propertyName: string; price: number }
+  | { type: GameEventType.PropertySold;   playerId: string; playerName: string; position: number; propertyName: string; refund: number }
+  | { type: GameEventType.RentPaid;       payerId: string; payerName: string; ownerId: string; ownerName: string; position: number; propertyName: string; amount: number }
+  | { type: GameEventType.TaxPaid;        playerId: string; playerName: string; position: number; taxName: string; amount: number }
+  | { type: GameEventType.CardDrawn;      playerId: string; playerName: string; cardKind: CardKind; text: string }
+  | { type: GameEventType.CardResolved;   playerId: string; playerName: string; text: string }
+  | { type: GameEventType.SentToJail;     playerId: string; playerName: string; reason: 'card' | 'corner' | 'doubles' }
+  | { type: GameEventType.LeftJail;       playerId: string; playerName: string; method: JailExitMethod }
+  | { type: GameEventType.HouseBuilt;     playerId: string; playerName: string; position: number; propertyName: string; cost: number }
+  | { type: GameEventType.HotelBuilt;     playerId: string; playerName: string; position: number; propertyName: string; cost: number }
+  | { type: GameEventType.HouseSold;      playerId: string; playerName: string; position: number; propertyName: string; refund: number }
+  | { type: GameEventType.HotelSold;      playerId: string; playerName: string; position: number; propertyName: string; refund: number }
+  | { type: GameEventType.Mortgaged;      playerId: string; playerName: string; position: number; propertyName: string; amount: number }
+  | { type: GameEventType.Unmortgaged;    playerId: string; playerName: string; position: number; propertyName: string; cost: number }
+  | { type: GameEventType.AuctionStarted; position: number; propertyName: string }
+  | { type: GameEventType.AuctionBid;     playerId: string; playerName: string; amount: number }
+  | { type: GameEventType.AuctionWon;     winnerId: string | null; winnerName: string; position: number; propertyName: string; amount: number }
+  | { type: GameEventType.TradeProposed;  tradeId: string; proposerId: string; proposerName: string; targetId: string; targetName: string }
+  | { type: GameEventType.TradeResolved;  tradeId: string; accepted: boolean }
+  | { type: GameEventType.DebtIncurred;   debtorId: string; debtorName: string; creditorId: string | null; amount: number }
+  | { type: GameEventType.Bankrupted;     playerId: string; playerName: string; creditorId: string | null }
+  | { type: GameEventType.GameOver;       winnerId: string; winnerName: string };
+
+// ======================================================
 // BOARD DEFINITIONS (IMMUTABLE — sent once in snapshot)
 // ======================================================
 
@@ -365,6 +434,8 @@ export type LogEntry = {
   text:         string;
   stickerUrl?:  string;
   ts:           IsoDateString;
+  /** Machine-readable payload for EVENT-kind entries. Absent for chat/sticker. */
+  event?:       GameEvent;
 };
 
 // ======================================================
