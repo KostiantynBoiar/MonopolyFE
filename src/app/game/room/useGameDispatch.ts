@@ -1,92 +1,71 @@
 'use client';
 
-import { useCallback, useRef, type Dispatch, type SetStateAction } from 'react';
-import type { GameSnapshot } from '@/shared/protocol/permissions';
+import { useCallback } from 'react';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
-import type { ServerMessage, SnapshotMessage } from '@/shared/protocol/network';
-import { applyMessage, ServerEventType } from '@/shared/protocol/network';
+import type { SnapshotMessage } from '@/shared/protocol/network';
+import { ServerEventType } from '@/shared/protocol/network';
 import { dispatchToMockServer } from '@/shared/mocks/mock-server';
 import { getWalkSteps } from '@/features/game-board';
 import { getDeedInfo } from '@/features/deed';
-import type { DeedInfo } from '@/features/deed';
 import { WALK_STEP_DURATION_MS } from '@/shared/config/constants';
-
-export type WalkState = { playerId: string; currentPos: number };
+import { useGameStore } from '@/stores/game-store';
+import { useUiStore } from '@/stores/ui-store';
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-type Setters = {
-  setSnapshot:   Dispatch<SetStateAction<GameSnapshot>>;
-  setIsRolling:  Dispatch<SetStateAction<boolean>>;
-  setWalkState:  Dispatch<SetStateAction<WalkState | null>>;
-  setActiveDeed: Dispatch<SetStateAction<DeedInfo | null>>;
-};
-
-function applyMessages(
-  messages: ServerMessage[],
-  setSnapshot: Dispatch<SetStateAction<GameSnapshot>>,
-): void {
-  for (const msg of messages) {
-    setSnapshot((prev) => applyMessage(prev, msg));
-  }
-}
-
 /**
- * Dispatch flow for every command:
- *   ClientCommand
- *     → dispatchToMockServer   (mock backend → ServerMessage[])
- *     → applyMessage           (pure reducer on GameSnapshot)
+ * Returns `dispatch(cmd)`.
  *
- * RollDice pre-computes the Snapshot, sequences animation, then applies messages.
+ * Reads the latest state synchronously via store.getState() inside async
+ * callbacks — no stale-closure problem, no prop threading.
+ *
+ * Flow:
+ *   ClientCommand → dispatchToMockServer → ServerMessage[] → applyServerMessage
  */
-export function useGameDispatch(
-  snapshotRef: React.RefObject<GameSnapshot>,
-  { setSnapshot, setIsRolling, setWalkState, setActiveDeed }: Setters,
-) {
-  const isRollingRef = useRef(false);
+export function useGameDispatch() {
+  const { setSnapshot, applyServerMessage } = useGameStore();
+  const { setIsRolling, setWalkState, setActiveDeed } = useUiStore();
 
   const dispatch = useCallback(
     async (cmd: ClientCommand): Promise<void> => {
 
       // ── Roll dice — animation-aware ─────────────────────────────────────────
       if (cmd.type === CommandType.RollDice) {
-        if (isRollingRef.current) return;
-        isRollingRef.current = true;
+        if (useUiStore.getState().isRolling) return;
+
+        const { snapshot } = useGameStore.getState();
         setIsRolling(true);
 
-        const current  = snapshotRef.current!;
-        const messages = dispatchToMockServer(current.game, cmd);
-
-        const snapshot = messages.find(
+        const messages  = dispatchToMockServer(snapshot.game, cmd);
+        const snapshotMsg = messages.find(
           (m): m is SnapshotMessage => m.type === ServerEventType.Snapshot,
         );
-        if (!snapshot) {
+        if (!snapshotMsg) {
           setIsRolling(false);
-          isRollingRef.current = false;
           return;
         }
 
-        const nextGame  = snapshot.game;
+        const nextGame = snapshotMsg.game;
         const { diceRoll } = nextGame.turn;
-        const viewerId  = current.game.viewerId;
-        const oldPos    = current.game.players.find((p) => p.id === viewerId)?.position ?? 0;
-        const newPos    = nextGame.players.find((p) => p.id === viewerId)?.position ?? oldPos;
+        const viewerId = snapshot.game.viewerId;
+        const oldPos   = snapshot.game.players.find((p) => p.id === viewerId)?.position ?? 0;
+        const newPos   = nextGame.players.find((p) => p.id === viewerId)?.position ?? oldPos;
 
         // Phase 1 — dice spin
         await delay(1200);
         setIsRolling(false);
 
-        // Show dice result, mark canRoll false immediately
-        setSnapshot((prev) => ({
-          game:        { ...prev.game, turn: { ...prev.game.turn, diceRoll } },
-          permissions: { ...prev.permissions, canRoll: false },
-        }));
+        // Show dice result; mark canRoll false immediately
+        setSnapshot({
+          game:        { ...snapshot.game, turn: { ...snapshot.game.turn, diceRoll } },
+          permissions: { ...snapshot.permissions, canRoll: false },
+        });
         await delay(500);
 
-        // Phase 2 — walk token
+        // Phase 2 — walk token step-by-step
         const steps = getWalkSteps(oldPos, newPos);
         setWalkState({ playerId: viewerId, currentPos: oldPos });
 
@@ -100,13 +79,11 @@ export function useGameDispatch(
           setTimeout(step, 80);
         });
 
-        // Phase 3 — commit all server messages, clear walk overlay
+        // Phase 3 — apply all server messages, clear walk overlay
         setWalkState(null);
-        applyMessages(messages, setSnapshot);
-        isRollingRef.current = false;
+        for (const msg of messages) applyServerMessage(msg);
 
-        // Show deed when server says the viewer can buy
-        if (snapshot.permissions.canBuyProperty) {
+        if (snapshotMsg.permissions.canBuyProperty) {
           setActiveDeed(getDeedInfo(newPos));
         }
 
@@ -114,10 +91,11 @@ export function useGameDispatch(
       }
 
       // ── All other commands ──────────────────────────────────────────────────
-      const messages = dispatchToMockServer(snapshotRef.current!.game, cmd);
-      applyMessages(messages, setSnapshot);
+      const { snapshot } = useGameStore.getState();
+      const messages     = dispatchToMockServer(snapshot.game, cmd);
+      for (const msg of messages) applyServerMessage(msg);
     },
-    [snapshotRef, setSnapshot, setIsRolling, setWalkState, setActiveDeed],
+    [setSnapshot, applyServerMessage, setIsRolling, setWalkState, setActiveDeed],
   );
 
   return { dispatch };

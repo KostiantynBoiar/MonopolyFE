@@ -11,50 +11,46 @@ import type { SessionMember } from '@/features/lobby';
 import { BOARD } from '@/shared/config/board-layout';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore, useGameStore, useSocketStore, useUiStore } from '@/stores';
 import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, TradeState } from '@/shared/protocol/game-state.schema';
 import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
-import type { GameSnapshot } from '@/shared/protocol/permissions';
-import { applyMessage, ServerEventType } from '@/shared/protocol/network';
 import {
   tickAuction, advanceTurnEvent, startAuctionEvent, resetViewerTurnEvent,
 } from '@/shared/mocks/mock-server';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
-import { MOCK_SNAPSHOT, logToChatMessages } from '@/shared/mocks/game-state.mock';
+import { logToChatMessages } from '@/shared/mocks/game-state.mock';
 import { TOKEN_ORDER } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
-import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
 import { useGameDispatch } from './useGameDispatch';
-import type { WalkState } from './useGameDispatch';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
 function deriveSidebarPlayers(gs: GameState): Player[] {
   return gs.players.map((p) => ({
-    id: p.id,
-    name: p.displayName,
-    balance: p.balance,
-    position: p.position,
-    token: p.token,
+    id:             p.id,
+    name:           p.displayName,
+    balance:        p.balance,
+    position:       p.position,
+    token:          p.token,
     ownedPositions: getPlayerPositions(gs, p.id),
-    isActive: p.id === gs.turn.currentPlayerId,
-    isBankrupt: p.isBankrupt,
-    inJail: p.jailStatus !== null,
-    jailTurns: p.jailStatus?.attempts,
+    isActive:       p.id === gs.turn.currentPlayerId,
+    isBankrupt:     p.isBankrupt,
+    inJail:         p.jailStatus !== null,
+    jailTurns:      p.jailStatus?.attempts,
   }));
 }
 
 function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
   return gs.players.map((p) => ({
-    id: p.id,
-    position: p.position,
+    id:         p.id,
+    position:   p.position,
     tokenColor: TOKEN_COLORS[p.token],
     isBankrupt: p.isBankrupt,
   }));
@@ -62,15 +58,15 @@ function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
 
 function sessionMembersToPlayers(members: SessionMember[]): Player[] {
   return members.map((m, i) => ({
-    id: m.user_id,
-    name: m.display_name,
-    balance: 0,
-    position: 0,
-    token: TOKEN_ORDER[i % TOKEN_ORDER.length],
+    id:             m.user_id,
+    name:           m.display_name,
+    balance:        0,
+    position:       0,
+    token:          TOKEN_ORDER[i % TOKEN_ORDER.length],
     ownedPositions: [],
-    isActive: false,
-    isBankrupt: false,
-    inJail: false,
+    isActive:       false,
+    isBankrupt:     false,
+    inJail:         false,
   }));
 }
 
@@ -78,10 +74,10 @@ function deriveTradeParticipant(gs: GameState, playerId: string): TradeParticipa
   const p = gs.players.find((pl) => pl.id === playerId);
   if (!p) return undefined;
   return {
-    id: p.id,
-    name: p.displayName,
-    token: p.token,
-    balance: p.balance,
+    id:             p.id,
+    name:           p.displayName,
+    token:          p.token,
+    balance:        p.balance,
     ownedPositions: getPlayerPositions(gs, p.id),
   };
 }
@@ -94,27 +90,31 @@ export default function GameRoomPage() {
   const { currentSession, clearSession, setSession } = useSessionStore();
   const [resolvingCode, setResolvingCode] = useState(false);
 
-  // ── WebSocket (active during waiting + in-game) ────────────────────────────
+  // ── Stores ────────────────────────────────────────────────────────────────
+
+  const { snapshot, setSnapshot, applyServerMessage, updateGame } = useGameStore();
+  const { game: gameState, permissions } = snapshot;
 
   const {
     status: socketStatus,
     messages: wsMessages,
-    sendChat,
-    sendSticker,
     wsError,
-    clearWsError,
     wasKicked,
-  } = useGameSocket(currentSession?.id ?? null);
+    clearWsError,
+  } = useSocketStore();
 
-  // Gap 2: redirect if kicked
+  const { isRolling, walkState, activeDeed, setActiveDeed } = useUiStore();
+
+  // ── WebSocket ─────────────────────────────────────────────────────────────
+
+  const { sendChat, sendSticker } = useGameSocket(currentSession?.id ?? null);
+
   useEffect(() => {
     if (!wasKicked) return;
     clearSession();
     router.push('/lobby?kicked=1');
   }, [wasKicked, clearSession, router]);
 
-  // Join-by-code entry point: /game/room?code=TYC-XXXX (from landing "Join with code").
-  // Resolve + join via the API, then drop into the waiting room.
   useEffect(() => {
     if (!ready || !token || currentSession) return;
     const code = new URLSearchParams(window.location.search).get('code');
@@ -122,52 +122,38 @@ export default function GameRoomPage() {
     setResolvingCode(true);
     let cancelled = false;
     joinByCode(token, { invite_code: code }, user?.id ?? '', user?.display_name ?? '')
-      .then(({ session }) => {
-        if (!cancelled) setSession(session);
-      })
+      .then(({ session }) => { if (!cancelled) setSession(session); })
       .catch((err) => {
-        if (!cancelled) {
-          router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
-        }
+        if (!cancelled) router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
       })
-      .finally(() => {
-        if (!cancelled) setResolvingCode(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .finally(() => { if (!cancelled) setResolvingCode(false); });
+    return () => { cancelled = true; };
   }, [ready, token, currentSession, user, setSession, router]);
 
-  // Auto-dismiss WS errors after 6 s
   useEffect(() => {
     if (!wsError) return;
     const t = setTimeout(clearWsError, 6_000);
     return () => clearTimeout(t);
   }, [wsError, clearWsError]);
 
-  // ── Waiting room mode ──────────────────────────────────────────────────────
+  // ── Waiting room mode ─────────────────────────────────────────────────────
 
   const isWaiting = currentSession?.status === SessionStatus.WAITING;
 
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  // Convert WS chat entries to ChatMessage format for the panel
   const waitingMessages: ChatMessage[] = wsMessages.map((m) => ({
-    id: m.id,
-    kind: m.kind === 'sticker' ? 'chat' : 'chat',
+    id:     m.id,
+    kind:   'chat',
     author: m.display_name,
-    text: m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
-    ts: new Date(m.ts).getTime(),
+    text:   m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
+    ts:     new Date(m.ts).getTime(),
   }));
 
   function handleWaitingMessage(text: string) {
     const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
-    if (stickerMatch) {
-      sendSticker(stickerMatch[1]);
-    } else {
-      sendChat(text);
-    }
+    stickerMatch ? sendSticker(stickerMatch[1]) : sendChat(text);
   }
 
   async function handleLeave() {
@@ -186,49 +172,32 @@ export default function GameRoomPage() {
     setIsStarting(false);
   }
 
-  // ── Game board mode ────────────────────────────────────────────────────────
+  // ── Game board mode ───────────────────────────────────────────────────────
 
-  const [snapshot, setSnapshot] = useState<GameSnapshot>(MOCK_SNAPSHOT);
-  const { game: gameState, permissions } = snapshot;
-
-  const [isRolling, setIsRolling] = useState(false);
-  const [walkState, setWalkState] = useState<WalkState | null>(null);
-  const [activeDeed, setActiveDeed] = useState<DeedInfo | null>(null);
-
-  // Always-fresh ref so async callbacks read current snapshot without stale closure
-  const snapshotRef = useRef(snapshot);
-  snapshotRef.current = snapshot;
-
-  const { dispatch } = useGameDispatch(snapshotRef, {
-    setSnapshot, setIsRolling, setWalkState, setActiveDeed,
-  });
-
-  // Tracks whether Bob's auto-bid in the current auction has already fired
+  const viewer          = gameState.players.find((p) => p.id === gameState.viewerId)!;
   const autoBidFiredRef = useRef(false);
 
-  const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
+  const { dispatch } = useGameDispatch();
 
-  // ── Auto-advance after post_roll — simulates server turn management ─────────
-
+  // Auto-advance after post_roll — simulates server turn management
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
     if (activeDeed !== null) return;
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
-      const current = snapshotRef.current.game;
-      if (isViewerTurn) {
-        // Viewer manually ends turns in real play; for the mock, reset to pre_roll.
-        setSnapshot((prev) => applyMessage(prev,resetViewerTurnEvent(current)));
-      } else {
-        // Simulate the opponent finishing their turn.
-        setSnapshot((prev) => applyMessage(prev,advanceTurnEvent(current)));
-      }
+      const current = useGameStore.getState().snapshot.game;
+      applyServerMessage(
+        isViewerTurn ? resetViewerTurnEvent(current) : advanceTurnEvent(current),
+      );
     }, 1500);
     return () => clearTimeout(t);
-  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed, setSnapshot]);
+  }, [
+    gameState.turn.phase, gameState.turn.turnNumber,
+    gameState.turn.currentPlayerId, gameState.viewerId,
+    activeDeed, applyServerMessage,
+  ]);
 
-  // ── Auction countdown — simulates server ticks ────────────────────────────
-
+  // Auction countdown — simulates server ticks
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.AUCTION) {
       autoBidFiredRef.current = false;
@@ -236,18 +205,18 @@ export default function GameRoomPage() {
     }
 
     const interval = setInterval(() => {
-      const current = snapshotRef.current.game;
+      const current = useGameStore.getState().snapshot.game;
       if (current.turn.phase !== TurnPhase.AUCTION || !current.auction) return;
 
       const { messages, bobBidFired } = tickAuction(current, 1000, autoBidFiredRef.current);
       autoBidFiredRef.current = bobBidFired;
-      for (const msg of messages) {
-        setSnapshot((prev) => applyMessage(prev,msg));
-      }
+      for (const msg of messages) applyServerMessage(msg);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [gameState.turn.phase, snapshotRef, setSnapshot]);
+  }, [gameState.turn.phase, applyServerMessage]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleRoll = useCallback(() => {
     if (!permissions.canRoll || isRolling) return;
@@ -255,107 +224,79 @@ export default function GameRoomPage() {
   }, [permissions.canRoll, isRolling, dispatch]);
 
   const handleCardProceed = useCallback(() => {
-    setSnapshot((prev) => ({
-      ...prev,
-      game: {
-        ...prev.game,
-        activeCard: null,
-        turn: { ...prev.game.turn, phase: TurnPhase.POST_ROLL },
-        log: [
-          ...prev.game.log,
-          {
-            id: `log_card_${Date.now()}`,
-            kind: LogKind.EVENT,
-            text: `${viewer.displayName} drew: "${prev.game.activeCard?.text ?? ''}"`,
-            ts: new Date().toISOString(),
-          },
-        ],
-      },
+    const cardText = useGameStore.getState().snapshot.game.activeCard?.text ?? '';
+    updateGame((g) => ({
+      ...g,
+      activeCard: null,
+      turn: { ...g.turn, phase: TurnPhase.POST_ROLL },
+      log: [...g.log, {
+        id: `log_card_${Date.now()}`, kind: LogKind.EVENT,
+        text: `${viewer.displayName} drew: "${cardText}"`,
+        ts: new Date().toISOString(),
+      }],
     }));
-  }, [viewer, setSnapshot]);
-
-  // ── Buy property ──────────────────────────────────────────────────────────
+  }, [viewer.displayName, updateGame]);
 
   const handleBuy = useCallback(() => {
     if (!activeDeed) return;
     setActiveDeed(null);
     dispatch({ type: CommandType.BuyProperty, position: activeDeed.position });
-  }, [activeDeed, dispatch]);
-
-  // ── Start auction ──────────────────────────────────────────────────────────
+  }, [activeDeed, dispatch, setActiveDeed]);
 
   const handleAuction = useCallback(() => {
     if (!activeDeed) return;
     autoBidFiredRef.current = false;
     setActiveDeed(null);
-    // Server decides the transition — permissions (canBid) set by the server event.
-    setSnapshot((prev) => applyMessage(prev, startAuctionEvent(prev.game, activeDeed.position)));
-  }, [activeDeed, setSnapshot]);
-
-  // ── Place bid ──────────────────────────────────────────────────────────────
+    applyServerMessage(startAuctionEvent(useGameStore.getState().snapshot.game, activeDeed.position));
+  }, [activeDeed, applyServerMessage, setActiveDeed]);
 
   const handleBid = useCallback((amount: number) => {
     dispatch({ type: CommandType.BidAuction, amount });
   }, [dispatch]);
 
-  // ── Trade handlers ─────────────────────────────────────────────────────────
-
   const handleTrade = useCallback(() => {
-    // Mock: open a pre-filled trade proposal with Bob.
-    // In real mode this would open a trade builder UI before dispatching StartTrade.
     dispatch({
-      type:     CommandType.StartTrade,
-      targetId: 'bob',
-      offer:    { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
-      request:  { money: 0,   positions: [5],    getOutOfJailCards: 0 },
+      type: CommandType.StartTrade, targetId: 'bob',
+      offer:   { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
+      request: { money: 0,   positions: [5],    getOutOfJailCards: 0 },
     });
   }, [dispatch]);
 
   const handleTradeAccept = useCallback(() => {
-    const tradeId = snapshotRef.current.game.trade?.id ?? '';
+    const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
     dispatch({ type: CommandType.AcceptTrade, tradeId });
-    setTimeout(() => setSnapshot((prev) => ({ ...prev, game: { ...prev.game, trade: null } })), 800);
-  }, [dispatch, snapshotRef, setSnapshot]);
+    setTimeout(() => updateGame((g) => ({ ...g, trade: null })), 800);
+  }, [dispatch, updateGame]);
 
   const handleTradeReject = useCallback(() => {
-    const tradeId = snapshotRef.current.game.trade?.id ?? '';
+    const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
     dispatch({ type: CommandType.RejectTrade, tradeId });
-    setTimeout(() => setSnapshot((prev) => ({ ...prev, game: { ...prev.game, trade: null } })), 800);
-  }, [dispatch, snapshotRef, setSnapshot]);
+    setTimeout(() => updateGame((g) => ({ ...g, trade: null })), 800);
+  }, [dispatch, updateGame]);
 
-  // Cancel = proposer withdraws; no protocol command yet — direct mock mutation.
   const handleTradeCancel = useCallback(() => {
-    setSnapshot((prev) => ({
-      ...prev,
-      game: { ...prev.game, trade: null, turn: { ...prev.game.turn, phase: TurnPhase.PRE_ROLL } },
-    }));
-  }, [setSnapshot]);
+    updateGame((g) => ({ ...g, trade: null, turn: { ...g.turn, phase: TurnPhase.PRE_ROLL } }));
+  }, [updateGame]);
 
   const handleSendMessage = useCallback((text: string) => {
     const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
-    const isSticker = stickerMatch !== null;
-    setSnapshot((prev) => ({
-      ...prev,
-      game: {
-        ...prev.game,
-        log: [
-          ...prev.game.log,
-          {
-            id: `log_chat_${Date.now()}`,
-            kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
-            playerId: prev.game.viewerId,
-            playerName: viewer.displayName,
-            playerToken: viewer.token,
-            text,
-            stickerUrl: stickerMatch?.[1],
-            ts: new Date().toISOString(),
-          },
-        ],
-      },
+    const isSticker    = stickerMatch !== null;
+    updateGame((g) => ({
+      ...g,
+      log: [...g.log, {
+        id: `log_chat_${Date.now()}`,
+        kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
+        playerId:    g.viewerId,
+        playerName:  viewer.displayName,
+        playerToken: viewer.token,
+        text,
+        stickerUrl:  stickerMatch?.[1],
+        ts: new Date().toISOString(),
+      }],
     }));
-  }, [viewer, setSnapshot]);
+  }, [viewer.displayName, viewer.token, updateGame]);
 
-  // ── Guards (all hooks above, returns below) ────────────────────────────────
+  // ── Guards ────────────────────────────────────────────────────────────────
 
   if (!ready || resolvingCode) return <FullScreenSpinner />;
 
@@ -386,32 +327,31 @@ export default function GameRoomPage() {
     );
   }
 
-  // ── Game board ─────────────────────────────────────────────────────────────
+  // ── Game board ────────────────────────────────────────────────────────────
 
   const tradeProposer = gameState.trade
-    ? deriveTradeParticipant(gameState, gameState.trade.proposerId)
-    : undefined;
+    ? deriveTradeParticipant(gameState, gameState.trade.proposerId) : undefined;
   const tradeTarget = gameState.trade
-    ? deriveTradeParticipant(gameState, gameState.trade.targetId)
-    : undefined;
+    ? deriveTradeParticipant(gameState, gameState.trade.targetId)   : undefined;
 
   const walkingBoardPlayers: WalkingPlayer[] = walkState
     ? [{
-        id: walkState.playerId,
+        id:         walkState.playerId,
         currentPos: walkState.currentPos,
-        tokenColor: TOKEN_COLORS[gameState.players.find((p) => p.id === walkState.playerId)!.token],
+        tokenColor: TOKEN_COLORS[
+          gameState.players.find((p) => p.id === walkState.playerId)!.token
+        ],
       }]
     : [];
 
   const auctionPropertyName = gameState.auction
     ? gameState.auction.target.kind === AuctionTargetKind.PROPERTY
-    ? (BOARD[gameState.auction.target.position]?.name ?? 'Property')
-    : 'Property'
+      ? (BOARD[gameState.auction.target.position]?.name ?? 'Property')
+      : 'Property'
     : '';
 
   const auctionPlayers: AuctionPlayer[] = gameState.players.map((p) => ({
-    id: p.id,
-    name: p.displayName,
+    id: p.id, name: p.displayName,
   }));
 
   return (
