@@ -3,9 +3,9 @@
 import { useRef, useEffect, useState } from 'react';
 import { MonopolyBoard } from './MonopolyBoard';
 import { BoardContainerProps } from '../game-board.types';
-import { BASE_PX } from '@/shared/config/constants';
+import { BOARD_W, BOARD_PX } from '@/shared/config/constants';
 
-export function BoardContainer({ centerContent, spaces, players }: BoardContainerProps) {
+export function BoardContainer({ centerContent, spaces, players, walkingPlayers }: BoardContainerProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -15,8 +15,8 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
 
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      const fit = Math.min(width, height);
-      setScale(Math.max(0.3, fit / BASE_PX));
+      const scale = Math.max(0.3, Math.min(width / BOARD_W, height / BOARD_PX));
+      setScale(scale);
     });
 
     ro.observe(el);
@@ -30,6 +30,7 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
         centerContent={centerContent}
         spaces={spaces}
         players={players}
+        walkingPlayers={walkingPlayers}
       />
     </div>
   );

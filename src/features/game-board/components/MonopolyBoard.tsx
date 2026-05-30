@@ -1,12 +1,13 @@
 'use client';
 
-import { BOARD, getGridPos, getTileEdge } from '../board-data';
+import { BOARD, getGridPos, getTileEdge, getTileCenter } from '../board-data';
 import type { TileEdge } from '../game-board.enums';
-import type { BoardPlayer } from '../game-board.types';
+import type { BoardPlayer, WalkingPlayer } from '../game-board.types';
+import { getProperty, getOwner, isMortgaged } from '@/shared/protocol/selectors';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
-import { N, W, gridCols, gridRows, BOARD_PX } from '@/shared/config/constants';
+import { N, W, gridCols, gridRows, BOARD_W, BOARD_PX, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import type { TileContentProps, MonopolyBoardProps } from '../game-board.types';
 
 // ─── Tile rendering ───────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps
     return <CornerTile variant={space.corner!} />;
   }
   if (space.type === 'property') {
-    const houses = ownership?.hasHotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
+    const houses = ownership?.hotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
     return (
       <PropertyTile
         name={space.name}
@@ -103,6 +104,45 @@ function TokenDots({ players }: { players: BoardPlayer[] }) {
   );
 }
 
+// ─── Walking token overlay ────────────────────────────────────────────────────
+
+function WalkingTokenOverlay({ players }: { players: WalkingPlayer[] }) {
+  if (players.length === 0) return null;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 20,
+      }}
+    >
+      {players.map((p) => {
+        const { x, y } = getTileCenter(p.currentPos);
+        return (
+          <div
+            key={p.id}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: p.tokenColor,
+              border: '2px solid white',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
+              transform: `translate(${x - 6}px, ${y - 6}px)`,
+              transition: `transform ${WALK_STEP_DURATION_MS}ms ease-in-out`,
+              willChange: 'transform',
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Board ────────────────────────────────────────────────────────────────────
 
 export function MonopolyBoard({
@@ -110,21 +150,25 @@ export function MonopolyBoard({
   centerContent,
   spaces,
   players = [],
+  walkingPlayers = [],
 }: MonopolyBoardProps) {
+  const walkingIds = new Set(walkingPlayers.map((p) => p.id));
+
   return (
     <div
       style={{
-        width: BOARD_PX * scale,
+        width: BOARD_W * scale,
         height: BOARD_PX * scale,
         fontSize: `${scale}rem`,
       }}
     >
       <div
         style={{
+          position: 'relative',
           display: 'grid',
           gridTemplateColumns: gridCols,
           gridTemplateRows: gridRows,
-          width: BOARD_PX,
+          width: BOARD_W,
           height: BOARD_PX,
           transformOrigin: 'top left',
           transform: scale !== 1 ? `scale(${scale})` : undefined,
@@ -134,12 +178,14 @@ export function MonopolyBoard({
           const { col, row } = getGridPos(space.pos);
           const edge = getTileEdge(space.pos);
           const flipped = edge === 'top';
-          const ownership = spaces?.[space.pos];
-          const ownerColor = ownership?.ownerId
-            ? players.find((p) => p.id === ownership.ownerId)?.tokenColor
+          const spaceCtx  = { spaces: spaces ?? [] };
+          const ownership = getProperty(spaceCtx, space.pos);
+          const ownerId   = getOwner(spaceCtx, space.pos);
+          const ownerColor = ownerId
+            ? players.find((p) => p.id === ownerId)?.tokenColor
             : undefined;
           const tokensHere = players.filter(
-            (p) => p.position === space.pos && !p.isBankrupt,
+            (p) => p.position === space.pos && !p.isBankrupt && !walkingIds.has(p.id),
           );
 
           return (
@@ -176,6 +222,8 @@ export function MonopolyBoard({
             </div>
           )}
         </div>
+
+        <WalkingTokenOverlay players={walkingPlayers} />
       </div>
     </div>
   );

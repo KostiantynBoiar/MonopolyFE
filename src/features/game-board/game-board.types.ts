@@ -1,11 +1,18 @@
 import { type ReactNode } from 'react';
-import type { SpaceOwnership } from '@/shared/protocol/game-state.schema';
+import type { PropertyState } from '@/shared/protocol/game-state';
 import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, PropertyColor } from './game-board.enums';
+
+export type WalkingPlayer = {
+  id: string;
+  currentPos: number;
+  tokenColor: string;
+};
 
 export type BoardContainerProps = {
   centerContent?: ReactNode;
-  spaces?: SpaceOwnership[];
+  spaces?: PropertyState[];
   players?: BoardPlayer[];
+  walkingPlayers?: WalkingPlayer[];
 };
 
 export type CornerTileProps = {
@@ -15,7 +22,7 @@ export type CornerTileProps = {
 
 export type TileContentProps = {
   space: BoardSpace;
-  ownership?: SpaceOwnership;
+  ownership?: PropertyState | null;
   ownerColor?: string;
   flipped?: boolean;
 };
@@ -23,8 +30,9 @@ export type TileContentProps = {
 export type MonopolyBoardProps = {
   scale?: number;
   centerContent?: ReactNode;
-  spaces?: SpaceOwnership[];
+  spaces?: PropertyState[];
   players?: BoardPlayer[];
+  walkingPlayers?: WalkingPlayer[];
 };
 
 export type PropertyTileProps = {

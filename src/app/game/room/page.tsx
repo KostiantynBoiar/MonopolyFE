@@ -1,164 +1,39 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BoardContainer } from '@/features/game-board';
-import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
-import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
+import { PlayerSidebar } from '@/features/player-panel';
 import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
 import { joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import type { SessionMember } from '@/features/lobby';
-import { BOARD } from '@/shared/config/board-layout';
-import { SpaceType } from '@/features/game-board/game-board.enums';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
-import { useSessionStore } from '@/stores/session-store';
+import { useSessionStore, useSocketStore } from '@/stores';
 import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
-import type { BoardPlayer } from '@/features/game-board';
-import type { GameState, ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
-import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
-import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
 import { TOKEN_ORDER } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
+import { GameBoard } from './GameBoard';
 
-// ─── Adapters ─────────────────────────────────────────────────────────────────
-
-function deriveSidebarPlayers(gs: GameState): Player[] {
-  return gs.players.map((p) => ({
-    id: p.id,
-    name: p.displayName,
-    balance: p.balance,
-    position: p.position,
-    token: p.token,
-    ownedPositions: p.ownedPositions,
-    isActive: p.id === gs.turn.currentPlayerId,
-    isBankrupt: p.isBankrupt,
-    inJail: p.jailStatus !== null,
-    jailTurns: p.jailStatus?.turnsRemaining,
-  }));
-}
-
-function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
-  return gs.players.map((p) => ({
-    id: p.id,
-    position: p.position,
-    tokenColor: TOKEN_COLORS[p.token],
-    isBankrupt: p.isBankrupt,
-  }));
-}
+// ─── Adapter ───────────────────────────────────────────────────────────────────
 
 function sessionMembersToPlayers(members: SessionMember[]): Player[] {
   return members.map((m, i) => ({
-    id: m.user_id,
-    name: m.display_name,
-    balance: 0,
-    position: 0,
-    token: TOKEN_ORDER[i % TOKEN_ORDER.length],
+    id:             m.user_id,
+    name:           m.display_name,
+    balance:        0,
+    position:       0,
+    token:          TOKEN_ORDER[i % TOKEN_ORDER.length],
     ownedPositions: [],
-    isActive: false,
-    isBankrupt: false,
-    inJail: false,
+    isActive:       false,
+    isBankrupt:     false,
+    inJail:         false,
   }));
 }
 
-function deriveTradeParticipant(gs: GameState, playerId: string): TradeParticipant | undefined {
-  const p = gs.players.find((pl) => pl.id === playerId);
-  if (!p) return undefined;
-  return {
-    id: p.id,
-    name: p.displayName,
-    token: p.token,
-    balance: p.balance,
-    ownedPositions: p.ownedPositions,
-  };
-}
-
-// ─── Mock card helpers ────────────────────────────────────────────────────────
-
-function makeMockCard(pos: number): ActiveCard | null {
-  const spaceType = BOARD[pos]?.type;
-
-  if (spaceType === SpaceType.CHANCE) {
-    return {
-      id: `card_chance_${Date.now()}`,
-      kind: 'chance',
-      text: 'Advance to GO. Collect M200.',
-      effect: { type: 'advance_to', position: 0, collectGoBonus: true },
-      drawerId: MOCK_GAME_STATE.viewerId,
-    };
-  }
-
-  if (spaceType === SpaceType.CHEST) {
-    return {
-      id: `card_chest_${Date.now()}`,
-      kind: 'community_chest',
-      text: 'Bank error in your favor. Collect M200.',
-      effect: { type: 'collect', amount: 200 },
-      drawerId: MOCK_GAME_STATE.viewerId,
-    };
-  }
-
-  return null;
-}
-
-function makeMockTrade(gs: GameState): TradeState {
-  return {
-    id: `trade_${Date.now()}`,
-    proposerId: gs.viewerId,
-    targetId: 'bob',
-    proposerOffer: { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
-    targetRequest: { money: 0, positions: [5], getOutOfJailCards: 0 },
-    status: 'pending',
-    expiresAt: new Date(Date.now() + 120_000).toISOString(),
-  };
-}
-
-// ─── Turn advance (pure) ──────────────────────────────────────────────────────
-
-function advanceTurn(prev: GameState): GameState {
-  const activePlayers = prev.players.filter((p) => !p.isBankrupt);
-  const currentIdx = activePlayers.findIndex((p) => p.id === prev.turn.currentPlayerId);
-  const nextPlayer = activePlayers[(currentIdx + 1) % activePlayers.length];
-  const isViewerNext = nextPlayer.id === prev.viewerId;
-
-  return {
-    ...prev,
-    turn: {
-      ...prev.turn,
-      phase: nextPlayer.jailStatus ? 'jail_decision' : 'pre_roll',
-      currentPlayerId: nextPlayer.id,
-      turnNumber: prev.turn.turnNumber + 1,
-      diceRoll: null,
-      doublesStreak: 0,
-      actionsAvailable: {
-        canRoll: isViewerNext,
-        canBuy: false,
-        canBuild: false,
-        canMortgage: isViewerNext,
-        canUnmortgage: isViewerNext,
-        canTrade: isViewerNext,
-        canEndTurn: false,
-        canPayJailFine: isViewerNext && nextPlayer.jailStatus !== null,
-        canUseJailCard: isViewerNext && (nextPlayer.getOutOfJailCards ?? 0) > 0,
-        canBid: false,
-      },
-    },
-    activeCard: null,
-    log: [
-      ...prev.log,
-      {
-        id: `log_turn_${Date.now()}`,
-        kind: 'event' as const,
-        text: `${nextPlayer.displayName}'s turn.`,
-        ts: new Date().toISOString(),
-      },
-    ],
-  };
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function GameRoomPage() {
   const router = useRouter();
@@ -166,27 +41,24 @@ export default function GameRoomPage() {
   const { currentSession, clearSession, setSession } = useSessionStore();
   const [resolvingCode, setResolvingCode] = useState(false);
 
-  // ── WebSocket (active during waiting + in-game) ────────────────────────────
-
   const {
     status: socketStatus,
     messages: wsMessages,
-    sendChat,
-    sendSticker,
     wsError,
-    clearWsError,
     wasKicked,
-  } = useGameSocket(currentSession?.id ?? null);
+    clearWsError,
+  } = useSocketStore();
 
-  // Gap 2: redirect if kicked
+  const { sendChat, sendSticker } = useGameSocket(currentSession?.id ?? null);
+
+  // ── Session setup & lifecycle management ────────────────────────────────────
+
   useEffect(() => {
     if (!wasKicked) return;
     clearSession();
     router.push('/lobby?kicked=1');
   }, [wasKicked, clearSession, router]);
 
-  // Join-by-code entry point: /game/room?code=TYC-XXXX (from landing "Join with code").
-  // Resolve + join via the API, then drop into the waiting room.
   useEffect(() => {
     if (!ready || !token || currentSession) return;
     const code = new URLSearchParams(window.location.search).get('code');
@@ -194,52 +66,38 @@ export default function GameRoomPage() {
     setResolvingCode(true);
     let cancelled = false;
     joinByCode(token, { invite_code: code }, user?.id ?? '', user?.display_name ?? '')
-      .then(({ session }) => {
-        if (!cancelled) setSession(session);
-      })
+      .then(({ session }) => { if (!cancelled) setSession(session); })
       .catch((err) => {
-        if (!cancelled) {
-          router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
-        }
+        if (!cancelled) router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
       })
-      .finally(() => {
-        if (!cancelled) setResolvingCode(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .finally(() => { if (!cancelled) setResolvingCode(false); });
+    return () => { cancelled = true; };
   }, [ready, token, currentSession, user, setSession, router]);
 
-  // Auto-dismiss WS errors after 6 s
   useEffect(() => {
     if (!wsError) return;
     const t = setTimeout(clearWsError, 6_000);
     return () => clearTimeout(t);
   }, [wsError, clearWsError]);
 
-  // ── Waiting room mode ──────────────────────────────────────────────────────
+  // ── Waiting room state ──────────────────────────────────────────────────────
 
   const isWaiting = currentSession?.status === SessionStatus.WAITING;
 
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  // Convert WS chat entries to ChatMessage format for the panel
   const waitingMessages: ChatMessage[] = wsMessages.map((m) => ({
-    id: m.id,
-    kind: m.kind === 'sticker' ? 'chat' : 'chat',
+    id:     m.id,
+    kind:   'chat',
     author: m.display_name,
-    text: m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
-    ts: new Date(m.ts).getTime(),
+    text:   m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
+    ts:     new Date(m.ts).getTime(),
   }));
 
   function handleWaitingMessage(text: string) {
     const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
-    if (stickerMatch) {
-      sendSticker(stickerMatch[1]);
-    } else {
-      sendChat(text);
-    }
+    stickerMatch ? sendSticker(stickerMatch[1]) : sendChat(text);
   }
 
   async function handleLeave() {
@@ -258,134 +116,7 @@ export default function GameRoomPage() {
     setIsStarting(false);
   }
 
-  // ── Game board mode ────────────────────────────────────────────────────────
-
-  const [gameState, setGameState] = useState<GameState>(MOCK_GAME_STATE);
-  const [isRolling, setIsRolling] = useState(false);
-
-  const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
-  const actions = gameState.turn.actionsAvailable;
-
-  useEffect(() => {
-    if (gameState.turn.phase !== 'post_roll') return;
-    const t = setTimeout(() => {
-      setGameState((prev) => {
-        if (prev.turn.phase !== 'post_roll') return prev;
-        return advanceTurn(prev);
-      });
-    }, 2500);
-    return () => clearTimeout(t);
-  }, [gameState.turn.phase, gameState.turn.turnNumber]);
-
-  const handleRoll = useCallback(async () => {
-    if (!actions.canRoll || isRolling) return;
-    setIsRolling(true);
-    await new Promise<void>((r) => setTimeout(r, 1200));
-
-    const die1 = Math.ceil(Math.random() * 6);
-    const die2 = Math.ceil(Math.random() * 6);
-    const isDoubles = die1 === die2;
-    const total = die1 + die2;
-    const newPos = (viewer.position + total) % 40;
-    const drawnCard = makeMockCard(newPos);
-
-    setIsRolling(false);
-    setGameState((prev) => ({
-      ...prev,
-      players: prev.players.map((p) =>
-        p.id === prev.viewerId ? { ...p, position: newPos } : p,
-      ),
-      activeCard: drawnCard,
-      turn: {
-        ...prev.turn,
-        phase: drawnCard ? 'drawing_card' : 'post_roll',
-        diceRoll: { die1, die2, isDoubles },
-        doublesStreak: isDoubles ? prev.turn.doublesStreak + 1 : 0,
-        actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false, canEndTurn: false },
-      },
-      log: [
-        ...prev.log,
-        {
-          id: `log_roll_${Date.now()}`,
-          kind: 'event' as const,
-          text: `${viewer.displayName} rolled ${die1} + ${die2} = ${total}${isDoubles ? ' (doubles!)' : ''}. Moved to ${BOARD[newPos]?.name ?? `space ${newPos}`}.`,
-          ts: new Date().toISOString(),
-        },
-      ],
-    }));
-  }, [actions.canRoll, isRolling, viewer]);
-
-  const handleCardProceed = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      activeCard: null,
-      turn: { ...prev.turn, phase: 'post_roll' },
-      log: [
-        ...prev.log,
-        {
-          id: `log_card_${Date.now()}`,
-          kind: 'event' as const,
-          text: `${viewer.displayName} drew: "${prev.activeCard?.text ?? ''}"`,
-          ts: new Date().toISOString(),
-        },
-      ],
-    }));
-  }, [viewer]);
-
-  const handleTrade = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: makeMockTrade(prev),
-      turn: { ...prev.turn, phase: 'trade_negotiation' },
-    }));
-  }, []);
-
-  const handleTradeAccept = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: prev.trade ? { ...prev.trade, status: 'accepted' } : null,
-      turn: { ...prev.turn, phase: 'post_roll' },
-      log: [...prev.log, { id: `log_trade_accept_${Date.now()}`, kind: 'event' as const, text: 'Trade accepted.', ts: new Date().toISOString() }],
-    }));
-    setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
-  }, []);
-
-  const handleTradeReject = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: prev.trade ? { ...prev.trade, status: 'rejected' } : null,
-      turn: { ...prev.turn, phase: 'post_roll' },
-      log: [...prev.log, { id: `log_trade_reject_${Date.now()}`, kind: 'event' as const, text: 'Trade rejected.', ts: new Date().toISOString() }],
-    }));
-    setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
-  }, []);
-
-  const handleTradeCancel = useCallback(() => {
-    setGameState((prev) => ({ ...prev, trade: null, turn: { ...prev.turn, phase: 'pre_roll' } }));
-  }, []);
-
-  const handleSendMessage = useCallback((text: string) => {
-    const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
-    const isSticker = stickerMatch !== null;
-    setGameState((prev) => ({
-      ...prev,
-      log: [
-        ...prev.log,
-        {
-          id: `log_chat_${Date.now()}`,
-          kind: isSticker ? ('sticker' as const) : ('chat' as const),
-          playerId: prev.viewerId,
-          playerName: viewer.displayName,
-          playerToken: viewer.token,
-          text,
-          stickerUrl: stickerMatch?.[1],
-          ts: new Date().toISOString(),
-        },
-      ],
-    }));
-  }, [viewer]);
-
-  // ── Guards (all hooks above, returns below) ────────────────────────────────
+  // ── Render logic ────────────────────────────────────────────────────────────
 
   if (!ready || resolvingCode) return <FullScreenSpinner />;
 
@@ -416,50 +147,5 @@ export default function GameRoomPage() {
     );
   }
 
-  // ── Game board ─────────────────────────────────────────────────────────────
-
-  const tradeProposer = gameState.trade
-    ? deriveTradeParticipant(gameState, gameState.trade.proposerId)
-    : undefined;
-  const tradeTarget = gameState.trade
-    ? deriveTradeParticipant(gameState, gameState.trade.targetId)
-    : undefined;
-
-  return (
-    <div className="relative flex h-screen overflow-hidden bg-paper">
-      <WsErrorBanner error={wsError} onDismiss={clearWsError} />
-      <div className="flex-1 overflow-hidden p-4">
-        <BoardContainer
-          spaces={gameState.spaces}
-          players={deriveBoardPlayers(gameState)}
-          centerContent={
-            <BoardCenterPanel
-              messages={logToChatMessages(gameState.log)}
-              diceRoll={gameState.turn.diceRoll}
-              isRolling={isRolling}
-              canRoll={actions.canRoll && !isRolling}
-              canBuy={actions.canBuy}
-              canBuild={actions.canBuild}
-              canTrade={actions.canTrade}
-              onRoll={handleRoll}
-              onSendMessage={handleSendMessage}
-              onTrade={handleTrade}
-              activeCard={gameState.activeCard}
-              onCardProceed={handleCardProceed}
-              tradeState={gameState.trade}
-              tradeProposer={tradeProposer}
-              tradeTarget={tradeTarget}
-              viewerId={gameState.viewerId}
-              onTradeAccept={handleTradeAccept}
-              onTradeReject={handleTradeReject}
-              onTradeCancel={handleTradeCancel}
-            />
-          }
-        />
-      </div>
-      <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-        <PlayerSidebar players={deriveSidebarPlayers(gameState)} />
-      </aside>
-    </div>
-  );
+  return <GameBoard wsError={wsError} onClearWsError={clearWsError} />;
 }

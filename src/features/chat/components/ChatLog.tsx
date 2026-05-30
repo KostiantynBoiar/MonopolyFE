@@ -2,14 +2,15 @@
 
 import { useEffect, useRef } from 'react';
 import { TOKEN_COLORS } from '@/features/player-panel';
-import type { ChatMessage, ChatLogProps } from '../chat.types';
+import { LogKind } from '@/shared/protocol/game-state';
+import type { ChatLogProps } from '../chat.types';
 
-export function ChatLog({ messages }: ChatLogProps) {
+export function ChatLog({ log }: ChatLogProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [log]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden" style={{ fontSize: '0.7em' }}>
@@ -20,29 +21,29 @@ export function ChatLog({ messages }: ChatLogProps) {
         </span>
       </div>
 
-      {/* messages */}
+      {/* entries */}
       <div className="flex flex-1 flex-col gap-[0.4em] overflow-y-auto px-[1em] py-[0.6em]">
-        {messages.map((msg) =>
-          msg.kind === 'event' ? (
-            <p key={msg.id} className="font-sans italic text-ink/50" style={{ fontSize: '0.85em' }}>
-              {msg.text}
+        {log.map((entry) =>
+          entry.kind === LogKind.EVENT ? (
+            <p key={entry.id} className="font-sans italic text-ink/50" style={{ fontSize: '0.85em' }}>
+              {entry.text}
             </p>
           ) : (
-            <div key={msg.id} className="flex items-start gap-[0.5em]">
-              {msg.token && (
+            <div key={entry.id} className="flex items-start gap-[0.5em]">
+              {entry.playerToken && (
                 <span
                   className="mt-[0.15em] h-[1em] w-[1em] shrink-0 rounded-full border border-ink/20"
-                  style={{ background: TOKEN_COLORS[msg.token] }}
+                  style={{ background: TOKEN_COLORS[entry.playerToken] }}
                 />
               )}
               <p className="min-w-0 font-sans text-ink" style={{ fontSize: '0.9em' }}>
                 <span
                   className="mr-[0.35em] font-semibold"
-                  style={{ color: msg.token ? TOKEN_COLORS[msg.token] : '#10182E' }}
+                  style={{ color: entry.playerToken ? TOKEN_COLORS[entry.playerToken] : '#10182E' }}
                 >
-                  {msg.author}
+                  {entry.playerName}
                 </span>
-                {msg.text}
+                {entry.text}
               </p>
             </div>
           ),

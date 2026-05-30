@@ -6,8 +6,13 @@ import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { cn } from '@/shared/lib/cn';
 import { CardFlipOverlay } from '@/features/card';
 import { TradeWindow } from '@/features/trade';
+import { DeedCard } from '@/features/deed';
+import { JailModal } from '@/features/jail';
+import { DebtModal } from '@/features/bankruptcy';
+import { AuctionPanel } from '@/features/auction';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
+import { LogKind } from '@/shared/protocol/game-state';
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
 
@@ -204,32 +209,55 @@ function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BoardCenterPanel({
-  messages,
+  log,
   diceRoll = null,
   isRolling = false,
   canRoll = false,
   canBuy = false,
-  canBuild = false,
+  canManage = false,
   canTrade = false,
   onRoll,
   onBuy,
-  onBuild,
+  onManage,
   onTrade,
   onSendMessage,
   activeCard = null,
   onCardProceed,
+  activeDeed = null,
+  onAuction,
+  jailDecision = false,
+  jailAttempts = 0,
+  canPayJailFine = false,
+  canUseJailCard = false,
+  canRollInJail = false,
+  onPayJailFine,
+  onUseJailCard,
+  onRollInJail,
+  debtPending = false,
+  debtAmount = 0,
+  canPayDebt = false,
+  onPayDebt,
+  onManageDebt,
+  onDeclareBankruptcy,
+  auctionState = null,
+  auctionPropertyName = '',
+  auctionPlayers = [],
+  canBid = false,
+  onBid,
   tradeState = null,
   tradeProposer,
   tradeTarget,
   viewerId,
   onTradeAccept,
   onTradeReject,
+  onTradeCounter,
   onTradeCancel,
 }: BoardCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const isAuctionActive = auctionState !== null;
   const isTradeActive = tradeState !== null
     && (tradeState.status === 'pending' || tradeState.status === 'countered')
     && tradeProposer != null
@@ -237,7 +265,7 @@ export function BoardCenterPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [log]);
 
   function sendText() {
     const t = draft.trim();
@@ -252,9 +280,9 @@ export function BoardCenterPanel({
   }
 
   const actions: Action[] = [
-    canBuild && { key: ActionKey.BUILD, label: 'Build House', enabled: true, handler: onBuild },
-    canBuy   && { key: ActionKey.BUY,   label: 'Buy Property', enabled: true, handler: onBuy },
-    canTrade && { key: ActionKey.TRADE, label: 'Trade',        enabled: true, handler: onTrade },
+    canManage && { key: ActionKey.MANAGE, label: 'Manage',       enabled: true, handler: onManage },
+    canBuy    && { key: ActionKey.BUY,    label: 'Buy Property', enabled: true, handler: onBuy },
+    canTrade  && { key: ActionKey.TRADE,  label: 'Trade',        enabled: true, handler: onTrade },
     {
       key: ActionKey.ROLL,
       label: isRolling ? 'Rolling…' : 'Roll Dice',
@@ -269,8 +297,17 @@ export function BoardCenterPanel({
       className="relative flex h-full w-full flex-col overflow-hidden bg-gray-100"
       style={{ fontSize: '0.72em' }}
     >
-      {/* ── Trade window (swaps the whole log+actions area) ── */}
-      {isTradeActive ? (
+      {/* ── Auction panel (swaps whole area when auction is active) ── */}
+      {isAuctionActive ? (
+        <AuctionPanel
+          auctionState={auctionState!}
+          propertyName={auctionPropertyName}
+          viewerId={viewerId ?? ''}
+          players={auctionPlayers}
+          canBid={canBid}
+          onBid={onBid ?? (() => {})}
+        />
+      ) : isTradeActive ? (
         <TradeWindow
           trade={tradeState!}
           proposer={tradeProposer!}
@@ -278,6 +315,7 @@ export function BoardCenterPanel({
           viewerId={viewerId ?? ''}
           onAccept={onTradeAccept}
           onReject={onTradeReject}
+          onCounter={onTradeCounter}
           onCancel={onTradeCancel}
         />
       ) : (
@@ -286,7 +324,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'flex min-h-0 flex-1 overflow-hidden transition-opacity duration-300',
-              activeCard ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed || jailDecision || debtPending ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             {/* Game log */}
@@ -300,11 +338,16 @@ export function BoardCenterPanel({
                 className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
               >
-                {messages.map((msg) =>
-                  msg.kind === 'event' ? (
-                    <EventRow key={msg.id} text={msg.text} />
+                {log.map((entry) =>
+                  entry.kind === LogKind.EVENT ? (
+                    <EventRow key={entry.id} text={entry.text} />
                   ) : (
-                    <MessageRow key={msg.id} author={msg.author} token={msg.token} text={msg.text} />
+                    <MessageRow
+                      key={entry.id}
+                      author={entry.playerName}
+                      token={entry.playerToken}
+                      text={entry.text}
+                    />
                   ),
                 )}
                 <div ref={bottomRef} />
@@ -343,7 +386,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
-              activeCard ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed || jailDecision || debtPending ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             <div className="flex items-center gap-1.5">
@@ -390,10 +433,49 @@ export function BoardCenterPanel({
         </>
       )}
 
-      {/* ── Card flip overlay (sits above log; log fades behind it) ── */}
+      {/* ── Card flip overlay ── */}
       {activeCard && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} />
+        </div>
+      )}
+
+      {/* ── Deed card overlay (unowned purchasable property) ── */}
+      {activeDeed && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <DeedCard
+            deed={activeDeed}
+            onBuy={onBuy ?? (() => {})}
+            onAuction={onAuction ?? (() => {})}
+          />
+        </div>
+      )}
+
+      {/* ── Jail decision overlay ── */}
+      {jailDecision && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <JailModal
+            attempts={jailAttempts}
+            canPayFine={canPayJailFine}
+            canUseCard={canUseJailCard}
+            canRoll={canRollInJail}
+            onPayFine={onPayJailFine ?? (() => {})}
+            onUseCard={onUseJailCard ?? (() => {})}
+            onRoll={onRollInJail ?? (() => {})}
+          />
+        </div>
+      )}
+
+      {/* ── Debt overlay ── */}
+      {debtPending && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <DebtModal
+            amount={debtAmount}
+            canPay={canPayDebt}
+            onPay={onPayDebt ?? (() => {})}
+            onManage={onManageDebt ?? (() => {})}
+            onBankrupt={onDeclareBankruptcy ?? (() => {})}
+          />
         </div>
       )}
     </div>

@@ -1,1 +1,4 @@
-export * from './game-state.schema';
+export * from './game-state';
+export * from './permissions';
+export * from './commands';
+export * from './events';

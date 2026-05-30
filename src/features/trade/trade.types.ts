@@ -22,5 +22,6 @@ export type TradeWindowProps = {
   viewerId: string;
   onAccept?: () => void;
   onReject?: () => void;
+  onCounter?: () => void;
   onCancel?: () => void;
 };
