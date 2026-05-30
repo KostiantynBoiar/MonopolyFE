@@ -2,33 +2,32 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { BoardContainer, getWalkSteps } from '@/features/game-board';
+import { BoardContainer } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
 import { joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import type { SessionMember } from '@/features/lobby';
 import { BOARD } from '@/shared/config/board-layout';
-import { SpaceType } from '@/features/game-board/game-board.enums';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useSessionStore } from '@/stores/session-store';
 import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
-import type { GameState, ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
-import {
-  TurnPhase, LogKind, CardKind, CardEffectType, TradeStatus, AuctionTargetKind,
-} from '@/shared/protocol/game-state';
-import { getActivePlayers, getPlayerPositions } from '@/shared/protocol/selectors';
+import type { GameState, TradeState } from '@/shared/protocol/game-state.schema';
+import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
+import { CommandType } from '@/shared/protocol/commands';
+import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
-import { TOKEN_ORDER, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { TOKEN_ORDER } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
-import { getDeedInfo } from '@/features/deed';
 import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
+import { useGameDispatch } from './useGameDispatch';
+import type { WalkState } from './useGameDispatch';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -82,93 +81,7 @@ function deriveTradeParticipant(gs: GameState, playerId: string): TradeParticipa
   };
 }
 
-// ─── Mock card helpers ────────────────────────────────────────────────────────
-
-function makeMockCard(pos: number): ActiveCard | null {
-  const spaceType = BOARD[pos]?.type;
-
-  if (spaceType === SpaceType.CHANCE) {
-    return {
-      id: `card_chance_${Date.now()}`,
-      kind: CardKind.CHANCE,
-      text: 'Advance to GO. Collect M200.',
-      effect: { type: CardEffectType.ADVANCE_TO, position: 0, collectGoBonus: true },
-      drawerId: MOCK_GAME_STATE.viewerId,
-    };
-  }
-
-  if (spaceType === SpaceType.CHEST) {
-    return {
-      id: `card_chest_${Date.now()}`,
-      kind: CardKind.COMMUNITY_CHEST,
-      text: 'Bank error in your favor. Collect M200.',
-      effect: { type: CardEffectType.COLLECT, amount: 200 },
-      drawerId: MOCK_GAME_STATE.viewerId,
-    };
-  }
-
-  return null;
-}
-
-function makeMockTrade(gs: GameState): TradeState {
-  return {
-    id: `trade_${Date.now()}`,
-    proposerId: gs.viewerId,
-    targetId: 'bob',
-    proposerOffer: { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
-    targetRequest: { money: 0, positions: [5], getOutOfJailCards: 0 },
-    status: TradeStatus.PENDING,
-    expiresAt: new Date(Date.now() + 120_000).toISOString(),
-  };
-}
-
-// ─── Turn advance (pure) ──────────────────────────────────────────────────────
-
-function advanceTurn(prev: GameState): GameState {
-  const activePlayers = getActivePlayers(prev);
-  const currentIdx = activePlayers.findIndex((p) => p.id === prev.turn.currentPlayerId);
-  const nextPlayer = activePlayers[(currentIdx + 1) % activePlayers.length];
-  const isViewerNext = nextPlayer.id === prev.viewerId;
-
-  return {
-    ...prev,
-    turn: {
-      ...prev.turn,
-      phase: nextPlayer.jailStatus ? TurnPhase.JAIL_DECISION : TurnPhase.PRE_ROLL,
-      currentPlayerId: nextPlayer.id,
-      turnNumber: prev.turn.turnNumber + 1,
-      diceRoll: null,
-      doublesStreak: 0,
-      actionsAvailable: {
-        canRoll: isViewerNext,
-        canBuy: false,
-        canBuild: false,
-        canSellBuildings: false,
-        canMortgage: isViewerNext,
-        canUnmortgage: isViewerNext,
-        canTrade: isViewerNext,
-        canEndTurn: false,
-        canPayJailFine: isViewerNext && nextPlayer.jailStatus !== null,
-        canUseJailCard: isViewerNext && (nextPlayer.getOutOfJailCards ?? 0) > 0,
-        canBid: false,
-      },
-    },
-    activeCard: null,
-    log: [
-      ...prev.log,
-      {
-        id: `log_turn_${Date.now()}`,
-        kind: LogKind.EVENT,
-        text: `${nextPlayer.displayName}'s turn.`,
-        ts: new Date().toISOString(),
-      },
-    ],
-  };
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
-
-type WalkState = { playerId: string; currentPos: number };
 
 export default function GameRoomPage() {
   const router = useRouter();
@@ -275,9 +188,13 @@ export default function GameRoomPage() {
   const [walkState, setWalkState] = useState<WalkState | null>(null);
   const [activeDeed, setActiveDeed] = useState<DeedInfo | null>(null);
 
-  // Always-fresh ref so async callbacks (handleRoll) read current spaces without stale closure
+  // Always-fresh ref so async callbacks read current state without stale closure
   const gameStateRef = useRef(gameState);
   gameStateRef.current = gameState;
+
+  const { dispatch } = useGameDispatch(gameStateRef, {
+    setGameState, setIsRolling, setWalkState, setActiveDeed,
+  });
 
   // Tracks whether Bob's auto-bid in the current auction has already fired
   const autoBidFiredRef = useRef(false);
@@ -293,27 +210,8 @@ export default function GameRoomPage() {
     if (activeDeed !== null) return; // wait for buy/auction decision
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
-      setGameState((prev) => {
-        if (prev.turn.phase !== TurnPhase.POST_ROLL) return prev;
-        if (isViewerTurn) {
-          return {
-            ...prev,
-            turn: {
-              ...prev.turn,
-              phase: TurnPhase.PRE_ROLL,
-              diceRoll: null,
-              actionsAvailable: {
-                ...prev.turn.actionsAvailable,
-                canRoll: true,
-                canBuy: false,
-                canBuild: false,
-                canEndTurn: false,
-              },
-            },
-          };
-        }
-        return advanceTurn(prev);
-      });
+      // Simulate the server advancing the turn (mock-only).
+      dispatch({ type: CommandType.EndTurn });
     }, 1500);
     return () => clearTimeout(t);
   }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed]);
@@ -385,91 +283,10 @@ export default function GameRoomPage() {
     return () => clearInterval(interval);
   }, [gameState.turn.phase]);
 
-  const handleRoll = useCallback(async () => {
+  const handleRoll = useCallback(() => {
     if (!actions.canRoll || isRolling) return;
-    setIsRolling(true);
-
-    // Phase 1: dice roll animation delay
-    await new Promise<void>((r) => setTimeout(r, 1200));
-
-    const die1 = Math.ceil(Math.random() * 6);
-    const die2 = Math.ceil(Math.random() * 6);
-    const isDoubles = die1 === die2;
-    const total = die1 + die2;
-    const newPos = (viewer.position + total) % 40;
-
-    // Stop dice spin and show result — walk starts after the player reads it
-    setIsRolling(false);
-    setGameState((prev) => ({
-      ...prev,
-      turn: {
-        ...prev.turn,
-        diceRoll: { die1, die2, isDoubles },
-        actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false },
-      },
-    }));
-
-    await new Promise<void>((r) => setTimeout(r, 500));
-
-    // Phase 2: walk the token step-by-step
-    const steps = getWalkSteps(viewer.position, newPos);
-    await new Promise<void>((resolve) => {
-      let i = 0;
-      setWalkState({ playerId: viewer.id, currentPos: viewer.position });
-
-      function step() {
-        if (i >= steps.length) {
-          resolve();
-          return;
-        }
-        setWalkState({ playerId: viewer.id, currentPos: steps[i] });
-        i++;
-        setTimeout(step, WALK_STEP_DURATION_MS);
-      }
-
-      // Brief pause so the token renders at the start tile before transitioning
-      setTimeout(step, 80);
-    });
-
-    // Phase 3: commit final position and clear walk overlay
-    const drawnCard = makeMockCard(newPos);
-    const landedSpace = BOARD[newPos];
-    const isPurchasable =
-      landedSpace != null &&
-      (landedSpace.type === SpaceType.PROPERTY ||
-        landedSpace.type === SpaceType.RAILROAD ||
-        landedSpace.type === SpaceType.UTILITY);
-    const isUnowned = gameStateRef.current.spaces[newPos]?.ownerId === null;
-    const showDeed = !drawnCard && isPurchasable && isUnowned;
-
-    setWalkState(null);
-    setGameState((prev) => ({
-      ...prev,
-      players: prev.players.map((p) =>
-        p.id === prev.viewerId ? { ...p, position: newPos } : p,
-      ),
-      activeCard: drawnCard,
-      turn: {
-        ...prev.turn,
-        phase: drawnCard ? TurnPhase.DRAWING_CARD : TurnPhase.POST_ROLL,
-        doublesStreak: isDoubles ? prev.turn.doublesStreak + 1 : 0,
-        actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false, canEndTurn: false },
-      },
-      log: [
-        ...prev.log,
-        {
-          id: `log_roll_${Date.now()}`,
-          kind: LogKind.EVENT,
-          text: `${viewer.displayName} rolled ${die1} + ${die2} = ${total}${isDoubles ? ' (doubles!)' : ''}. Moved to ${BOARD[newPos]?.name ?? `space ${newPos}`}.`,
-          ts: new Date().toISOString(),
-        },
-      ],
-    }));
-
-    if (showDeed) {
-      setActiveDeed(getDeedInfo(newPos));
-    }
-  }, [actions.canRoll, isRolling, viewer]);
+    dispatch({ type: CommandType.RollDice });
+  }, [actions.canRoll, isRolling, dispatch]);
 
   const handleCardProceed = useCallback(() => {
     setGameState((prev) => ({
@@ -492,27 +309,9 @@ export default function GameRoomPage() {
 
   const handleBuy = useCallback(() => {
     if (!activeDeed) return;
-    const { position, price, name } = activeDeed;
     setActiveDeed(null);
-    setGameState((prev) => ({
-      ...prev,
-      players: prev.players.map((p) =>
-        p.id === prev.viewerId
-          ? { ...p, balance: p.balance - price }
-          : p,
-      ),
-      spaces: prev.spaces.map((s, i) => (i === position ? { ...s, ownerId: prev.viewerId } : s)),
-      log: [
-        ...prev.log,
-        {
-          id: `log_buy_${Date.now()}`,
-          kind: LogKind.EVENT,
-          text: `${viewer.displayName} bought ${name} for M${price}.`,
-          ts: new Date().toISOString(),
-        },
-      ],
-    }));
-  }, [activeDeed, viewer.displayName]);
+    dispatch({ type: CommandType.BuyProperty, position: activeDeed.position });
+  }, [activeDeed, dispatch]);
 
   // ── Start auction ──────────────────────────────────────────────────────────
 
@@ -550,62 +349,38 @@ export default function GameRoomPage() {
   // ── Place bid ──────────────────────────────────────────────────────────────
 
   const handleBid = useCallback((amount: number) => {
-    setGameState((prev) => {
-      if (!prev.auction || amount <= prev.auction.highestBid) return prev;
-      return {
-        ...prev,
-        auction: {
-          ...prev.auction,
-          bids: [...prev.auction.bids, { playerId: prev.viewerId, amount }],
-          highestBid: amount,
-          highestBidderId: prev.viewerId,
-        },
-        log: [
-          ...prev.log,
-          {
-            id: `log_bid_${Date.now()}`,
-            kind: LogKind.EVENT,
-            text: `${viewer.displayName} bids M${amount}.`,
-            ts: new Date().toISOString(),
-          },
-        ],
-      };
-    });
-  }, [viewer.displayName]);
+    dispatch({ type: CommandType.BidAuction, amount });
+  }, [dispatch]);
 
   // ── Trade handlers ─────────────────────────────────────────────────────────
 
   const handleTrade = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: makeMockTrade(prev),
-      turn: { ...prev.turn, phase: TurnPhase.TRADE_NEGOTIATION },
-    }));
-  }, []);
+    // Mock: open a pre-filled trade proposal with Bob.
+    // In real mode this would open a trade builder UI before dispatching StartTrade.
+    dispatch({
+      type:     CommandType.StartTrade,
+      targetId: 'bob',
+      offer:    { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
+      request:  { money: 0,   positions: [5],    getOutOfJailCards: 0 },
+    });
+  }, [dispatch]);
 
   const handleTradeAccept = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: prev.trade ? { ...prev.trade, status: TradeStatus.ACCEPTED } : null,
-      turn: { ...prev.turn, phase: TurnPhase.POST_ROLL },
-      log: [...prev.log, { id: `log_trade_accept_${Date.now()}`, kind: LogKind.EVENT, text: 'Trade accepted.', ts: new Date().toISOString() }],
-    }));
+    const tradeId = gameStateRef.current.trade?.id ?? '';
+    dispatch({ type: CommandType.AcceptTrade, tradeId });
     setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
-  }, []);
+  }, [dispatch, gameStateRef, setGameState]);
 
   const handleTradeReject = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      trade: prev.trade ? { ...prev.trade, status: TradeStatus.REJECTED } : null,
-      turn: { ...prev.turn, phase: TurnPhase.POST_ROLL },
-      log: [...prev.log, { id: `log_trade_reject_${Date.now()}`, kind: LogKind.EVENT, text: 'Trade rejected.', ts: new Date().toISOString() }],
-    }));
+    const tradeId = gameStateRef.current.trade?.id ?? '';
+    dispatch({ type: CommandType.RejectTrade, tradeId });
     setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
-  }, []);
+  }, [dispatch, gameStateRef, setGameState]);
 
+  // Cancel = proposer withdraws; no protocol command yet — direct mock mutation.
   const handleTradeCancel = useCallback(() => {
     setGameState((prev) => ({ ...prev, trade: null, turn: { ...prev.turn, phase: TurnPhase.PRE_ROLL } }));
-  }, []);
+  }, [setGameState]);
 
   const handleSendMessage = useCallback((text: string) => {
     const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);

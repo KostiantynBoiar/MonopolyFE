@@ -5,75 +5,79 @@ import type { TradeOffer } from './game-state';
 // ======================================================
 
 export enum CommandType {
-  RollDice     = 'roll_dice',
-  BuyProperty  = 'buy_property',
-  PassBuy      = 'pass_buy',
-  BuildHouse   = 'build_house',
-  SellHouse    = 'sell_house',
-  Mortgage     = 'mortgage',
-  Unmortgage   = 'unmortgage',
-  PayJailFine  = 'pay_jail_fine',
-  UseJailCard  = 'use_jail_card',
-  EndTurn      = 'end_turn',
-  ProposeTrade = 'propose_trade',
-  RespondTrade = 'respond_trade',
-  PlaceBid     = 'place_bid',
-  SendChat     = 'send_chat',
-  SendSticker  = 'send_sticker',
-}
+  RollDice    = 'roll_dice',
+  EndTurn     = 'end_turn',
 
-export type TradeResponse = 'accept' | 'reject' | 'counter';
+  BuyProperty = 'buy_property',
+
+  BuildHouse  = 'build_house',
+  BuildHotel  = 'build_hotel',
+
+  SellHouse   = 'sell_house',
+  SellHotel   = 'sell_hotel',
+
+  Mortgage    = 'mortgage',
+  Unmortgage  = 'unmortgage',
+
+  StartTrade  = 'start_trade',
+  AcceptTrade = 'accept_trade',
+  RejectTrade = 'reject_trade',
+
+  BidAuction  = 'bid_auction',
+
+  PayJailFine = 'pay_jail_fine',
+  UseJailCard = 'use_jail_card',
+}
 
 // ======================================================
 // COMMAND PAYLOADS
 // ======================================================
 
-export type RollDiceCommand     = { type: CommandType.RollDice };
-export type BuyPropertyCommand  = { type: CommandType.BuyProperty;  position: number };
-export type PassBuyCommand      = { type: CommandType.PassBuy };
-export type BuildHouseCommand   = { type: CommandType.BuildHouse;   position: number };
-export type SellHouseCommand    = { type: CommandType.SellHouse;    position: number };
-export type MortgageCommand     = { type: CommandType.Mortgage;     position: number };
-export type UnmortgageCommand   = { type: CommandType.Unmortgage;   position: number };
-export type PayJailFineCommand  = { type: CommandType.PayJailFine };
-export type UseJailCardCommand  = { type: CommandType.UseJailCard };
-export type EndTurnCommand      = { type: CommandType.EndTurn };
+export type RollDiceCommand    = { type: CommandType.RollDice };
+export type EndTurnCommand     = { type: CommandType.EndTurn };
 
-export type ProposeTradeCommand = {
-  type:          CommandType.ProposeTrade;
-  targetId:      string;
-  proposerOffer: TradeOffer;
-  targetRequest: TradeOffer;
+export type BuyPropertyCommand = { type: CommandType.BuyProperty; position: number };
+
+export type BuildHouseCommand  = { type: CommandType.BuildHouse;  position: number };
+export type BuildHotelCommand  = { type: CommandType.BuildHotel;  position: number };
+
+export type SellHouseCommand   = { type: CommandType.SellHouse;   position: number };
+export type SellHotelCommand   = { type: CommandType.SellHotel;   position: number };
+
+export type MortgageCommand    = { type: CommandType.Mortgage;    position: number };
+export type UnmortgageCommand  = { type: CommandType.Unmortgage;  position: number };
+
+export type StartTradeCommand  = {
+  type:         CommandType.StartTrade;
+  targetId:     string;
+  offer:        TradeOffer;   // what the proposer gives
+  request:      TradeOffer;   // what the proposer wants
 };
+export type AcceptTradeCommand = { type: CommandType.AcceptTrade; tradeId: string };
+export type RejectTradeCommand = { type: CommandType.RejectTrade; tradeId: string };
 
-export type RespondTradeCommand = {
-  type:          CommandType.RespondTrade;
-  tradeId:       string;
-  response:      TradeResponse;
-  counterOffer?: TradeOffer;
-};
+export type BidAuctionCommand  = { type: CommandType.BidAuction;  amount: number };
 
-export type PlaceBidCommand   = { type: CommandType.PlaceBid;    amount: number };
-export type SendChatCommand   = { type: CommandType.SendChat;    text: string };
-export type SendStickerCommand = { type: CommandType.SendSticker; stickerUrl: string };
+export type PayJailFineCommand = { type: CommandType.PayJailFine };
+export type UseJailCardCommand = { type: CommandType.UseJailCard };
 
 // ======================================================
 // DISCRIMINATED UNION
 // ======================================================
 
-export type GameCommand =
+export type ClientCommand =
   | RollDiceCommand
+  | EndTurnCommand
   | BuyPropertyCommand
-  | PassBuyCommand
   | BuildHouseCommand
+  | BuildHotelCommand
   | SellHouseCommand
+  | SellHotelCommand
   | MortgageCommand
   | UnmortgageCommand
+  | StartTradeCommand
+  | AcceptTradeCommand
+  | RejectTradeCommand
+  | BidAuctionCommand
   | PayJailFineCommand
-  | UseJailCardCommand
-  | EndTurnCommand
-  | ProposeTradeCommand
-  | RespondTradeCommand
-  | PlaceBidCommand
-  | SendChatCommand
-  | SendStickerCommand;
+  | UseJailCardCommand;
