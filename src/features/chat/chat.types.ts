@@ -73,6 +73,13 @@ export type BoardCenterPanelProps = {
   onPayJailFine?: () => void;
   onUseJailCard?: () => void;
   onRollInJail?: () => void;
+  // Debt overlay (shown when the viewer owes more than they can immediately pay)
+  debtPending?: boolean;
+  debtAmount?: number;
+  canPayDebt?: boolean;
+  onPayDebt?: () => void;
+  onManageDebt?: () => void;
+  onDeclareBankruptcy?: () => void;
   // Auction panel (swaps chat container when active)
   auctionState?: AuctionState | null;
   auctionPropertyName?: string;

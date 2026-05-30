@@ -13,7 +13,7 @@ import type { GameState, TradeOffer } from '@/shared/protocol/game-state';
 import { TurnPhase, TradeStatus } from '@/shared/protocol/game-state';
 import type { ServerMessage } from '@/shared/protocol/network';
 import { CommandType } from '@/shared/protocol/commands';
-import { getOwner } from '@/shared/protocol/selectors';
+import { getOwner, getPlayerProperties } from '@/shared/protocol/selectors';
 import { PRICE } from '@/shared/protocol/board-data';
 import { processCommand } from './command-processor';
 import { makeSnapshot, dispatchToMockServer } from './mock-server';
@@ -68,8 +68,24 @@ export function runOpponentTurn(state: GameState): ServerMessage[] {
     }
   }
 
-  // ── End the turn (POST_ROLL normally; MUST_PAY_RENT fallback until Phase 17) ─
-  if (s.turn.phase === TurnPhase.POST_ROLL || s.turn.phase === TurnPhase.MUST_PAY_RENT) {
+  // ── Debt: mortgage spare properties to raise cash, else go bankrupt ────────
+  if (s.turn.phase === TurnPhase.MUST_PAY_RENT && s.debt) {
+    let guard = 0;
+    while (s.debt && (s.players.find((p) => p.id === id)?.balance ?? 0) < s.debt.amount && guard++ < 30) {
+      const liquid = getPlayerProperties(s, id).find((p) => !p.isMortgaged && p.houses === 0 && !p.hotel);
+      if (!liquid) break;
+      step({ type: CommandType.Mortgage, position: liquid.position });
+    }
+    if (s.debt && (s.players.find((p) => p.id === id)?.balance ?? 0) >= s.debt.amount) {
+      step({ type: CommandType.PayDebt });
+    } else {
+      step({ type: CommandType.DeclareBankruptcy });   // advances the turn itself
+      return messages;
+    }
+  }
+
+  // ── End the turn ───────────────────────────────────────────────────────────
+  if (s.turn.phase === TurnPhase.POST_ROLL) {
     step({ type: CommandType.EndTurn });
   }
 

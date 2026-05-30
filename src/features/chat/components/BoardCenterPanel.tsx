@@ -8,6 +8,7 @@ import { CardFlipOverlay } from '@/features/card';
 import { TradeWindow } from '@/features/trade';
 import { DeedCard } from '@/features/deed';
 import { JailModal } from '@/features/jail';
+import { DebtModal } from '@/features/bankruptcy';
 import { AuctionPanel } from '@/features/auction';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
@@ -232,6 +233,12 @@ export function BoardCenterPanel({
   onPayJailFine,
   onUseJailCard,
   onRollInJail,
+  debtPending = false,
+  debtAmount = 0,
+  canPayDebt = false,
+  onPayDebt,
+  onManageDebt,
+  onDeclareBankruptcy,
   auctionState = null,
   auctionPropertyName = '',
   auctionPlayers = [],
@@ -317,7 +324,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'flex min-h-0 flex-1 overflow-hidden transition-opacity duration-300',
-              activeCard || activeDeed || jailDecision ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed || jailDecision || debtPending ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             {/* Game log */}
@@ -379,7 +386,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
-              activeCard || activeDeed || jailDecision ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed || jailDecision || debtPending ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             <div className="flex items-center gap-1.5">
@@ -455,6 +462,19 @@ export function BoardCenterPanel({
             onPayFine={onPayJailFine ?? (() => {})}
             onUseCard={onUseJailCard ?? (() => {})}
             onRoll={onRollInJail ?? (() => {})}
+          />
+        </div>
+      )}
+
+      {/* ── Debt overlay ── */}
+      {debtPending && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <DebtModal
+            amount={debtAmount}
+            canPay={canPayDebt}
+            onPay={onPayDebt ?? (() => {})}
+            onManage={onManageDebt ?? (() => {})}
+            onBankrupt={onDeclareBankruptcy ?? (() => {})}
           />
         </div>
       )}

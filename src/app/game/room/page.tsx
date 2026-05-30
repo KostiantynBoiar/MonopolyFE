@@ -299,6 +299,10 @@ export default function GameRoomPage() {
   const handleUnmortgage  = useCallback((position: number) => dispatch({ type: CommandType.Unmortgage, position }), [dispatch]);
   const handleSellProperty = useCallback((position: number) => dispatch({ type: CommandType.SellProperty, position }), [dispatch]);
 
+  // ── Debt resolution ──────────────────────────────────────────────────────
+  const handlePayDebt           = useCallback(() => dispatch({ type: CommandType.PayDebt }), [dispatch]);
+  const handleDeclareBankruptcy = useCallback(() => dispatch({ type: CommandType.DeclareBankruptcy }), [dispatch]);
+
   const handleTrade = useCallback(() => {
     dispatch({
       type: CommandType.StartTrade, targetId: 'bob',
@@ -415,6 +419,11 @@ export default function GameRoomPage() {
     gameState.turn.phase === TurnPhase.JAIL_DECISION &&
     gameState.turn.currentPlayerId === gameState.viewerId;
 
+  const debtPending =
+    gameState.turn.phase === TurnPhase.MUST_PAY_RENT &&
+    gameState.debt?.debtorId === gameState.viewerId;
+  const debtAmount = gameState.debt?.amount ?? 0;
+
   // Viewer's properties for the Manage modal.
   const manageProperties: ManageProperty[] = getPlayerProperties(gameState, gameState.viewerId).map((s) => ({
     position:    s.position,
@@ -463,6 +472,12 @@ export default function GameRoomPage() {
               onPayJailFine={handlePayJailFine}
               onUseJailCard={handleUseJailCard}
               onRollInJail={handleRollInJail}
+              debtPending={debtPending}
+              debtAmount={debtAmount}
+              canPayDebt={permissions.canPayDebt}
+              onPayDebt={handlePayDebt}
+              onManageDebt={handleManage}
+              onDeclareBankruptcy={handleDeclareBankruptcy}
               auctionState={gameState.auction}
               auctionPropertyName={auctionPropertyName}
               auctionPlayers={auctionPlayers}

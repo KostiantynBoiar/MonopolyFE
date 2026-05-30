@@ -8,7 +8,7 @@
 
 import type { GameState, ActiveCard, DeckState, GameEvent } from '@/shared/protocol/game-state';
 import {
-  TurnPhase, CardKind,
+  TurnPhase, CardKind, GameStatus,
   AuctionTargetKind, TradeStatus, GameEventType,
 } from '@/shared/protocol/game-state';
 import type { ClientCommand } from '@/shared/protocol/commands';
@@ -39,6 +39,20 @@ function spaceName(position: number): string {
 
 function advanceTurn(state: GameState): GameState {
   const current = state.players.find((p) => p.id === state.turn.currentPlayerId);
+
+  // Win condition: last solvent player standing.
+  const survivors = getActivePlayers(state);
+  if (survivors.length === 1) {
+    const winner = survivors[0];
+    return {
+      ...state,
+      status:     GameStatus.FINISHED,
+      winnerId:   winner.id,
+      finishedAt: new Date().toISOString(),
+      turn:       { ...state.turn, phase: TurnPhase.GAME_OVER },
+      log: log(state, { type: GameEventType.GameOver, winnerId: winner.id, winnerName: winner.displayName }),
+    };
+  }
 
   // Doubles grant another roll for the SAME player (unless they were jailed this turn).
   if (state.turn.extraTurn && current && !current.isBankrupt && !current.jailStatus) {
@@ -397,6 +411,61 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
           position: cmd.position, propertyName: spaceName(cmd.position), refund,
         }),
       };
+    }
+
+    case CommandType.PayDebt: {
+      const debt = state.debt;
+      if (!debt) return state;
+      const debtor = state.players.find((p) => p.id === debt.debtorId);
+      if (!debtor || debtor.balance < debt.amount) return state;  // raise cash first
+
+      const players = state.players.map((p) => {
+        if (p.id === debt.debtorId)                     return { ...p, balance: p.balance - debt.amount };
+        if (debt.creditorId && p.id === debt.creditorId) return { ...p, balance: p.balance + debt.amount };
+        return p;
+      });
+      return {
+        ...state,
+        players,
+        debt: null,
+        turn: { ...state.turn, phase: TurnPhase.POST_ROLL },   // resume the debtor's turn
+      };
+    }
+
+    case CommandType.DeclareBankruptcy: {
+      const debt = state.debt;
+      const debtorId   = debt?.debtorId ?? actorId;
+      const creditorId = debt?.creditorId ?? null;
+      const debtor = state.players.find((p) => p.id === debtorId);
+      if (!debtor) return state;
+
+      const players = state.players.map((p) => {
+        if (p.id === debtorId) {
+          return { ...p, isBankrupt: true, balance: 0, getOutOfJailCards: 0, jailStatus: null };
+        }
+        // Creditor inherits the bankrupt player's remaining cash.
+        if (creditorId && p.id === creditorId) {
+          return { ...p, balance: p.balance + debtor.balance, getOutOfJailCards: p.getOutOfJailCards + debtor.getOutOfJailCards };
+        }
+        return p;
+      });
+
+      // Properties pass to the creditor (player) or back to the bank; buildings cleared.
+      const spaces = state.spaces.map((s) =>
+        s.ownerId === debtorId
+          ? { ...s, ownerId: creditorId, houses: 0 as const, hotel: false }
+          : s,
+      );
+
+      const bankrupted: GameState = {
+        ...state,
+        players,
+        spaces,
+        debt: null,
+        log: log(state, { type: GameEventType.Bankrupted, playerId: debtorId, playerName: debtor.displayName, creditorId }),
+      };
+      // Advance the turn (also runs the win-condition check).
+      return advanceTurn(bankrupted);
     }
 
     case CommandType.BidAuction: {

@@ -26,6 +26,9 @@ export enum CommandType {
 
   SellProperty = 'sell_property',
 
+  PayDebt           = 'pay_debt',
+  DeclareBankruptcy = 'declare_bankruptcy',
+
   BidAuction  = 'bid_auction',
 
   PayJailFine = 'pay_jail_fine',
@@ -70,6 +73,9 @@ export type CounterTradeCommand = {
 
 export type SellPropertyCommand = { type: CommandType.SellProperty; position: number };
 
+export type PayDebtCommand           = { type: CommandType.PayDebt };
+export type DeclareBankruptcyCommand = { type: CommandType.DeclareBankruptcy };
+
 export type BidAuctionCommand  = { type: CommandType.BidAuction;  amount: number };
 
 export type PayJailFineCommand = { type: CommandType.PayJailFine };
@@ -96,6 +102,8 @@ export type ClientCommand =
   | RejectTradeCommand
   | CounterTradeCommand
   | SellPropertyCommand
+  | PayDebtCommand
+  | DeclareBankruptcyCommand
   | BidAuctionCommand
   | PayJailFineCommand
   | UseJailCardCommand

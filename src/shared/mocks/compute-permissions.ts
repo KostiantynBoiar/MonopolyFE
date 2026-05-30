@@ -87,5 +87,11 @@ export function computePermissions(state: GameState): PlayerPermissions {
       inJail && viewer.getOutOfJailCards > 0,
 
     canRollInJail:  isViewerTurn && phase === TurnPhase.JAIL_DECISION && inJail,
+
+    canPayDebt: phase === TurnPhase.MUST_PAY_RENT &&
+      state.debt?.debtorId === state.viewerId && viewer.balance >= state.debt.amount,
+
+    canDeclareBankruptcy: phase === TurnPhase.MUST_PAY_RENT &&
+      state.debt?.debtorId === state.viewerId,
   };
 }
