@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
 import type { SnapshotMessage } from '@/shared/protocol/network';
 import { ServerEventType } from '@/shared/protocol/network';
-import { dispatchToMockServer } from '@/shared/mocks/mock-server';
+import { createTransport } from '@/shared/transport';
 import { getWalkSteps } from '@/features/game-board';
 import { getDeedInfo } from '@/features/deed';
 import { WALK_STEP_DURATION_MS } from '@/shared/config/constants';
@@ -23,11 +23,14 @@ function delay(ms: number): Promise<void> {
  * callbacks — no stale-closure problem, no prop threading.
  *
  * Flow:
- *   ClientCommand → dispatchToMockServer → ServerMessage[] → applyServerMessage
+ *   ClientCommand → transport.send → ServerMessage[] → applyServerMessage
+ * The transport is the mock by default; a real socket would deliver messages
+ * asynchronously via onMessage (subscribed at the app level).
  */
 export function useGameDispatch() {
   const { setSnapshot, applyServerMessage } = useGameStore();
   const { setIsRolling, setWalkState, setActiveDeed } = useUiStore();
+  const transport = useMemo(() => createTransport(), []);
 
   const dispatch = useCallback(
     async (cmd: ClientCommand): Promise<void> => {
@@ -39,7 +42,7 @@ export function useGameDispatch() {
         const { snapshot } = useGameStore.getState();
         setIsRolling(true);
 
-        const messages  = dispatchToMockServer(snapshot.game, cmd);
+        const messages  = transport.send(snapshot.game, cmd);
         const snapshotMsg = messages.find(
           (m): m is SnapshotMessage => m.type === ServerEventType.Snapshot,
         );
@@ -97,10 +100,10 @@ export function useGameDispatch() {
 
       // ── All other commands ──────────────────────────────────────────────────
       const { snapshot } = useGameStore.getState();
-      const messages     = dispatchToMockServer(snapshot.game, cmd);
+      const messages     = transport.send(snapshot.game, cmd);
       for (const msg of messages) applyServerMessage(msg);
     },
-    [setSnapshot, applyServerMessage, setIsRolling, setWalkState, setActiveDeed],
+    [transport, setSnapshot, applyServerMessage, setIsRolling, setWalkState, setActiveDeed],
   );
 
   return { dispatch };
