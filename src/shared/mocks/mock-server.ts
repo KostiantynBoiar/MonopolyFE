@@ -162,14 +162,3 @@ export function startAuctionEvent(state: GameState, position: number): SnapshotM
   };
   return makeSnapshot(next);   // computePermissions sets canBidAuction:true
 }
-
-export function resetViewerTurnEvent(state: GameState): SnapshotMessage {
-  // A jailed viewer must make a jail decision, not roll normally.
-  const viewer = state.players.find((p) => p.id === state.viewerId);
-  const phase  = viewer?.jailStatus ? TurnPhase.JAIL_DECISION : TurnPhase.PRE_ROLL;
-  const next: GameState = {
-    ...state,
-    turn: { ...state.turn, phase, diceRoll: null },
-  };
-  return makeSnapshot(next);
-}

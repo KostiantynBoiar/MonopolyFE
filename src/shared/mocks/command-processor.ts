@@ -28,10 +28,6 @@ function log(state: GameState, ...events: GameEvent[]): GameState['log'] {
   return appendEvents(state.log, ...events);
 }
 
-function viewerName(state: GameState): string {
-  return playerName(state, state.viewerId);
-}
-
 function playerName(state: GameState, playerId: string): string {
   return state.players.find((p) => p.id === playerId)?.displayName ?? 'Player';
 }
@@ -98,12 +94,15 @@ function drawForSpace(
 // ── Main processor ────────────────────────────────────────────────────────────
 
 export function processCommand(state: GameState, cmd: ClientCommand): GameState {
+  // Most commands act as whoever's turn it is — the viewer OR an opponent (Phase 14).
+  // Auction bids and trade proposal/response stay viewer/target-driven (see those cases).
+  const actorId   = state.turn.currentPlayerId;
+  const actorName = playerName(state, actorId);
+
   switch (cmd.type) {
 
     case CommandType.RollDice: {
-      // Roll for whoever's turn it is (viewer or opponent — Phase 14 drives opponents).
-      const actorId = state.turn.currentPlayerId;
-      const actor   = state.players.find((p) => p.id === actorId);
+      const actor = state.players.find((p) => p.id === actorId);
       if (!actor) return state;
 
       const die1 = Math.ceil(Math.random() * 6);
@@ -167,13 +166,13 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance - price } : p,
+          p.id === actorId ? { ...p, balance: p.balance - price } : p,
         ),
         spaces: state.spaces.map((s, i) =>
-          i === cmd.position ? { ...s, ownerId: state.viewerId } : s,
+          i === cmd.position ? { ...s, ownerId: actorId } : s,
         ),
         log: log(state, {
-          type: GameEventType.PropertyBought, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.PropertyBought, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), price,
         }),
       };
@@ -185,7 +184,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance - cost } : p,
+          p.id === actorId ? { ...p, balance: p.balance - cost } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position && !s.hotel && s.houses < 4
@@ -193,7 +192,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             : s,
         ),
         log: log(state, {
-          type: GameEventType.HouseBuilt, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.HouseBuilt, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), cost,
         }),
       };
@@ -205,7 +204,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance - cost } : p,
+          p.id === actorId ? { ...p, balance: p.balance - cost } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position && s.houses === 4
@@ -213,7 +212,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             : s,
         ),
         log: log(state, {
-          type: GameEventType.HotelBuilt, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.HotelBuilt, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), cost,
         }),
       };
@@ -225,7 +224,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance + refund } : p,
+          p.id === actorId ? { ...p, balance: p.balance + refund } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position && s.houses > 0
@@ -233,7 +232,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             : s,
         ),
         log: log(state, {
-          type: GameEventType.HouseSold, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.HouseSold, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), refund,
         }),
       };
@@ -245,7 +244,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance + refund } : p,
+          p.id === actorId ? { ...p, balance: p.balance + refund } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position && s.hotel
@@ -253,7 +252,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
             : s,
         ),
         log: log(state, {
-          type: GameEventType.HotelSold, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.HotelSold, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), refund,
         }),
       };
@@ -265,13 +264,13 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance + mortgageValue } : p,
+          p.id === actorId ? { ...p, balance: p.balance + mortgageValue } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, isMortgaged: true } : s,
         ),
         log: log(state, {
-          type: GameEventType.Mortgaged, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.Mortgaged, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), amount: mortgageValue,
         }),
       };
@@ -283,13 +282,13 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance - unmortgageCost } : p,
+          p.id === actorId ? { ...p, balance: p.balance - unmortgageCost } : p,
         ),
         spaces: state.spaces.map((s, i) =>
           i === cmd.position ? { ...s, isMortgaged: false } : s,
         ),
         log: log(state, {
-          type: GameEventType.Unmortgaged, playerId: state.viewerId, playerName: viewerName(state),
+          type: GameEventType.Unmortgaged, playerId: actorId, playerName: actorName,
           position: cmd.position, propertyName: spaceName(cmd.position), cost: unmortgageCost,
         }),
       };
@@ -300,7 +299,7 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         ...state,
         trade: {
           id:            `trade_${Date.now()}`,
-          proposerId:    state.viewerId,
+          proposerId:    actorId,
           targetId:      cmd.targetId,
           proposerOffer: cmd.offer,
           targetRequest: cmd.request,
@@ -327,17 +326,21 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       };
 
     case CommandType.BidAuction: {
+      // The human (viewer) is the bidder — even during an auction triggered by an
+      // opponent's decline, where currentPlayerId is the opponent. Opponents bid via
+      // the mock-server auction tick, not this command.
       if (!state.auction || cmd.amount <= state.auction.highestBid) return state;
+      const bidderId = state.viewerId;
       return {
         ...state,
         auction: {
           ...state.auction,
-          bids:            [...state.auction.bids, { playerId: state.viewerId, amount: cmd.amount }],
+          bids:            [...state.auction.bids, { playerId: bidderId, amount: cmd.amount }],
           highestBid:      cmd.amount,
-          highestBidderId: state.viewerId,
+          highestBidderId: bidderId,
         },
         log: log(state, {
-          type: GameEventType.AuctionBid, playerId: state.viewerId, playerName: viewerName(state), amount: cmd.amount,
+          type: GameEventType.AuctionBid, playerId: bidderId, playerName: playerName(state, bidderId), amount: cmd.amount,
         }),
       };
     }
@@ -346,11 +349,11 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, balance: p.balance - 50, jailStatus: null } : p,
+          p.id === actorId ? { ...p, balance: p.balance - 50, jailStatus: null } : p,
         ),
         turn: { ...state.turn, phase: TurnPhase.PRE_ROLL },
         log:  log(state, {
-          type: GameEventType.LeftJail, playerId: state.viewerId, playerName: viewerName(state), method: 'fine',
+          type: GameEventType.LeftJail, playerId: actorId, playerName: actorName, method: 'fine',
         }),
       };
 
@@ -358,19 +361,18 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       return {
         ...state,
         players: state.players.map((p) =>
-          p.id === state.viewerId
+          p.id === actorId
             ? { ...p, getOutOfJailCards: p.getOutOfJailCards - 1, jailStatus: null }
             : p,
         ),
         turn: { ...state.turn, phase: TurnPhase.PRE_ROLL },
         log:  log(state, {
-          type: GameEventType.LeftJail, playerId: state.viewerId, playerName: viewerName(state), method: 'card',
+          type: GameEventType.LeftJail, playerId: actorId, playerName: actorName, method: 'card',
         }),
       };
 
     case CommandType.RollInJail: {
-      const actorId = state.turn.currentPlayerId;
-      const actor   = state.players.find((p) => p.id === actorId);
+      const actor = state.players.find((p) => p.id === actorId);
       if (!actor || !actor.jailStatus) return state;
 
       const die1 = Math.ceil(Math.random() * 6);

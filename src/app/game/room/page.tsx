@@ -19,8 +19,9 @@ import type { GameState, TradeState } from '@/shared/protocol/game-state.schema'
 import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import {
-  tickAuction, advanceTurnEvent, startAuctionEvent, resetViewerTurnEvent,
+  tickAuction, advanceTurnEvent, startAuctionEvent,
 } from '@/shared/mocks/mock-server';
+import { runOpponentTurn } from '@/shared/mocks/opponent-ai';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
@@ -174,21 +175,18 @@ export default function GameRoomPage() {
   // ── Game board mode ───────────────────────────────────────────────────────
 
   const autoBidFiredRef = useRef(false);
+  const opponentTurnRef = useRef(false);
 
   const { dispatch } = useGameDispatch();
 
-  // Auto-advance after post_roll — simulates server turn management
+  // End the viewer's turn automatically after POST_ROLL (no explicit End Turn button yet).
+  // advanceTurnEvent re-rolls the viewer on doubles (extraTurn) or hands off to the next player.
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
+    if (gameState.turn.currentPlayerId !== gameState.viewerId) return;
     if (activeDeed !== null) return;
     const t = setTimeout(() => {
-      // Re-read isViewerTurn from fresh store state — never use a stale closure value
-      // captured at effect time, because the turn may have changed during the 1500 ms window.
-      const current = useGameStore.getState().snapshot.game;
-      const isViewerTurnNow = current.turn.currentPlayerId === current.viewerId;
-      applyServerMessage(
-        isViewerTurnNow ? resetViewerTurnEvent(current) : advanceTurnEvent(current),
-      );
+      applyServerMessage(advanceTurnEvent(useGameStore.getState().snapshot.game));
     }, 1500);
     return () => clearTimeout(t);
   }, [
@@ -196,6 +194,27 @@ export default function GameRoomPage() {
     gameState.turn.currentPlayerId, gameState.viewerId,
     activeDeed, applyServerMessage,
   ]);
+
+  // Drive an opponent's whole turn (roll → move → resolve → buy → end), playing the
+  // resulting snapshots out on a timer so the human watches it happen.
+  useEffect(() => {
+    const isOpponentTurn =
+      gameState.turn.currentPlayerId !== gameState.viewerId &&
+      (gameState.turn.phase === TurnPhase.PRE_ROLL || gameState.turn.phase === TurnPhase.JAIL_DECISION);
+    if (!isOpponentTurn || opponentTurnRef.current) return;
+
+    opponentTurnRef.current = true;
+    const messages = runOpponentTurn(useGameStore.getState().snapshot.game);
+    let i = 0;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const playNext = () => {
+      if (i >= messages.length) { opponentTurnRef.current = false; return; }
+      applyServerMessage(messages[i++]);
+      timers.push(setTimeout(playNext, 900));
+    };
+    timers.push(setTimeout(playNext, 700));
+    return () => { timers.forEach(clearTimeout); opponentTurnRef.current = false; };
+  }, [gameState.turn.currentPlayerId, gameState.turn.phase, gameState.viewerId, applyServerMessage]);
 
   // Auction countdown — simulates server ticks
   useEffect(() => {
