@@ -16,7 +16,7 @@ function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps
     return <CornerTile variant={space.corner!} />;
   }
   if (space.type === 'property') {
-    const houses = ownership?.hasHotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
+    const houses = ownership?.hotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
     return (
       <PropertyTile
         name={space.name}

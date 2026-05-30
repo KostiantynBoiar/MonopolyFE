@@ -1,3 +1,5 @@
+import type { ActionSet } from './permissions';
+
 // ======================================================
 // PRIMITIVES
 // ======================================================
@@ -9,27 +11,27 @@ export type IsoDateString = string;
 // ======================================================
 
 export enum TokenColor {
-  Blue   = 'blue',
-  Red    = 'red',
-  Green  = 'green',
-  Yellow = 'yellow',
-  Orange = 'orange',
-  Pink   = 'pink',
-  Cyan   = 'cyan',
-  Brown  = 'brown',
-  Gold   = 'gold',
-  Ink    = 'ink',
+  BLUE   = 'blue',
+  RED    = 'red',
+  GREEN  = 'green',
+  YELLOW = 'yellow',
+  ORANGE = 'orange',
+  PINK   = 'pink',
+  CYAN   = 'cyan',
+  BROWN  = 'brown',
+  GOLD   = 'gold',
+  INK    = 'ink',
 }
 
 export enum PropertyColor {
-  Brown  = 'brown',
-  Cyan   = 'cyan',
-  Pink   = 'pink',
-  Orange = 'orange',
-  Red    = 'red',
-  Yellow = 'yellow',
-  Green  = 'green',
-  Blue   = 'blue',
+  BROWN  = 'brown',
+  CYAN   = 'cyan',
+  PINK   = 'pink',
+  ORANGE = 'orange',
+  RED    = 'red',
+  YELLOW = 'yellow',
+  GREEN  = 'green',
+  BLUE   = 'blue',
 }
 
 // ======================================================
@@ -37,21 +39,21 @@ export enum PropertyColor {
 // ======================================================
 
 export enum GameStatus {
-  Lobby      = 'lobby',
-  InProgress = 'in_progress',
-  Finished   = 'finished',
+  LOBBY       = 'lobby',
+  IN_PROGRESS = 'in_progress',
+  FINISHED    = 'finished',
 }
 
 export enum TurnPhase {
-  PreRoll            = 'pre_roll',
-  JailDecision       = 'jail_decision',
-  PostRoll           = 'post_roll',
-  MustPayRent        = 'must_pay_rent',
-  DrawingCard        = 'drawing_card',
-  Auction            = 'auction',
-  TradeNegotiation   = 'trade_negotiation',
-  BankruptResolution = 'bankrupt_resolution',
-  GameOver           = 'game_over',
+  PRE_ROLL             = 'pre_roll',
+  JAIL_DECISION        = 'jail_decision',
+  POST_ROLL            = 'post_roll',
+  MUST_PAY_RENT        = 'must_pay_rent',
+  DRAWING_CARD         = 'drawing_card',
+  AUCTION              = 'auction',
+  TRADE_NEGOTIATION    = 'trade_negotiation',
+  BANKRUPT_RESOLUTION  = 'bankrupt_resolution',
+  GAME_OVER            = 'game_over',
 }
 
 // ======================================================
@@ -59,22 +61,22 @@ export enum TurnPhase {
 // ======================================================
 
 export enum BoardSpaceType {
-  Go             = 'go',
-  Property       = 'property',
-  Railroad       = 'railroad',
-  Utility        = 'utility',
-  Chance         = 'chance',
-  CommunityChest = 'community_chest',
-  IncomeTax      = 'income_tax',
-  LuxuryTax      = 'luxury_tax',
-  Jail           = 'jail',
-  FreeParking    = 'free_parking',
-  GoToJail       = 'go_to_jail',
+  GO              = 'go',
+  PROPERTY        = 'property',
+  RAILROAD        = 'railroad',
+  UTILITY         = 'utility',
+  CHANCE          = 'chance',
+  COMMUNITY_CHEST = 'community_chest',
+  INCOME_TAX      = 'income_tax',
+  LUXURY_TAX      = 'luxury_tax',
+  JAIL            = 'jail',
+  FREE_PARKING    = 'free_parking',
+  GO_TO_JAIL      = 'go_to_jail',
 }
 
 export enum AdvanceToNearestSpaceType {
-  Railroad = 'railroad',
-  Utility  = 'utility',
+  RAILROAD = 'railroad',
+  UTILITY  = 'utility',
 }
 
 // ======================================================
@@ -82,9 +84,9 @@ export enum AdvanceToNearestSpaceType {
 // ======================================================
 
 export enum AuctionTargetKind {
-  Property = 'property',
-  House    = 'house',
-  Hotel    = 'hotel',
+  PROPERTY = 'property',
+  HOUSE    = 'house',
+  HOTEL    = 'hotel',
 }
 
 // ======================================================
@@ -92,8 +94,8 @@ export enum AuctionTargetKind {
 // ======================================================
 
 export enum DebtCreditorType {
-  Bank   = 'bank',
-  Player = 'player',
+  BANK   = 'bank',
+  PLAYER = 'player',
 }
 
 // ======================================================
@@ -101,21 +103,21 @@ export enum DebtCreditorType {
 // ======================================================
 
 export enum CardKind {
-  Chance        = 'chance',
-  CommunityChest = 'community_chest',
+  CHANCE         = 'chance',
+  COMMUNITY_CHEST = 'community_chest',
 }
 
 export enum CardEffectType {
-  AdvanceTo             = 'advance_to',
-  AdvanceToNearest      = 'advance_to_nearest',
-  GoToJail              = 'go_to_jail',
-  GoBack                = 'go_back',
-  Collect               = 'collect',
-  Pay                   = 'pay',
-  CollectFromEachPlayer = 'collect_from_each_player',
-  PayEachPlayer         = 'pay_each_player',
-  GetOutOfJailFree      = 'get_out_of_jail_free',
-  Repairs               = 'repairs',
+  ADVANCE_TO              = 'advance_to',
+  ADVANCE_TO_NEAREST      = 'advance_to_nearest',
+  GO_TO_JAIL              = 'go_to_jail',
+  GO_BACK                 = 'go_back',
+  COLLECT                 = 'collect',
+  PAY                     = 'pay',
+  COLLECT_FROM_EACH_PLAYER = 'collect_from_each_player',
+  PAY_EACH_PLAYER         = 'pay_each_player',
+  GET_OUT_OF_JAIL_FREE    = 'get_out_of_jail_free',
+  REPAIRS                 = 'repairs',
 }
 
 // ======================================================
@@ -123,11 +125,11 @@ export enum CardEffectType {
 // ======================================================
 
 export enum TradeStatus {
-  Pending   = 'pending',
-  Countered = 'countered',
-  Accepted  = 'accepted',
-  Rejected  = 'rejected',
-  Cancelled = 'cancelled',
+  PENDING   = 'pending',
+  COUNTERED = 'countered',
+  ACCEPTED  = 'accepted',
+  REJECTED  = 'rejected',
+  CANCELLED = 'cancelled',
 }
 
 // ======================================================
@@ -135,9 +137,9 @@ export enum TradeStatus {
 // ======================================================
 
 export enum LogKind {
-  Event   = 'event',
-  Chat    = 'chat',
-  Sticker = 'sticker',
+  EVENT   = 'event',
+  CHAT    = 'chat',
+  STICKER = 'sticker',
 }
 
 // ======================================================
@@ -177,20 +179,20 @@ export type UtilityDefinition = {
 };
 
 export type BoardSpaceDefinition =
-  | { position: number; type: BoardSpaceType.Property;  property: PropertyDefinition }
-  | { position: number; type: BoardSpaceType.Railroad;  railroad: RailroadDefinition }
-  | { position: number; type: BoardSpaceType.Utility;   utility:  UtilityDefinition  }
+  | { position: number; type: BoardSpaceType.PROPERTY;  property: PropertyDefinition }
+  | { position: number; type: BoardSpaceType.RAILROAD;  railroad: RailroadDefinition }
+  | { position: number; type: BoardSpaceType.UTILITY;   utility:  UtilityDefinition  }
   | {
       position: number;
       type:
-        | BoardSpaceType.Go
-        | BoardSpaceType.Chance
-        | BoardSpaceType.CommunityChest
-        | BoardSpaceType.IncomeTax
-        | BoardSpaceType.LuxuryTax
-        | BoardSpaceType.Jail
-        | BoardSpaceType.FreeParking
-        | BoardSpaceType.GoToJail;
+        | BoardSpaceType.GO
+        | BoardSpaceType.CHANCE
+        | BoardSpaceType.COMMUNITY_CHEST
+        | BoardSpaceType.INCOME_TAX
+        | BoardSpaceType.LUXURY_TAX
+        | BoardSpaceType.JAIL
+        | BoardSpaceType.FREE_PARKING
+        | BoardSpaceType.GO_TO_JAIL;
       name: string;
     };
 
@@ -234,7 +236,6 @@ export type PlayerState = {
   balance:            number;
   getOutOfJailCards:  number;
   jailStatus:         JailStatus | null;
-  doublesStreak:      number;
   isBankrupt:         boolean;
   isConnected:        boolean;
 };
@@ -250,12 +251,14 @@ export type DiceRoll = {
 };
 
 export type TurnState = {
-  phase:           TurnPhase;
-  currentPlayerId: string;
-  turnNumber:      number;
-  roundNumber:     number;
-  diceRoll:        DiceRoll | null;
-  extraTurn:       boolean;
+  phase:            TurnPhase;
+  currentPlayerId:  string;
+  turnNumber:       number;
+  roundNumber:      number;
+  diceRoll:         DiceRoll | null;
+  doublesStreak:    number;
+  extraTurn:        boolean;
+  actionsAvailable: ActionSet;
 };
 
 // ======================================================
@@ -279,9 +282,9 @@ export type AuctionBid = {
 };
 
 export type AuctionTarget =
-  | { kind: AuctionTargetKind.Property; position: number }
-  | { kind: AuctionTargetKind.House }
-  | { kind: AuctionTargetKind.Hotel };
+  | { kind: AuctionTargetKind.PROPERTY; position: number }
+  | { kind: AuctionTargetKind.HOUSE }
+  | { kind: AuctionTargetKind.HOTEL };
 
 export type AuctionState = {
   target:           AuctionTarget;
@@ -316,16 +319,16 @@ export type TradeState = {
 // ======================================================
 
 export type CardEffect =
-  | { type: CardEffectType.AdvanceTo;             position: number; collectGoBonus: boolean }
-  | { type: CardEffectType.AdvanceToNearest;      spaceType: AdvanceToNearestSpaceType; payDouble: boolean }
-  | { type: CardEffectType.GoToJail }
-  | { type: CardEffectType.GoBack;                spaces: number }
-  | { type: CardEffectType.Collect;               amount: number }
-  | { type: CardEffectType.Pay;                   amount: number }
-  | { type: CardEffectType.CollectFromEachPlayer; amount: number }
-  | { type: CardEffectType.PayEachPlayer;         amount: number }
-  | { type: CardEffectType.GetOutOfJailFree }
-  | { type: CardEffectType.Repairs;               perHouse: number; perHotel: number };
+  | { type: CardEffectType.ADVANCE_TO;              position: number; collectGoBonus: boolean }
+  | { type: CardEffectType.ADVANCE_TO_NEAREST;      spaceType: AdvanceToNearestSpaceType; payDouble: boolean }
+  | { type: CardEffectType.GO_TO_JAIL }
+  | { type: CardEffectType.GO_BACK;                 spaces: number }
+  | { type: CardEffectType.COLLECT;                 amount: number }
+  | { type: CardEffectType.PAY;                     amount: number }
+  | { type: CardEffectType.COLLECT_FROM_EACH_PLAYER; amount: number }
+  | { type: CardEffectType.PAY_EACH_PLAYER;         amount: number }
+  | { type: CardEffectType.GET_OUT_OF_JAIL_FREE }
+  | { type: CardEffectType.REPAIRS;                 perHouse: number; perHotel: number };
 
 export type ActiveCard = {
   id:       string;
@@ -336,9 +339,9 @@ export type ActiveCard = {
 };
 
 export type DeckState = {
-  chance:                 string[];
-  communityChest:         string[];
-  discardedChance:        string[];
+  chance:                  string[];
+  communityChest:          string[];
+  discardedChance:         string[];
   discardedCommunityChest: string[];
 };
 
@@ -357,14 +360,14 @@ export type BankruptcyState = {
 // ======================================================
 
 export type LogEntry = {
-  id:          string;
-  kind:        LogKind;
-  playerId?:   string;
-  playerName?: string;
+  id:           string;
+  kind:         LogKind;
+  playerId?:    string;
+  playerName?:  string;
   playerToken?: TokenColor;
-  text:        string;
-  stickerUrl?: string;
-  ts:          IsoDateString;
+  text:         string;
+  stickerUrl?:  string;
+  ts:           IsoDateString;
 };
 
 // ======================================================

@@ -17,6 +17,10 @@ import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, ActiveCard, TradeState } from '@/shared/protocol/game-state.schema';
+import {
+  TurnPhase, LogKind, CardKind, CardEffectType, TradeStatus, AuctionTargetKind,
+} from '@/shared/protocol/game-state';
+import { getActivePlayers, getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
@@ -35,11 +39,11 @@ function deriveSidebarPlayers(gs: GameState): Player[] {
     balance: p.balance,
     position: p.position,
     token: p.token,
-    ownedPositions: p.ownedPositions,
+    ownedPositions: getPlayerPositions(gs, p.id),
     isActive: p.id === gs.turn.currentPlayerId,
     isBankrupt: p.isBankrupt,
     inJail: p.jailStatus !== null,
-    jailTurns: p.jailStatus?.turnsRemaining,
+    jailTurns: p.jailStatus?.attempts,
   }));
 }
 
@@ -74,7 +78,7 @@ function deriveTradeParticipant(gs: GameState, playerId: string): TradeParticipa
     name: p.displayName,
     token: p.token,
     balance: p.balance,
-    ownedPositions: p.ownedPositions,
+    ownedPositions: getPlayerPositions(gs, p.id),
   };
 }
 
@@ -86,9 +90,9 @@ function makeMockCard(pos: number): ActiveCard | null {
   if (spaceType === SpaceType.CHANCE) {
     return {
       id: `card_chance_${Date.now()}`,
-      kind: 'chance',
+      kind: CardKind.CHANCE,
       text: 'Advance to GO. Collect M200.',
-      effect: { type: 'advance_to', position: 0, collectGoBonus: true },
+      effect: { type: CardEffectType.ADVANCE_TO, position: 0, collectGoBonus: true },
       drawerId: MOCK_GAME_STATE.viewerId,
     };
   }
@@ -96,9 +100,9 @@ function makeMockCard(pos: number): ActiveCard | null {
   if (spaceType === SpaceType.CHEST) {
     return {
       id: `card_chest_${Date.now()}`,
-      kind: 'community_chest',
+      kind: CardKind.COMMUNITY_CHEST,
       text: 'Bank error in your favor. Collect M200.',
-      effect: { type: 'collect', amount: 200 },
+      effect: { type: CardEffectType.COLLECT, amount: 200 },
       drawerId: MOCK_GAME_STATE.viewerId,
     };
   }
@@ -113,7 +117,7 @@ function makeMockTrade(gs: GameState): TradeState {
     targetId: 'bob',
     proposerOffer: { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
     targetRequest: { money: 0, positions: [5], getOutOfJailCards: 0 },
-    status: 'pending',
+    status: TradeStatus.PENDING,
     expiresAt: new Date(Date.now() + 120_000).toISOString(),
   };
 }
@@ -121,7 +125,7 @@ function makeMockTrade(gs: GameState): TradeState {
 // ─── Turn advance (pure) ──────────────────────────────────────────────────────
 
 function advanceTurn(prev: GameState): GameState {
-  const activePlayers = prev.players.filter((p) => !p.isBankrupt);
+  const activePlayers = getActivePlayers(prev);
   const currentIdx = activePlayers.findIndex((p) => p.id === prev.turn.currentPlayerId);
   const nextPlayer = activePlayers[(currentIdx + 1) % activePlayers.length];
   const isViewerNext = nextPlayer.id === prev.viewerId;
@@ -130,7 +134,7 @@ function advanceTurn(prev: GameState): GameState {
     ...prev,
     turn: {
       ...prev.turn,
-      phase: nextPlayer.jailStatus ? 'jail_decision' : 'pre_roll',
+      phase: nextPlayer.jailStatus ? TurnPhase.JAIL_DECISION : TurnPhase.PRE_ROLL,
       currentPlayerId: nextPlayer.id,
       turnNumber: prev.turn.turnNumber + 1,
       diceRoll: null,
@@ -139,6 +143,7 @@ function advanceTurn(prev: GameState): GameState {
         canRoll: isViewerNext,
         canBuy: false,
         canBuild: false,
+        canSellBuildings: false,
         canMortgage: isViewerNext,
         canUnmortgage: isViewerNext,
         canTrade: isViewerNext,
@@ -153,7 +158,7 @@ function advanceTurn(prev: GameState): GameState {
       ...prev.log,
       {
         id: `log_turn_${Date.now()}`,
-        kind: 'event' as const,
+        kind: LogKind.EVENT,
         text: `${nextPlayer.displayName}'s turn.`,
         ts: new Date().toISOString(),
       },
@@ -284,18 +289,18 @@ export default function GameRoomPage() {
   // When the viewer is the current player, reset to pre_roll for endless mock turns.
 
   useEffect(() => {
-    if (gameState.turn.phase !== 'post_roll') return;
+    if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
     if (activeDeed !== null) return; // wait for buy/auction decision
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
       setGameState((prev) => {
-        if (prev.turn.phase !== 'post_roll') return prev;
+        if (prev.turn.phase !== TurnPhase.POST_ROLL) return prev;
         if (isViewerTurn) {
           return {
             ...prev,
             turn: {
               ...prev.turn,
-              phase: 'pre_roll',
+              phase: TurnPhase.PRE_ROLL,
               diceRoll: null,
               actionsAvailable: {
                 ...prev.turn.actionsAvailable,
@@ -316,14 +321,14 @@ export default function GameRoomPage() {
   // ── Auction countdown ──────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (gameState.turn.phase !== 'auction') {
+    if (gameState.turn.phase !== TurnPhase.AUCTION) {
       autoBidFiredRef.current = false;
       return;
     }
 
     const interval = setInterval(() => {
       setGameState((prev) => {
-        if (prev.turn.phase !== 'auction' || !prev.auction) return prev;
+        if (prev.turn.phase !== TurnPhase.AUCTION || !prev.auction) return prev;
 
         const newTime = Math.max(0, prev.auction.timeRemainingMs - 1000);
         let next: GameState = { ...prev, auction: { ...prev.auction, timeRemainingMs: newTime } };
@@ -331,7 +336,8 @@ export default function GameRoomPage() {
         // Bob auto-bids at 7 s remaining
         if (newTime <= 7000 && !autoBidFiredRef.current) {
           autoBidFiredRef.current = true;
-          const property = BOARD[prev.auction.propertyPosition];
+          const auctionPos = prev.auction.target.kind === AuctionTargetKind.PROPERTY ? prev.auction.target.position : -1;
+          const property = BOARD[auctionPos];
           const bobBid = Math.floor((property?.price ?? 100) / 2);
           const bob = prev.players.find((p) => p.id === 'bob');
           if (bob && bobBid > prev.auction.highestBid) {
@@ -343,7 +349,7 @@ export default function GameRoomPage() {
                 highestBid: bobBid,
                 highestBidderId: 'bob',
               },
-              log: [...next.log, { id: `log_bid_${Date.now()}`, kind: 'event' as const, text: `Bob bids M${bobBid}.`, ts: new Date().toISOString() }],
+              log: [...next.log, { id: `log_bid_${Date.now()}`, kind: LogKind.EVENT, text: `Bob bids M${bobBid}.`, ts: new Date().toISOString() }],
             };
           }
         }
@@ -352,7 +358,8 @@ export default function GameRoomPage() {
         if (newTime <= 0) {
           const winner = next.auction!.highestBidderId;
           const winAmount = next.auction!.highestBid;
-          const propertyPos = next.auction!.propertyPosition;
+          const aTarget = next.auction!.target;
+          const propertyPos = aTarget.kind === AuctionTargetKind.PROPERTY ? aTarget.position : -1;
           const winnerName = next.players.find((p) => p.id === winner)?.displayName ?? winner ?? 'Nobody';
           const logText = winner
             ? `${winnerName} won the auction for M${winAmount}.`
@@ -361,15 +368,13 @@ export default function GameRoomPage() {
             ...next,
             players: winner
               ? next.players.map((p) =>
-                  p.id === winner
-                    ? { ...p, balance: p.balance - winAmount, ownedPositions: [...p.ownedPositions, propertyPos] }
-                    : p,
+                  p.id === winner ? { ...p, balance: p.balance - winAmount } : p,
                 )
               : next.players,
             spaces: next.spaces.map((s, i) => (i === propertyPos ? { ...s, ownerId: winner ?? null } : s)),
             auction: null,
-            turn: { ...next.turn, phase: 'post_roll', actionsAvailable: { ...next.turn.actionsAvailable, canBid: false } },
-            log: [...next.log, { id: `log_auction_end_${Date.now()}`, kind: 'event' as const, text: logText, ts: new Date().toISOString() }],
+            turn: { ...next.turn, phase: TurnPhase.POST_ROLL, actionsAvailable: { ...next.turn.actionsAvailable, canBid: false } },
+            log: [...next.log, { id: `log_auction_end_${Date.now()}`, kind: LogKind.EVENT, text: logText, ts: new Date().toISOString() }],
           };
         }
 
@@ -446,7 +451,7 @@ export default function GameRoomPage() {
       activeCard: drawnCard,
       turn: {
         ...prev.turn,
-        phase: drawnCard ? 'drawing_card' : 'post_roll',
+        phase: drawnCard ? TurnPhase.DRAWING_CARD : TurnPhase.POST_ROLL,
         doublesStreak: isDoubles ? prev.turn.doublesStreak + 1 : 0,
         actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: false, canEndTurn: false },
       },
@@ -454,7 +459,7 @@ export default function GameRoomPage() {
         ...prev.log,
         {
           id: `log_roll_${Date.now()}`,
-          kind: 'event' as const,
+          kind: LogKind.EVENT,
           text: `${viewer.displayName} rolled ${die1} + ${die2} = ${total}${isDoubles ? ' (doubles!)' : ''}. Moved to ${BOARD[newPos]?.name ?? `space ${newPos}`}.`,
           ts: new Date().toISOString(),
         },
@@ -470,12 +475,12 @@ export default function GameRoomPage() {
     setGameState((prev) => ({
       ...prev,
       activeCard: null,
-      turn: { ...prev.turn, phase: 'post_roll' },
+      turn: { ...prev.turn, phase: TurnPhase.POST_ROLL },
       log: [
         ...prev.log,
         {
           id: `log_card_${Date.now()}`,
-          kind: 'event' as const,
+          kind: LogKind.EVENT,
           text: `${viewer.displayName} drew: "${prev.activeCard?.text ?? ''}"`,
           ts: new Date().toISOString(),
         },
@@ -493,7 +498,7 @@ export default function GameRoomPage() {
       ...prev,
       players: prev.players.map((p) =>
         p.id === prev.viewerId
-          ? { ...p, balance: p.balance - price, ownedPositions: [...p.ownedPositions, position] }
+          ? { ...p, balance: p.balance - price }
           : p,
       ),
       spaces: prev.spaces.map((s, i) => (i === position ? { ...s, ownerId: prev.viewerId } : s)),
@@ -501,7 +506,7 @@ export default function GameRoomPage() {
         ...prev.log,
         {
           id: `log_buy_${Date.now()}`,
-          kind: 'event' as const,
+          kind: LogKind.EVENT,
           text: `${viewer.displayName} bought ${name} for M${price}.`,
           ts: new Date().toISOString(),
         },
@@ -519,7 +524,7 @@ export default function GameRoomPage() {
     setGameState((prev) => ({
       ...prev,
       auction: {
-        propertyPosition: position,
+        target: { kind: AuctionTargetKind.PROPERTY, position },
         bids: [],
         highestBid: 0,
         highestBidderId: null,
@@ -527,14 +532,14 @@ export default function GameRoomPage() {
       },
       turn: {
         ...prev.turn,
-        phase: 'auction',
+        phase: TurnPhase.AUCTION,
         actionsAvailable: { ...prev.turn.actionsAvailable, canBid: true },
       },
       log: [
         ...prev.log,
         {
           id: `log_auction_start_${Date.now()}`,
-          kind: 'event' as const,
+          kind: LogKind.EVENT,
           text: `${name} goes to auction!`,
           ts: new Date().toISOString(),
         },
@@ -559,7 +564,7 @@ export default function GameRoomPage() {
           ...prev.log,
           {
             id: `log_bid_${Date.now()}`,
-            kind: 'event' as const,
+            kind: LogKind.EVENT,
             text: `${viewer.displayName} bids M${amount}.`,
             ts: new Date().toISOString(),
           },
@@ -574,16 +579,16 @@ export default function GameRoomPage() {
     setGameState((prev) => ({
       ...prev,
       trade: makeMockTrade(prev),
-      turn: { ...prev.turn, phase: 'trade_negotiation' },
+      turn: { ...prev.turn, phase: TurnPhase.TRADE_NEGOTIATION },
     }));
   }, []);
 
   const handleTradeAccept = useCallback(() => {
     setGameState((prev) => ({
       ...prev,
-      trade: prev.trade ? { ...prev.trade, status: 'accepted' } : null,
-      turn: { ...prev.turn, phase: 'post_roll' },
-      log: [...prev.log, { id: `log_trade_accept_${Date.now()}`, kind: 'event' as const, text: 'Trade accepted.', ts: new Date().toISOString() }],
+      trade: prev.trade ? { ...prev.trade, status: TradeStatus.ACCEPTED } : null,
+      turn: { ...prev.turn, phase: TurnPhase.POST_ROLL },
+      log: [...prev.log, { id: `log_trade_accept_${Date.now()}`, kind: LogKind.EVENT, text: 'Trade accepted.', ts: new Date().toISOString() }],
     }));
     setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
   }, []);
@@ -591,15 +596,15 @@ export default function GameRoomPage() {
   const handleTradeReject = useCallback(() => {
     setGameState((prev) => ({
       ...prev,
-      trade: prev.trade ? { ...prev.trade, status: 'rejected' } : null,
-      turn: { ...prev.turn, phase: 'post_roll' },
-      log: [...prev.log, { id: `log_trade_reject_${Date.now()}`, kind: 'event' as const, text: 'Trade rejected.', ts: new Date().toISOString() }],
+      trade: prev.trade ? { ...prev.trade, status: TradeStatus.REJECTED } : null,
+      turn: { ...prev.turn, phase: TurnPhase.POST_ROLL },
+      log: [...prev.log, { id: `log_trade_reject_${Date.now()}`, kind: LogKind.EVENT, text: 'Trade rejected.', ts: new Date().toISOString() }],
     }));
     setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
   }, []);
 
   const handleTradeCancel = useCallback(() => {
-    setGameState((prev) => ({ ...prev, trade: null, turn: { ...prev.turn, phase: 'pre_roll' } }));
+    setGameState((prev) => ({ ...prev, trade: null, turn: { ...prev.turn, phase: TurnPhase.PRE_ROLL } }));
   }, []);
 
   const handleSendMessage = useCallback((text: string) => {
@@ -611,7 +616,7 @@ export default function GameRoomPage() {
         ...prev.log,
         {
           id: `log_chat_${Date.now()}`,
-          kind: isSticker ? ('sticker' as const) : ('chat' as const),
+          kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
           playerId: prev.viewerId,
           playerName: viewer.displayName,
           playerToken: viewer.token,
@@ -672,7 +677,9 @@ export default function GameRoomPage() {
     : [];
 
   const auctionPropertyName = gameState.auction
-    ? (BOARD[gameState.auction.propertyPosition]?.name ?? 'Property')
+    ? gameState.auction.target.kind === AuctionTargetKind.PROPERTY
+    ? (BOARD[gameState.auction.target.position]?.name ?? 'Property')
+    : 'Property'
     : '';
 
   const auctionPlayers: AuctionPlayer[] = gameState.players.map((p) => ({
