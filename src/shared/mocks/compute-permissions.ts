@@ -83,5 +83,7 @@ export function computePermissions(state: GameState): PlayerPermissions {
 
     canUseJailCard: isViewerTurn && phase === TurnPhase.JAIL_DECISION &&
       inJail && viewer.getOutOfJailCards > 0,
+
+    canRollInJail:  isViewerTurn && phase === TurnPhase.JAIL_DECISION && inJail,
   };
 }

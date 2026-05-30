@@ -371,6 +371,55 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         }),
       };
 
+    case CommandType.RollInJail: {
+      const actorId = state.turn.currentPlayerId;
+      const actor   = state.players.find((p) => p.id === actorId);
+      if (!actor || !actor.jailStatus) return state;
+
+      const die1 = Math.ceil(Math.random() * 6);
+      const die2 = Math.ceil(Math.random() * 6);
+      const isDoubles = die1 === die2;
+      const total = die1 + die2;
+      const attempt = actor.jailStatus.attempts + 1;
+
+      let next: GameState = {
+        ...state,
+        turn: { ...state.turn, diceRoll: { die1, die2, isDoubles } },
+        log:  log(state, {
+          type: GameEventType.DiceRolled, playerId: actorId, playerName: actor.displayName, die1, die2, isDoubles,
+        }),
+      };
+
+      // Doubles → free; or the 3rd failed attempt → forced to pay M50, then move.
+      if (isDoubles || attempt >= 3) {
+        const method = isDoubles ? 'doubles' : 'fine';
+        next = {
+          ...next,
+          players: next.players.map((p) =>
+            p.id === actorId
+              ? { ...p, jailStatus: null, balance: method === 'fine' ? p.balance - 50 : p.balance }
+              : p,
+          ),
+        };
+        next = { ...next, log: log(next, {
+          type: GameEventType.LeftJail, playerId: actorId, playerName: actor.displayName, method,
+        }) };
+        next = applyMovement(next, actorId, (actor.position + total) % 40, { collectGo: false, teleport: false });
+        next = resolveLanding(next, actorId);
+        const inDebt = next.turn.phase === TurnPhase.MUST_PAY_RENT;
+        return { ...next, turn: { ...next.turn, phase: inDebt ? TurnPhase.MUST_PAY_RENT : TurnPhase.POST_ROLL } };
+      }
+
+      // Failed attempt — stay jailed, turn ends.
+      return {
+        ...next,
+        players: next.players.map((p) =>
+          p.id === actorId ? { ...p, jailStatus: { attempts: attempt } } : p,
+        ),
+        turn: { ...next.turn, phase: TurnPhase.POST_ROLL },
+      };
+    }
+
     default:
       return state;
   }

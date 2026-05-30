@@ -23,6 +23,7 @@ export type PlayerPermissions = {
 
   canPayJailFine: boolean;
   canUseJailCard: boolean;
+  canRollInJail:  boolean;
 };
 
 export const EMPTY_PERMISSIONS: PlayerPermissions = {
@@ -37,6 +38,7 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
   canBidAuction:  false,
   canPayJailFine: false,
   canUseJailCard: false,
+  canRollInJail:  false,
 };
 
 // ======================================================

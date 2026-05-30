@@ -64,6 +64,15 @@ export type BoardCenterPanelProps = {
   // Deed card overlay (shown when landing on unowned purchasable property)
   activeDeed?: DeedInfo | null;
   onAuction?: () => void;
+  // Jail decision overlay (shown when the viewer is jailed on their turn)
+  jailDecision?: boolean;
+  jailAttempts?: number;
+  canPayJailFine?: boolean;
+  canUseJailCard?: boolean;
+  canRollInJail?: boolean;
+  onPayJailFine?: () => void;
+  onUseJailCard?: () => void;
+  onRollInJail?: () => void;
   // Auction panel (swaps chat container when active)
   auctionState?: AuctionState | null;
   auctionPropertyName?: string;

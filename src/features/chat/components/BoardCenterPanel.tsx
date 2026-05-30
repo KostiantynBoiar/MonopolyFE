@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { CardFlipOverlay } from '@/features/card';
 import { TradeWindow } from '@/features/trade';
 import { DeedCard } from '@/features/deed';
+import { JailModal } from '@/features/jail';
 import { AuctionPanel } from '@/features/auction';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
@@ -223,6 +224,14 @@ export function BoardCenterPanel({
   onCardProceed,
   activeDeed = null,
   onAuction,
+  jailDecision = false,
+  jailAttempts = 0,
+  canPayJailFine = false,
+  canUseJailCard = false,
+  canRollInJail = false,
+  onPayJailFine,
+  onUseJailCard,
+  onRollInJail,
   auctionState = null,
   auctionPropertyName = '',
   auctionPlayers = [],
@@ -306,7 +315,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'flex min-h-0 flex-1 overflow-hidden transition-opacity duration-300',
-              activeCard || activeDeed ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed || jailDecision ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             {/* Game log */}
@@ -368,7 +377,7 @@ export function BoardCenterPanel({
           <div
             className={cn(
               'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
-              activeCard || activeDeed ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
+              activeCard || activeDeed || jailDecision ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             <div className="flex items-center gap-1.5">
@@ -429,6 +438,21 @@ export function BoardCenterPanel({
             deed={activeDeed}
             onBuy={onBuy ?? (() => {})}
             onAuction={onAuction ?? (() => {})}
+          />
+        </div>
+      )}
+
+      {/* ── Jail decision overlay ── */}
+      {jailDecision && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <JailModal
+            attempts={jailAttempts}
+            canPayFine={canPayJailFine}
+            canUseCard={canUseJailCard}
+            canRoll={canRollInJail}
+            onPayFine={onPayJailFine ?? (() => {})}
+            onUseCard={onUseJailCard ?? (() => {})}
+            onRoll={onRollInJail ?? (() => {})}
           />
         </div>
       )}

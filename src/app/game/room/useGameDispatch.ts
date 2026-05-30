@@ -52,7 +52,10 @@ export function useGameDispatch() {
         const { diceRoll } = nextGame.turn;
         const viewerId = snapshot.game.viewerId;
         const oldPos   = snapshot.game.players.find((p) => p.id === viewerId)?.position ?? 0;
-        const newPos   = nextGame.players.find((p) => p.id === viewerId)?.position ?? oldPos;
+        const nextPlayer = nextGame.players.find((p) => p.id === viewerId);
+        const newPos   = nextPlayer?.position ?? oldPos;
+        // Sent to jail this roll (3 doubles / go-to-jail corner) → teleport, don't walk a lap.
+        const teleported = nextPlayer?.jailStatus != null;
 
         // Phase 1 — dice spin
         await delay(1200);
@@ -65,19 +68,21 @@ export function useGameDispatch() {
         });
         await delay(500);
 
-        // Phase 2 — walk token step-by-step
-        const steps = getWalkSteps(oldPos, newPos);
-        setWalkState({ playerId: viewerId, currentPos: oldPos });
+        // Phase 2 — walk token step-by-step (skipped on teleport)
+        if (!teleported) {
+          const steps = getWalkSteps(oldPos, newPos);
+          setWalkState({ playerId: viewerId, currentPos: oldPos });
 
-        await new Promise<void>((resolve) => {
-          let i = 0;
-          function step() {
-            if (i >= steps.length) { resolve(); return; }
-            setWalkState({ playerId: viewerId, currentPos: steps[i++] });
-            setTimeout(step, WALK_STEP_DURATION_MS);
-          }
-          setTimeout(step, 80);
-        });
+          await new Promise<void>((resolve) => {
+            let i = 0;
+            function step() {
+              if (i >= steps.length) { resolve(); return; }
+              setWalkState({ playerId: viewerId, currentPos: steps[i++] });
+              setTimeout(step, WALK_STEP_DURATION_MS);
+            }
+            setTimeout(step, 80);
+          });
+        }
 
         // Phase 3 — apply all server messages, clear walk overlay
         setWalkState(null);

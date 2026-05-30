@@ -260,6 +260,11 @@ export default function GameRoomPage() {
     dispatch({ type: CommandType.BidAuction, amount });
   }, [dispatch]);
 
+  // ── Jail decision ───────────────────────────────────────────────────────
+  const handlePayJailFine = useCallback(() => dispatch({ type: CommandType.PayJailFine }), [dispatch]);
+  const handleUseJailCard = useCallback(() => dispatch({ type: CommandType.UseJailCard }), [dispatch]);
+  const handleRollInJail  = useCallback(() => dispatch({ type: CommandType.RollInJail }),  [dispatch]);
+
   const handleTrade = useCallback(() => {
     dispatch({
       type: CommandType.StartTrade, targetId: 'bob',
@@ -359,6 +364,10 @@ export default function GameRoomPage() {
     id: p.id, name: p.displayName,
   }));
 
+  const jailDecision =
+    gameState.turn.phase === TurnPhase.JAIL_DECISION &&
+    gameState.turn.currentPlayerId === gameState.viewerId;
+
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
@@ -384,6 +393,14 @@ export default function GameRoomPage() {
               activeDeed={activeDeed}
               onBuy={handleBuy}
               onAuction={handleAuction}
+              jailDecision={jailDecision}
+              jailAttempts={viewer?.jailStatus?.attempts ?? 0}
+              canPayJailFine={permissions.canPayJailFine}
+              canUseJailCard={permissions.canUseJailCard}
+              canRollInJail={permissions.canRollInJail}
+              onPayJailFine={handlePayJailFine}
+              onUseJailCard={handleUseJailCard}
+              onRollInJail={handleRollInJail}
               auctionState={gameState.auction}
               auctionPropertyName={auctionPropertyName}
               auctionPlayers={auctionPlayers}
