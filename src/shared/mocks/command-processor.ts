@@ -15,6 +15,7 @@ import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
 import { getActivePlayers } from '@/shared/protocol/selectors';
 import { appendEvents } from '@/shared/protocol/log';
+import { applyMovement, resolveLanding, sendToJail } from './resolve-landing';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
 
@@ -38,9 +39,28 @@ function spaceName(position: number): string {
 }
 
 function advanceTurn(state: GameState): GameState {
+  const current = state.players.find((p) => p.id === state.turn.currentPlayerId);
+
+  // Doubles grant another roll for the SAME player (unless they were jailed this turn).
+  if (state.turn.extraTurn && current && !current.isBankrupt && !current.jailStatus) {
+    return {
+      ...state,
+      turn: {
+        ...state.turn,
+        phase:         TurnPhase.PRE_ROLL,
+        turnNumber:    state.turn.turnNumber + 1,
+        diceRoll:      null,
+        extraTurn:     false,
+      },
+      activeCard: null,
+    };
+  }
+
   const active = getActivePlayers(state);
   const idx    = active.findIndex((p) => p.id === state.turn.currentPlayerId);
   const next   = active[(idx + 1) % active.length];
+  // A wrap back to the first active player completes a round.
+  const wrapped = active.length > 0 && (idx + 1) % active.length === 0;
 
   return {
     ...state,
@@ -49,8 +69,10 @@ function advanceTurn(state: GameState): GameState {
       phase:           next.jailStatus ? TurnPhase.JAIL_DECISION : TurnPhase.PRE_ROLL,
       currentPlayerId: next.id,
       turnNumber:      state.turn.turnNumber + 1,
+      roundNumber:     wrapped ? state.turn.roundNumber + 1 : state.turn.roundNumber,
       diceRoll:        null,
       doublesStreak:   0,
+      extraTurn:       false,
     },
     activeCard: null,
     log: log(state, {
@@ -88,36 +110,55 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
   switch (cmd.type) {
 
     case CommandType.RollDice: {
-      const viewer = state.players.find((p) => p.id === state.viewerId);
-      if (!viewer) return state;   // viewerId not in players — no-op rather than crash
+      // Roll for whoever's turn it is (viewer or opponent — Phase 14 drives opponents).
+      const actorId = state.turn.currentPlayerId;
+      const actor   = state.players.find((p) => p.id === actorId);
+      if (!actor) return state;
 
       const die1 = Math.ceil(Math.random() * 6);
       const die2 = Math.ceil(Math.random() * 6);
       const isDoubles = die1 === die2;
-      const total = die1 + die2;
-      const oldPos = viewer.position;
+      const total  = die1 + die2;
+      const oldPos = actor.position;
       const newPos = (oldPos + total) % 40;
-      const drawnCard = mockCard(state, newPos);
+      const newStreak = isDoubles ? state.turn.doublesStreak + 1 : 0;
 
-      return {
+      // Record dice + streak first so utility rent (resolveLanding) can read the roll.
+      let next: GameState = {
         ...state,
-        players:    state.players.map((p) =>
-          p.id === state.viewerId ? { ...p, position: newPos } : p,
-        ),
-        activeCard: drawnCard,
-        turn: {
-          ...state.turn,
-          diceRoll:      { die1, die2, isDoubles },
-          phase:         drawnCard ? TurnPhase.DRAWING_CARD : TurnPhase.POST_ROLL,
-          doublesStreak: isDoubles ? state.turn.doublesStreak + 1 : 0,
-        },
-        log: log(
-          state,
-          { type: GameEventType.DiceRolled, playerId: viewer.id, playerName: viewer.displayName, die1, die2, isDoubles },
-          { type: GameEventType.PlayerMoved, playerId: viewer.id, playerName: viewer.displayName,
-            from: oldPos, to: newPos, toName: spaceName(newPos), passedGo: false, teleport: false },
-        ),
+        turn: { ...state.turn, diceRoll: { die1, die2, isDoubles }, doublesStreak: newStreak },
+        log:  log(state, {
+          type: GameEventType.DiceRolled, playerId: actorId, playerName: actor.displayName, die1, die2, isDoubles,
+        }),
       };
+
+      // Three doubles in a row → straight to jail, turn ends.
+      if (newStreak === 3) {
+        next = sendToJail(next, actorId, 'doubles');
+        return { ...next, turn: { ...next.turn, phase: TurnPhase.POST_ROLL, extraTurn: false } };
+      }
+
+      // Move (single GO-bonus chokepoint).
+      const collectGo = newPos < oldPos;
+      next = applyMovement(next, actorId, newPos, { collectGo, teleport: false });
+
+      // Chance / Community Chest → draw and pause for the overlay (effects in Phase 13).
+      const drawnCard = mockCard(next, newPos);
+      if (drawnCard) {
+        return {
+          ...next,
+          activeCard: drawnCard,
+          turn: { ...next.turn, phase: TurnPhase.DRAWING_CARD, extraTurn: isDoubles },
+        };
+      }
+
+      // Rent / tax / go-to-jail corner.
+      next = resolveLanding(next, actorId);
+
+      const jailed   = next.players.find((p) => p.id === actorId)?.jailStatus != null;
+      const inDebt   = next.turn.phase === TurnPhase.MUST_PAY_RENT;
+      const phase    = inDebt ? TurnPhase.MUST_PAY_RENT : TurnPhase.POST_ROLL;
+      return { ...next, turn: { ...next.turn, phase, extraTurn: isDoubles && !jailed && !inDebt } };
     }
 
     case CommandType.EndTurn:
