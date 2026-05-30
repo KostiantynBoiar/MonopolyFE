@@ -16,21 +16,25 @@ import { useGameSocket } from '@/shared/socket';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, TradeState } from '@/shared/protocol/game-state.schema';
-import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
+import { TurnPhase, LogKind, AuctionTargetKind, GameStatus } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import {
   tickAuction, advanceTurnEvent, startAuctionEvent,
 } from '@/shared/mocks/mock-server';
 import { runOpponentTurn, opponentRespondToTrade } from '@/shared/mocks/opponent-ai';
-import { getPlayerPositions, getPlayerProperties, getPropertyRent } from '@/shared/protocol/selectors';
+import { getPlayerPositions, getPlayerProperties, getPropertyRent, hasMonopoly } from '@/shared/protocol/selectors';
 import { ManagePropertiesModal } from '@/features/manage';
 import type { ManageProperty } from '@/features/manage';
-import type { TradeParticipant } from '@/features/trade';
+import type { TradeParticipant, TradeAsset } from '@/features/trade';
+import { TradeBuilder } from '@/features/trade';
+import type { TradeOffer } from '@/shared/protocol/game-state';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { TOKEN_ORDER } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
 import { useGameDispatch } from './useGameDispatch';
+
+const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -178,6 +182,8 @@ export default function GameRoomPage() {
 
   const autoBidFiredRef = useRef(false);
   const opponentTurnRef = useRef(false);
+  const mountedRef      = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   const { dispatch } = useGameDispatch();
 
@@ -198,26 +204,36 @@ export default function GameRoomPage() {
     activeDeed, openedModal, applyServerMessage,
   ]);
 
-  // Drive an opponent's whole turn (roll → move → resolve → buy → end), playing the
-  // resulting snapshots out on a timer so the human watches it happen.
+  // Drive opponents' turns. A self-contained async loop plays each opponent turn
+  // (reading fresh state every step), applying snapshots on a timer so the human
+  // watches it happen. The ref guard prevents re-entry; crucially there is NO cleanup
+  // that cancels playback — applying a snapshot changes this effect's deps, and a
+  // cleanup would otherwise tear the loop down after the very first message (the roll).
   useEffect(() => {
     const isOpponentTurn =
+      gameState.status !== GameStatus.FINISHED &&
       gameState.turn.currentPlayerId !== gameState.viewerId &&
       (gameState.turn.phase === TurnPhase.PRE_ROLL || gameState.turn.phase === TurnPhase.JAIL_DECISION);
     if (!isOpponentTurn || opponentTurnRef.current) return;
 
     opponentTurnRef.current = true;
-    const messages = runOpponentTurn(useGameStore.getState().snapshot.game);
-    let i = 0;
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const playNext = () => {
-      if (i >= messages.length) { opponentTurnRef.current = false; return; }
-      applyServerMessage(messages[i++]);
-      timers.push(setTimeout(playNext, 900));
-    };
-    timers.push(setTimeout(playNext, 700));
-    return () => { timers.forEach(clearTimeout); opponentTurnRef.current = false; };
-  }, [gameState.turn.currentPlayerId, gameState.turn.phase, gameState.viewerId, applyServerMessage]);
+    void (async () => {
+      while (mountedRef.current) {
+        const game = useGameStore.getState().snapshot.game;
+        if (game.status === GameStatus.FINISHED) break;
+        if (game.turn.currentPlayerId === game.viewerId) break;
+        if (game.turn.phase !== TurnPhase.PRE_ROLL && game.turn.phase !== TurnPhase.JAIL_DECISION) break;
+
+        for (const msg of runOpponentTurn(game)) {
+          if (!mountedRef.current) return;
+          applyServerMessage(msg);
+          await delay(750);
+        }
+        await delay(300);   // brief pause between consecutive opponent turns
+      }
+      opponentTurnRef.current = false;
+    })();
+  }, [gameState.turn.currentPlayerId, gameState.turn.phase, gameState.status, gameState.viewerId, applyServerMessage]);
 
   // An opponent who is the target of the viewer's pending trade auto-responds.
   useEffect(() => {
@@ -303,13 +319,15 @@ export default function GameRoomPage() {
   const handlePayDebt           = useCallback(() => dispatch({ type: CommandType.PayDebt }), [dispatch]);
   const handleDeclareBankruptcy = useCallback(() => dispatch({ type: CommandType.DeclareBankruptcy }), [dispatch]);
 
-  const handleTrade = useCallback(() => {
-    dispatch({
-      type: CommandType.StartTrade, targetId: 'bob',
-      offer:   { money: 100, positions: [1, 3], getOutOfJailCards: 0 },
-      request: { money: 0,   positions: [5],    getOutOfJailCards: 0 },
-    });
-  }, [dispatch]);
+  const handleTrade = useCallback(() => setOpenedModal('trade'), [setOpenedModal]);
+
+  const handleProposeTrade = useCallback(
+    (targetId: string, offer: TradeOffer, request: TradeOffer) => {
+      setOpenedModal(null);
+      dispatch({ type: CommandType.StartTrade, targetId, offer, request });
+    },
+    [dispatch, setOpenedModal],
+  );
 
   const handleTradeAccept = useCallback(() => {
     const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
@@ -425,18 +443,33 @@ export default function GameRoomPage() {
   const debtAmount = gameState.debt?.amount ?? 0;
 
   // Viewer's properties for the Manage modal.
-  const manageProperties: ManageProperty[] = getPlayerProperties(gameState, gameState.viewerId).map((s) => ({
-    position:    s.position,
-    name:        BOARD[s.position]?.name ?? `#${s.position}`,
-    color:       BOARD[s.position]?.color,
-    houses:      s.houses,
-    hotel:       s.hotel,
-    isMortgaged: s.isMortgaged,
-    rent:        getPropertyRent(gameState, s.position),
-  }));
+  const manageProperties: ManageProperty[] = getPlayerProperties(gameState, gameState.viewerId).map((s) => {
+    const color = BOARD[s.position]?.color;
+    return {
+      position:    s.position,
+      name:        BOARD[s.position]?.name ?? `#${s.position}`,
+      color,
+      houses:      s.houses,
+      hotel:       s.hotel,
+      isMortgaged: s.isMortgaged,
+      inMonopoly:  !!color && hasMonopoly(gameState, gameState.viewerId, color),
+      rent:        getPropertyRent(gameState, s.position),
+    };
+  });
   const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
   const canManage = isViewerTurn && manageProperties.length > 0 &&
     (gameState.turn.phase === TurnPhase.PRE_ROLL || gameState.turn.phase === TurnPhase.POST_ROLL);
+
+  // Trade-builder data.
+  const propertiesOf = (playerId: string): TradeAsset[] =>
+    getPlayerProperties(gameState, playerId)
+      .filter((s) => s.houses === 0 && !s.hotel)   // can't trade a property with buildings
+      .map((s) => ({ position: s.position, name: BOARD[s.position]?.name ?? `#${s.position}`, color: BOARD[s.position]?.color }));
+  const jailCardsOf = (playerId: string): number =>
+    gameState.players.find((p) => p.id === playerId)?.getOutOfJailCards ?? 0;
+  const tradeOthers = gameState.players
+    .filter((p) => p.id !== gameState.viewerId && !p.isBankrupt)
+    .map((p) => ({ id: p.id, name: p.displayName, balance: p.balance }));
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
@@ -516,6 +549,24 @@ export default function GameRoomPage() {
               onMortgage={handleMortgage}
               onUnmortgage={handleUnmortgage}
               onSellProperty={permissions.canSellProperty ? handleSellProperty : undefined}
+              onClose={() => setOpenedModal(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Trade builder modal */}
+      {openedModal === 'trade' && tradeOthers.length > 0 && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40" onClick={() => setOpenedModal(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <TradeBuilder
+              me={{ id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 }}
+              others={tradeOthers}
+              myProperties={propertiesOf(gameState.viewerId)}
+              myJailCards={jailCardsOf(gameState.viewerId)}
+              propertiesOf={propertiesOf}
+              jailCardsOf={jailCardsOf}
+              onPropose={handleProposeTrade}
               onClose={() => setOpenedModal(null)}
             />
           </div>

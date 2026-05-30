@@ -13,7 +13,7 @@ import type { GameState } from '@/shared/protocol/game-state';
 import { TurnPhase } from '@/shared/protocol/game-state';
 import type { PlayerPermissions } from '@/shared/protocol/permissions';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
-import { getPlayerProperties, getProperty } from '@/shared/protocol/selectors';
+import { getPlayerProperties, getProperty, hasMonopoly } from '@/shared/protocol/selectors';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
 
@@ -42,18 +42,18 @@ export function computePermissions(state: GameState): PlayerPermissions {
     isViewerTurn && phase === TurnPhase.POST_ROLL && isPurchasable && isUnowned;
 
   // ── canBuild ──────────────────────────────────────────────────────────────
-  // Filtered to color-group properties only — railroads/utilities cannot have
-  // houses built on them regardless of ownership.
-  // Server validates monopoly ownership and housing limits; we check the minimum
-  // precondition (owns at least one color-group property with room for a house).
-  const viewerProps       = getPlayerProperties(state, state.viewerId);
-  const colorGroupProps   = viewerProps.filter(
-    (s) => COLOR_GROUP_ONLY.has(BOARD[s.position]?.type ?? ''),
-  );
-  const canBuildHouse  = isViewerTurn && phase === TurnPhase.POST_ROLL &&
-    colorGroupProps.some((s) => !s.hotel && s.houses < 4);
-  const canBuildHotel  = isViewerTurn && phase === TurnPhase.POST_ROLL &&
-    colorGroupProps.some((s) => s.houses === 4);
+  // You may build any time during your own turn (pre- or post-roll), but only on a
+  // completed colour monopoly. Railroads/utilities never take houses.
+  const viewerProps     = getPlayerProperties(state, state.viewerId);
+  const canBuildPhase   = isViewerTurn && (phase === TurnPhase.PRE_ROLL || phase === TurnPhase.POST_ROLL);
+  const inMonopoly = (s: { position: number }) => {
+    const color = BOARD[s.position]?.color;
+    return !!color && COLOR_GROUP_ONLY.has(BOARD[s.position]?.type ?? '') && hasMonopoly(state, state.viewerId, color);
+  };
+  const canBuildHouse  = canBuildPhase &&
+    viewerProps.some((s) => inMonopoly(s) && !s.hotel && s.houses < 4);
+  const canBuildHotel  = canBuildPhase &&
+    viewerProps.some((s) => inMonopoly(s) && s.houses === 4);
 
   // ── canMortgage / canUnmortgage / canSellProperty ──────────────────────────
   const canMortgage   = isViewerTurn && viewerProps.some((s) => !s.isMortgaged && s.houses === 0 && !s.hotel);

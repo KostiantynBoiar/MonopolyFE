@@ -11,6 +11,7 @@ export type ManageProperty = {
   houses:      0 | 1 | 2 | 3 | 4;
   hotel:       boolean;
   isMortgaged: boolean;
+  inMonopoly:  boolean;       // viewer owns the whole colour group → may build
   rent:        number;        // current rent at this build level (from getPropertyRent)
 };
 
@@ -98,10 +99,10 @@ export function ManagePropertiesModal({
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-1">
-                  {p.color && !p.hotel && p.houses < 4 && (
+                  {p.inMonopoly && !p.hotel && p.houses < 4 && (
                     <MiniBtn label="Build House" onClick={() => onBuildHouse(p.position)} disabled={!canBuildHouse} />
                   )}
-                  {p.color && p.houses === 4 && (
+                  {p.inMonopoly && p.houses === 4 && (
                     <MiniBtn label="Build Hotel" onClick={() => onBuildHotel(p.position)} disabled={!canBuildHotel} />
                   )}
                   {p.color && p.houses > 0 && (
