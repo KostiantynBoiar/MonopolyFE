@@ -18,6 +18,8 @@ import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, TradeState } from '@/shared/protocol/game-state.schema';
 import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
+import { applyMessage, ServerEventType } from '@/shared/protocol/network';
+import { tickAuction, advanceTurnEvent } from '@/shared/mocks/mock-server';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
@@ -202,21 +204,33 @@ export default function GameRoomPage() {
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
   const actions = gameState.turn.actionsAvailable;
 
-  // ── Auto-advance after post_roll ──────────────────────────────────────────
-  // When the viewer is the current player, reset to pre_roll for endless mock turns.
+  // ── Auto-advance after post_roll — simulates server turn management ─────────
 
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
-    if (activeDeed !== null) return; // wait for buy/auction decision
+    if (activeDeed !== null) return;
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
-      // Simulate the server advancing the turn (mock-only).
-      dispatch({ type: CommandType.EndTurn });
+      if (isViewerTurn) {
+        // Viewer manually ends turns in real play; for the mock, reset to pre_roll
+        // so the UI stays interactive without requiring an explicit EndTurn click.
+        setGameState((prev) =>
+          applyMessage(prev, { type: ServerEventType.Patch, seq: 0, delta: {
+            turn: {
+              ...prev.turn, phase: TurnPhase.PRE_ROLL, diceRoll: null,
+              actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: true, canBuy: false, canBuild: false, canEndTurn: false },
+            },
+          } }),
+        );
+      } else {
+        // Simulate the opponent finishing their turn.
+        setGameState((prev) => applyMessage(prev, advanceTurnEvent(prev)));
+      }
     }, 1500);
     return () => clearTimeout(t);
-  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed]);
+  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed, setGameState]);
 
-  // ── Auction countdown ──────────────────────────────────────────────────────
+  // ── Auction countdown — simulates server ticks ────────────────────────────
 
   useEffect(() => {
     if (gameState.turn.phase !== TurnPhase.AUCTION) {
@@ -225,63 +239,18 @@ export default function GameRoomPage() {
     }
 
     const interval = setInterval(() => {
-      setGameState((prev) => {
-        if (prev.turn.phase !== TurnPhase.AUCTION || !prev.auction) return prev;
+      const current = gameStateRef.current;
+      if (current.turn.phase !== TurnPhase.AUCTION || !current.auction) return;
 
-        const newTime = Math.max(0, prev.auction.timeRemainingMs - 1000);
-        let next: GameState = { ...prev, auction: { ...prev.auction, timeRemainingMs: newTime } };
-
-        // Bob auto-bids at 7 s remaining
-        if (newTime <= 7000 && !autoBidFiredRef.current) {
-          autoBidFiredRef.current = true;
-          const auctionPos = prev.auction.target.kind === AuctionTargetKind.PROPERTY ? prev.auction.target.position : -1;
-          const property = BOARD[auctionPos];
-          const bobBid = Math.floor((property?.price ?? 100) / 2);
-          const bob = prev.players.find((p) => p.id === 'bob');
-          if (bob && bobBid > prev.auction.highestBid) {
-            next = {
-              ...next,
-              auction: {
-                ...next.auction!,
-                bids: [...next.auction!.bids, { playerId: 'bob', amount: bobBid }],
-                highestBid: bobBid,
-                highestBidderId: 'bob',
-              },
-              log: [...next.log, { id: `log_bid_${Date.now()}`, kind: LogKind.EVENT, text: `Bob bids M${bobBid}.`, ts: new Date().toISOString() }],
-            };
-          }
-        }
-
-        // Resolve when time runs out
-        if (newTime <= 0) {
-          const winner = next.auction!.highestBidderId;
-          const winAmount = next.auction!.highestBid;
-          const aTarget = next.auction!.target;
-          const propertyPos = aTarget.kind === AuctionTargetKind.PROPERTY ? aTarget.position : -1;
-          const winnerName = next.players.find((p) => p.id === winner)?.displayName ?? winner ?? 'Nobody';
-          const logText = winner
-            ? `${winnerName} won the auction for M${winAmount}.`
-            : 'No bids. Property returns to the bank.';
-          return {
-            ...next,
-            players: winner
-              ? next.players.map((p) =>
-                  p.id === winner ? { ...p, balance: p.balance - winAmount } : p,
-                )
-              : next.players,
-            spaces: next.spaces.map((s, i) => (i === propertyPos ? { ...s, ownerId: winner ?? null } : s)),
-            auction: null,
-            turn: { ...next.turn, phase: TurnPhase.POST_ROLL, actionsAvailable: { ...next.turn.actionsAvailable, canBid: false } },
-            log: [...next.log, { id: `log_auction_end_${Date.now()}`, kind: LogKind.EVENT, text: logText, ts: new Date().toISOString() }],
-          };
-        }
-
-        return next;
-      });
+      const { messages, bobBidFired } = tickAuction(current, 1000, autoBidFiredRef.current);
+      autoBidFiredRef.current = bobBidFired;
+      for (const msg of messages) {
+        setGameState((prev) => applyMessage(prev, msg));
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [gameState.turn.phase]);
+  }, [gameState.turn.phase, gameStateRef, setGameState]);
 
   const handleRoll = useCallback(() => {
     if (!actions.canRoll || isRolling) return;
