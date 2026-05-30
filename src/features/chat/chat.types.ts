@@ -51,11 +51,11 @@ export type BoardCenterPanelProps = {
   isRolling?: boolean;
   canRoll?: boolean;
   canBuy?: boolean;
-  canBuild?: boolean;
+  canManage?: boolean;
   canTrade?: boolean;
   onRoll?: () => void;
   onBuy?: () => void;
-  onBuild?: () => void;
+  onManage?: () => void;
   onTrade?: () => void;
   onSendMessage?: (text: string) => void;
   // Card drawing overlay

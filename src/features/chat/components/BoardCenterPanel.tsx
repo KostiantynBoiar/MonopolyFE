@@ -213,11 +213,11 @@ export function BoardCenterPanel({
   isRolling = false,
   canRoll = false,
   canBuy = false,
-  canBuild = false,
+  canManage = false,
   canTrade = false,
   onRoll,
   onBuy,
-  onBuild,
+  onManage,
   onTrade,
   onSendMessage,
   activeCard = null,
@@ -272,9 +272,9 @@ export function BoardCenterPanel({
   }
 
   const actions: Action[] = [
-    canBuild && { key: ActionKey.BUILD, label: 'Build House', enabled: true, handler: onBuild },
-    canBuy   && { key: ActionKey.BUY,   label: 'Buy Property', enabled: true, handler: onBuy },
-    canTrade && { key: ActionKey.TRADE, label: 'Trade',        enabled: true, handler: onTrade },
+    canManage && { key: ActionKey.MANAGE, label: 'Manage',       enabled: true, handler: onManage },
+    canBuy    && { key: ActionKey.BUY,    label: 'Buy Property', enabled: true, handler: onBuy },
+    canTrade  && { key: ActionKey.TRADE,  label: 'Trade',        enabled: true, handler: onTrade },
     {
       key: ActionKey.ROLL,
       label: isRolling ? 'Rolling…' : 'Roll Dice',

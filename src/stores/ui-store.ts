@@ -6,7 +6,7 @@ import type { DeedInfo } from '@/features/deed';
 export type WalkState = { playerId: string; currentPos: number };
 
 // ── Modals the UI can open
-export type ModalKind = 'trade' | 'mortgage' | 'build' | null;
+export type ModalKind = 'trade' | 'manage' | null;
 
 interface UiStore {
   // Animations

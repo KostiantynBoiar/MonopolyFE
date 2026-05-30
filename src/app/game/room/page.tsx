@@ -22,7 +22,9 @@ import {
   tickAuction, advanceTurnEvent, startAuctionEvent,
 } from '@/shared/mocks/mock-server';
 import { runOpponentTurn } from '@/shared/mocks/opponent-ai';
-import { getPlayerPositions } from '@/shared/protocol/selectors';
+import { getPlayerPositions, getPlayerProperties, getPropertyRent } from '@/shared/protocol/selectors';
+import { ManagePropertiesModal } from '@/features/manage';
+import type { ManageProperty } from '@/features/manage';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { TOKEN_ORDER } from '@/shared/config/constants';
@@ -103,7 +105,7 @@ export default function GameRoomPage() {
     clearWsError,
   } = useSocketStore();
 
-  const { isRolling, walkState, activeDeed, setActiveDeed } = useUiStore();
+  const { isRolling, walkState, activeDeed, setActiveDeed, openedModal, setOpenedModal } = useUiStore();
 
   // ── WebSocket ─────────────────────────────────────────────────────────────
 
@@ -185,6 +187,7 @@ export default function GameRoomPage() {
     if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
     if (gameState.turn.currentPlayerId !== gameState.viewerId) return;
     if (activeDeed !== null) return;
+    if (openedModal !== null) return;   // don't end the turn while a modal is open
     const t = setTimeout(() => {
       applyServerMessage(advanceTurnEvent(useGameStore.getState().snapshot.game));
     }, 1500);
@@ -192,7 +195,7 @@ export default function GameRoomPage() {
   }, [
     gameState.turn.phase, gameState.turn.turnNumber,
     gameState.turn.currentPlayerId, gameState.viewerId,
-    activeDeed, applyServerMessage,
+    activeDeed, openedModal, applyServerMessage,
   ]);
 
   // Drive an opponent's whole turn (roll → move → resolve → buy → end), playing the
@@ -272,6 +275,15 @@ export default function GameRoomPage() {
   const handlePayJailFine = useCallback(() => dispatch({ type: CommandType.PayJailFine }), [dispatch]);
   const handleUseJailCard = useCallback(() => dispatch({ type: CommandType.UseJailCard }), [dispatch]);
   const handleRollInJail  = useCallback(() => dispatch({ type: CommandType.RollInJail }),  [dispatch]);
+
+  // ── Property management ──────────────────────────────────────────────────
+  const handleManage      = useCallback(() => setOpenedModal('manage'), [setOpenedModal]);
+  const handleBuildHouse  = useCallback((position: number) => dispatch({ type: CommandType.BuildHouse, position }), [dispatch]);
+  const handleBuildHotel  = useCallback((position: number) => dispatch({ type: CommandType.BuildHotel, position }), [dispatch]);
+  const handleSellHouse   = useCallback((position: number) => dispatch({ type: CommandType.SellHouse, position }),  [dispatch]);
+  const handleSellHotel   = useCallback((position: number) => dispatch({ type: CommandType.SellHotel, position }),  [dispatch]);
+  const handleMortgage    = useCallback((position: number) => dispatch({ type: CommandType.Mortgage, position }),   [dispatch]);
+  const handleUnmortgage  = useCallback((position: number) => dispatch({ type: CommandType.Unmortgage, position }), [dispatch]);
 
   const handleTrade = useCallback(() => {
     dispatch({
@@ -376,6 +388,20 @@ export default function GameRoomPage() {
     gameState.turn.phase === TurnPhase.JAIL_DECISION &&
     gameState.turn.currentPlayerId === gameState.viewerId;
 
+  // Viewer's properties for the Manage modal.
+  const manageProperties: ManageProperty[] = getPlayerProperties(gameState, gameState.viewerId).map((s) => ({
+    position:    s.position,
+    name:        BOARD[s.position]?.name ?? `#${s.position}`,
+    color:       BOARD[s.position]?.color,
+    houses:      s.houses,
+    hotel:       s.hotel,
+    isMortgaged: s.isMortgaged,
+    rent:        getPropertyRent(gameState, s.position),
+  }));
+  const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
+  const canManage = isViewerTurn && manageProperties.length > 0 &&
+    (gameState.turn.phase === TurnPhase.PRE_ROLL || gameState.turn.phase === TurnPhase.POST_ROLL);
+
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
@@ -391,10 +417,11 @@ export default function GameRoomPage() {
               isRolling={isRolling}
               canRoll={permissions.canRoll && !isRolling}
               canBuy={permissions.canBuyProperty}
-              canBuild={permissions.canBuildHouse || permissions.canBuildHotel}
+              canManage={canManage}
               canTrade={permissions.canTrade}
               onRoll={handleRoll}
               onSendMessage={handleSendMessage}
+              onManage={handleManage}
               onTrade={handleTrade}
               activeCard={gameState.activeCard}
               onCardProceed={handleCardProceed}
@@ -428,6 +455,28 @@ export default function GameRoomPage() {
       <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
         <PlayerSidebar players={deriveSidebarPlayers(gameState)} />
       </aside>
+
+      {/* Property management modal */}
+      {openedModal === 'manage' && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40" onClick={() => setOpenedModal(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <ManagePropertiesModal
+              properties={manageProperties}
+              canBuildHouse={permissions.canBuildHouse}
+              canBuildHotel={permissions.canBuildHotel}
+              canMortgage={permissions.canMortgage}
+              canUnmortgage={permissions.canUnmortgage}
+              onBuildHouse={handleBuildHouse}
+              onBuildHotel={handleBuildHotel}
+              onSellHouse={handleSellHouse}
+              onSellHotel={handleSellHotel}
+              onMortgage={handleMortgage}
+              onUnmortgage={handleUnmortgage}
+              onClose={() => setOpenedModal(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
