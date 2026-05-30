@@ -1,10 +1,15 @@
 import type { TokenColor } from '@/features/player-panel';
+import type { LogEntry } from '@/shared/protocol/game-state';
 import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state.schema';
 import type { TradeParticipant } from '@/features/trade';
 import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
 import { ActionKey } from './chat.enums';
 
+/**
+ * ChatMessage is kept for lobby use (pre-game WS chat from socket-store).
+ * For in-game activity, pass LogEntry[] directly — no conversion needed.
+ */
 export type ChatMessage = {
   id: string;
   kind: 'chat' | 'event';
@@ -14,8 +19,9 @@ export type ChatMessage = {
   ts: number;
 };
 
+/** Lobby chat log — still uses ChatMessage (from WS, not GameState). */
 export type ChatLogProps = {
-  messages: ChatMessage[];
+  log: LogEntry[];
 };
 
 export type DiceRoll = {
@@ -39,7 +45,8 @@ export type Action = {
 };
 
 export type BoardCenterPanelProps = {
-  messages: ChatMessage[];
+  /** In-game activity log — consumed directly from GameState.log. */
+  log: LogEntry[];
   diceRoll?: DiceRoll | null;
   isRolling?: boolean;
   canRoll?: boolean;

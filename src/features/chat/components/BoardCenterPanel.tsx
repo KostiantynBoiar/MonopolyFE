@@ -10,6 +10,7 @@ import { DeedCard } from '@/features/deed';
 import { AuctionPanel } from '@/features/auction';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
+import { LogKind } from '@/shared/protocol/game-state';
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
 
@@ -206,7 +207,7 @@ function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BoardCenterPanel({
-  messages,
+  log,
   diceRoll = null,
   isRolling = false,
   canRoll = false,
@@ -247,7 +248,7 @@ export function BoardCenterPanel({
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [log]);
 
   function sendText() {
     const t = draft.trim();
@@ -319,11 +320,16 @@ export function BoardCenterPanel({
                 className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
               >
-                {messages.map((msg) =>
-                  msg.kind === 'event' ? (
-                    <EventRow key={msg.id} text={msg.text} />
+                {log.map((entry) =>
+                  entry.kind === LogKind.EVENT ? (
+                    <EventRow key={entry.id} text={entry.text} />
                   ) : (
-                    <MessageRow key={msg.id} author={msg.author} token={msg.token} text={msg.text} />
+                    <MessageRow
+                      key={entry.id}
+                      author={entry.playerName}
+                      token={entry.playerToken}
+                      text={entry.text}
+                    />
                   ),
                 )}
                 <div ref={bottomRef} />

@@ -24,7 +24,6 @@ import {
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
-import { logToChatMessages } from '@/shared/mocks/game-state.mock';
 import { TOKEN_ORDER } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
@@ -364,7 +363,7 @@ export default function GameRoomPage() {
           walkingPlayers={walkingBoardPlayers}
           centerContent={
             <BoardCenterPanel
-              messages={logToChatMessages(gameState.log)}
+              log={gameState.log}
               diceRoll={gameState.turn.diceRoll}
               isRolling={isRolling}
               canRoll={permissions.canRoll && !isRolling}

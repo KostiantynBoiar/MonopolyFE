@@ -148,19 +148,6 @@ export const MOCK_GAME_STATE: GameState = {
   ],
 };
 
-// ─── Derived UI helpers ───────────────────────────────────────────────────────
-
-export function logToChatMessages(log: GameState['log']) {
-  return log.map((entry) => ({
-    id: entry.id,
-    kind: entry.kind === LogKind.STICKER ? 'chat' as const : entry.kind,
-    author: entry.playerName,
-    token: entry.playerToken,
-    text: entry.text,
-    ts: new Date(entry.ts).getTime(),
-  }));
-}
-
 /** Initial GameSnapshot for the mock session. */
 export const MOCK_SNAPSHOT: GameSnapshot = {
   game:        MOCK_GAME_STATE,
