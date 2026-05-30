@@ -1,5 +1,5 @@
 import type { GameState } from './game-state';
-import type { ActionSet } from './permissions';
+import type { PlayerPermissions } from './permissions';
 
 // ======================================================
 // WS ENVELOPE
@@ -50,11 +50,11 @@ export type ErrorPayload = {
 
 export type GameSnapshotPayload = {
   state:       GameState;
-  permissions: ActionSet;
+  permissions: PlayerPermissions;
 };
 
 export type PermissionsUpdatedPayload = {
-  permissions: ActionSet;
+  permissions: PlayerPermissions;
 };
 
 // ======================================================

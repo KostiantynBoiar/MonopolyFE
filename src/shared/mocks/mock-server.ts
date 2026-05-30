@@ -1,21 +1,18 @@
 /**
  * Mock server.
- *
- * Wraps the command-processor and emits typed ServerMessages — the same
- * pipeline the real backend uses over WebSocket. Replacing this module with
- * a real WS connection requires no changes to the frontend dispatch loop.
+ * Wraps processCommand, computes permissions, and emits typed ServerMessages.
+ * When the real backend ships, swap this for a GameSocket.send() call.
  */
 
 import type { GameState, LogEntry } from '@/shared/protocol/game-state';
 import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
-import type {
-  ServerMessage, SnapshotMessage, PatchMessage, LogMessage,
-} from '@/shared/protocol/network';
+import type { ServerMessage, SnapshotMessage, PatchMessage, LogMessage } from '@/shared/protocol/network';
 import { ServerEventType } from '@/shared/protocol/network';
 import { BOARD } from '@/shared/config/board-layout';
 import { processCommand } from './command-processor';
+import { computePermissions } from './compute-permissions';
 
 // ── Sequence counter ──────────────────────────────────────────────────────────
 
@@ -29,7 +26,7 @@ export function makeSnapshot(game: GameState): SnapshotMessage {
     type:        ServerEventType.Snapshot,
     seq:         nextSeq(),
     game,
-    permissions: game.turn.actionsAvailable,
+    permissions: computePermissions(game),
   };
 }
 
@@ -43,11 +40,6 @@ export function makeLog(entries: LogEntry[]): LogMessage {
 
 // ── Command dispatch ──────────────────────────────────────────────────────────
 
-/**
- * Process a client command through the mock backend.
- * Returns a sequence of ServerMessages to apply in order.
- * New log entries arrive as a LogMessage first; the Snapshot follows.
- */
 export function dispatchToMockServer(
   state: GameState,
   cmd: ClientCommand,
@@ -58,21 +50,13 @@ export function dispatchToMockServer(
   const newEntries = next.log.slice(state.log.length);
   const messages: ServerMessage[] = [];
 
-  if (newEntries.length > 0) {
-    messages.push(makeLog(newEntries));
-  }
-
+  if (newEntries.length > 0) messages.push(makeLog(newEntries));
   messages.push(makeSnapshot(next));
   return messages;
 }
 
-// ── Server-initiated events (mock-only simulations) ───────────────────────────
+// ── Server-initiated events ───────────────────────────────────────────────────
 
-/**
- * Advance the auction countdown by `elapsedMs`.
- * Returns the messages the server would stream on a tick timer.
- * When the auction resolves, returns a Snapshot with the final state.
- */
 export function tickAuction(
   state: GameState,
   elapsedMs: number,
@@ -87,14 +71,13 @@ export function tickAuction(
   let nextBobBidFired = bobBidFired;
   let next: GameState = { ...state, auction: { ...state.auction, timeRemainingMs: newTime } };
 
-  // Bob auto-bids at 7 s remaining
   if (newTime <= 7000 && !bobBidFired) {
     nextBobBidFired = true;
-    const aTarget = state.auction.target;
+    const aTarget    = state.auction.target;
     const auctionPos = aTarget.kind === AuctionTargetKind.PROPERTY ? aTarget.position : -1;
-    const property = BOARD[auctionPos] as { price?: number } | undefined;
-    const bobBid = Math.floor((property?.price ?? 100) / 2);
-    const bob = state.players.find((p) => p.id === 'bob');
+    const property   = BOARD[auctionPos] as { price?: number } | undefined;
+    const bobBid     = Math.floor((property?.price ?? 100) / 2);
+    const bob        = state.players.find((p) => p.id === 'bob');
 
     if (bob && bobBid > state.auction.highestBid) {
       const entry: LogEntry = {
@@ -115,7 +98,6 @@ export function tickAuction(
     }
   }
 
-  // Auction resolved
   if (newTime <= 0) {
     const winner    = next.auction!.highestBidderId;
     const winAmount = next.auction!.highestBid;
@@ -142,11 +124,7 @@ export function tickAuction(
         i === pos ? { ...s, ownerId: winner ?? null } : s,
       ),
       auction: null,
-      turn: {
-        ...next.turn,
-        phase: TurnPhase.POST_ROLL,
-        actionsAvailable: { ...next.turn.actionsAvailable, canBid: false },
-      },
+      turn: { ...next.turn, phase: TurnPhase.POST_ROLL },
       log: [...next.log, entry],
     };
 
@@ -155,22 +133,14 @@ export function tickAuction(
     return { messages, bobBidFired: nextBobBidFired };
   }
 
-  // Still ticking — cheap Patch for countdown only
   messages.push(makePatch({ auction: next.auction! }));
   return { messages, bobBidFired: nextBobBidFired };
 }
 
-/**
- * End the current player's turn. Emits a Snapshot with the next-player state.
- */
 export function advanceTurnEvent(state: GameState): SnapshotMessage {
   return makeSnapshot(processCommand(state, { type: CommandType.EndTurn }));
 }
 
-/**
- * Viewer passes on buying a property — the server starts a timed auction.
- * Emits a Snapshot with the auction open and `canBid` set to true.
- */
 export function startAuctionEvent(state: GameState, position: number): SnapshotMessage {
   const entry: LogEntry = {
     id: `log_auction_start_${Date.now()}`, kind: LogKind.EVENT,
@@ -186,35 +156,16 @@ export function startAuctionEvent(state: GameState, position: number): SnapshotM
       highestBidderId: null,
       timeRemainingMs: 10_000,
     },
-    turn: {
-      ...state.turn,
-      phase: TurnPhase.AUCTION,
-      actionsAvailable: { ...state.turn.actionsAvailable, canBid: true, canBuy: false },
-    },
-    log: [...state.log, entry],
+    turn: { ...state.turn, phase: TurnPhase.AUCTION },
+    log:  [...state.log, entry],
   };
-  return makeSnapshot(next);
+  return makeSnapshot(next);   // computePermissions sets canBidAuction:true
 }
 
-/**
- * Reset the current (viewer) player's turn to pre_roll without advancing.
- * Used by the mock to simulate the server telling the viewer "your turn starts".
- */
 export function resetViewerTurnEvent(state: GameState): SnapshotMessage {
   const next: GameState = {
     ...state,
-    turn: {
-      ...state.turn,
-      phase:    TurnPhase.PRE_ROLL,
-      diceRoll: null,
-      actionsAvailable: {
-        ...state.turn.actionsAvailable,
-        canRoll:    true,
-        canBuy:     false,
-        canBuild:   false,
-        canEndTurn: false,
-      },
-    },
+    turn: { ...state.turn, phase: TurnPhase.PRE_ROLL, diceRoll: null },
   };
-  return makeSnapshot(next);
+  return makeSnapshot(next);   // computePermissions sets canRoll:true
 }

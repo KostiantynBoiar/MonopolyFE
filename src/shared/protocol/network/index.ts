@@ -1,17 +1,12 @@
 /**
  * Game-level server messages.
  *
- * These are the payloads that arrive inside WS frames (see events.ts for the
- * transport-level envelope). When the real backend ships, the GameSocket will
- * deserialise incoming frames and emit typed ServerMessages for the frontend
- * to process — the same types, the same pipeline, no code changes required.
- *
  * Processing flow:
- *   WS frame → deserialise → ServerMessage → applyMessage → GameState
+ *   WS frame → deserialise → ServerMessage → applyMessage → GameSnapshot
  */
 
 import type { GameState, LogEntry } from '../game-state';
-import type { ActionSet } from '../permissions';
+import type { GameSnapshot, PlayerPermissions } from '../permissions';
 
 // ======================================================
 // EVENT TYPES
@@ -29,22 +24,19 @@ export enum ServerEventType {
 // ======================================================
 
 /**
- * Full game state replacement.
- * Sent on connect and after any command that produces a non-trivial state change.
- * `permissions` mirrors `game.turn.actionsAvailable` but is kept separate so the
- * frontend can apply permissions without re-parsing the whole state tree.
+ * Full state replacement. Sent on connect and after command processing.
+ * Permissions are sent separately so they can update without re-parsing the whole state tree.
  */
 export type SnapshotMessage = {
   type:        ServerEventType.Snapshot;
   seq:         number;
   game:        GameState;
-  permissions: ActionSet;
+  permissions: PlayerPermissions;
 };
 
 /**
  * Shallow-merge partial update.
- * Used for cheap server-side ticks (e.g. auction countdown).
- * Deep fields (players[], spaces[]) should use Snapshot instead.
+ * Used for cheap server ticks (e.g. auction countdown). Deep fields use Snapshot.
  */
 export type PatchMessage = {
   type:  ServerEventType.Patch;
@@ -53,8 +45,7 @@ export type PatchMessage = {
 };
 
 /**
- * New log entries only.
- * The server may send these between snapshots to avoid re-sending the full log.
+ * Append-only log entries between snapshots.
  */
 export type LogMessage = {
   type:    ServerEventType.Log;
@@ -63,7 +54,7 @@ export type LogMessage = {
 };
 
 /**
- * Command rejected or server fault.
+ * Command rejected or server fault. No state change; caller surfaces the error.
  */
 export type ErrorMessage = {
   type:    ServerEventType.Error;
@@ -83,26 +74,29 @@ export type ServerMessage =
   | ErrorMessage;
 
 // ======================================================
-// PURE REDUCER — apply a message to the current state
+// PURE REDUCER
 // ======================================================
 
 /**
- * Pure function: folds a ServerMessage into the current GameState.
- * Use with React's functional updater: `setGameState(prev => applyMessage(prev, msg))`.
- * ErrorMessage produces no state change — callers decide how to surface it.
+ * Folds a ServerMessage into the current GameSnapshot.
+ * Use as: `setSnapshot(prev => applyMessage(prev, msg))`.
+ * ErrorMessage leaves snapshot unchanged — callers decide how to surface it.
  */
-export function applyMessage(state: GameState, msg: ServerMessage): GameState {
+export function applyMessage(snapshot: GameSnapshot, msg: ServerMessage): GameSnapshot {
   switch (msg.type) {
     case ServerEventType.Snapshot:
-      return msg.game;
+      return { game: msg.game, permissions: msg.permissions };
 
     case ServerEventType.Patch:
-      return { ...state, ...msg.delta };
+      return { ...snapshot, game: { ...snapshot.game, ...msg.delta } };
 
     case ServerEventType.Log:
-      return { ...state, log: [...state.log, ...msg.entries] };
+      return {
+        ...snapshot,
+        game: { ...snapshot.game, log: [...snapshot.game.log, ...msg.entries] },
+      };
 
     case ServerEventType.Error:
-      return state;
+      return snapshot;
   }
 }

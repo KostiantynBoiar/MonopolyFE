@@ -1,5 +1,7 @@
 import type { GameState, PropertyState } from '@/shared/protocol/game-state';
 import { TokenColor, GameStatus, TurnPhase, LogKind } from '@/shared/protocol/game-state';
+import type { GameSnapshot } from '@/shared/protocol/permissions';
+import { computePermissions } from './compute-permissions';
 
 // ─── Board ownership snapshot (40 spaces) ────────────────────────────────────
 // Positions that are never purchasable: 0,2,4,7,10,17,20,22,30,33,36,38
@@ -106,19 +108,6 @@ export const MOCK_GAME_STATE: GameState = {
     diceRoll: null,
     doublesStreak: 0,
     extraTurn: false,
-    actionsAvailable: {
-      canRoll: true,
-      canBuy: false,
-      canBuild: false,
-      canSellBuildings: false,
-      canMortgage: true,
-      canUnmortgage: true,
-      canTrade: true,
-      canEndTurn: false,
-      canPayJailFine: false,
-      canUseJailCard: false,
-      canBid: false,
-    },
   },
 
   bank: { availableHouses: 32, availableHotels: 12 },
@@ -171,3 +160,9 @@ export function logToChatMessages(log: GameState['log']) {
     ts: new Date(entry.ts).getTime(),
   }));
 }
+
+/** Initial GameSnapshot for the mock session. */
+export const MOCK_SNAPSHOT: GameSnapshot = {
+  game:        MOCK_GAME_STATE,
+  permissions: computePermissions(MOCK_GAME_STATE),
+};

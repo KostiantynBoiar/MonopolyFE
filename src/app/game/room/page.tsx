@@ -18,6 +18,7 @@ import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState, TradeState } from '@/shared/protocol/game-state.schema';
 import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
+import type { GameSnapshot } from '@/shared/protocol/permissions';
 import { applyMessage, ServerEventType } from '@/shared/protocol/network';
 import {
   tickAuction, advanceTurnEvent, startAuctionEvent, resetViewerTurnEvent,
@@ -25,7 +26,7 @@ import {
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
-import { MOCK_GAME_STATE, logToChatMessages } from '@/shared/mocks/game-state.mock';
+import { MOCK_SNAPSHOT, logToChatMessages } from '@/shared/mocks/game-state.mock';
 import { TOKEN_ORDER } from '@/shared/config/constants';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { DeedInfo } from '@/features/deed';
@@ -187,24 +188,25 @@ export default function GameRoomPage() {
 
   // ── Game board mode ────────────────────────────────────────────────────────
 
-  const [gameState, setGameState] = useState<GameState>(MOCK_GAME_STATE);
+  const [snapshot, setSnapshot] = useState<GameSnapshot>(MOCK_SNAPSHOT);
+  const { game: gameState, permissions } = snapshot;
+
   const [isRolling, setIsRolling] = useState(false);
   const [walkState, setWalkState] = useState<WalkState | null>(null);
   const [activeDeed, setActiveDeed] = useState<DeedInfo | null>(null);
 
-  // Always-fresh ref so async callbacks read current state without stale closure
-  const gameStateRef = useRef(gameState);
-  gameStateRef.current = gameState;
+  // Always-fresh ref so async callbacks read current snapshot without stale closure
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
 
-  const { dispatch } = useGameDispatch(gameStateRef, {
-    setGameState, setIsRolling, setWalkState, setActiveDeed,
+  const { dispatch } = useGameDispatch(snapshotRef, {
+    setSnapshot, setIsRolling, setWalkState, setActiveDeed,
   });
 
   // Tracks whether Bob's auto-bid in the current auction has already fired
   const autoBidFiredRef = useRef(false);
 
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId)!;
-  const actions = gameState.turn.actionsAvailable;
 
   // ── Auto-advance after post_roll — simulates server turn management ─────────
 
@@ -213,17 +215,17 @@ export default function GameRoomPage() {
     if (activeDeed !== null) return;
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
-      const current = gameStateRef.current;
+      const current = snapshotRef.current.game;
       if (isViewerTurn) {
         // Viewer manually ends turns in real play; for the mock, reset to pre_roll.
-        setGameState((prev) => applyMessage(prev, resetViewerTurnEvent(current)));
+        setSnapshot((prev) => applyMessage(prev,resetViewerTurnEvent(current)));
       } else {
         // Simulate the opponent finishing their turn.
-        setGameState((prev) => applyMessage(prev, advanceTurnEvent(current)));
+        setSnapshot((prev) => applyMessage(prev,advanceTurnEvent(current)));
       }
     }, 1500);
     return () => clearTimeout(t);
-  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed, setGameState]);
+  }, [gameState.turn.phase, gameState.turn.turnNumber, gameState.turn.currentPlayerId, gameState.viewerId, activeDeed, setSnapshot]);
 
   // ── Auction countdown — simulates server ticks ────────────────────────────
 
@@ -234,40 +236,43 @@ export default function GameRoomPage() {
     }
 
     const interval = setInterval(() => {
-      const current = gameStateRef.current;
+      const current = snapshotRef.current.game;
       if (current.turn.phase !== TurnPhase.AUCTION || !current.auction) return;
 
       const { messages, bobBidFired } = tickAuction(current, 1000, autoBidFiredRef.current);
       autoBidFiredRef.current = bobBidFired;
       for (const msg of messages) {
-        setGameState((prev) => applyMessage(prev, msg));
+        setSnapshot((prev) => applyMessage(prev,msg));
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [gameState.turn.phase, gameStateRef, setGameState]);
+  }, [gameState.turn.phase, snapshotRef, setSnapshot]);
 
   const handleRoll = useCallback(() => {
-    if (!actions.canRoll || isRolling) return;
+    if (!permissions.canRoll || isRolling) return;
     dispatch({ type: CommandType.RollDice });
-  }, [actions.canRoll, isRolling, dispatch]);
+  }, [permissions.canRoll, isRolling, dispatch]);
 
   const handleCardProceed = useCallback(() => {
-    setGameState((prev) => ({
+    setSnapshot((prev) => ({
       ...prev,
-      activeCard: null,
-      turn: { ...prev.turn, phase: TurnPhase.POST_ROLL },
-      log: [
-        ...prev.log,
-        {
-          id: `log_card_${Date.now()}`,
-          kind: LogKind.EVENT,
-          text: `${viewer.displayName} drew: "${prev.activeCard?.text ?? ''}"`,
-          ts: new Date().toISOString(),
-        },
-      ],
+      game: {
+        ...prev.game,
+        activeCard: null,
+        turn: { ...prev.game.turn, phase: TurnPhase.POST_ROLL },
+        log: [
+          ...prev.game.log,
+          {
+            id: `log_card_${Date.now()}`,
+            kind: LogKind.EVENT,
+            text: `${viewer.displayName} drew: "${prev.game.activeCard?.text ?? ''}"`,
+            ts: new Date().toISOString(),
+          },
+        ],
+      },
     }));
-  }, [viewer]);
+  }, [viewer, setSnapshot]);
 
   // ── Buy property ──────────────────────────────────────────────────────────
 
@@ -284,8 +289,8 @@ export default function GameRoomPage() {
     autoBidFiredRef.current = false;
     setActiveDeed(null);
     // Server decides the transition — permissions (canBid) set by the server event.
-    setGameState((prev) => applyMessage(prev, startAuctionEvent(prev, activeDeed.position)));
-  }, [activeDeed, setGameState]);
+    setSnapshot((prev) => applyMessage(prev, startAuctionEvent(prev.game, activeDeed.position)));
+  }, [activeDeed, setSnapshot]);
 
   // ── Place bid ──────────────────────────────────────────────────────────────
 
@@ -307,42 +312,48 @@ export default function GameRoomPage() {
   }, [dispatch]);
 
   const handleTradeAccept = useCallback(() => {
-    const tradeId = gameStateRef.current.trade?.id ?? '';
+    const tradeId = snapshotRef.current.game.trade?.id ?? '';
     dispatch({ type: CommandType.AcceptTrade, tradeId });
-    setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
-  }, [dispatch, gameStateRef, setGameState]);
+    setTimeout(() => setSnapshot((prev) => ({ ...prev, game: { ...prev.game, trade: null } })), 800);
+  }, [dispatch, snapshotRef, setSnapshot]);
 
   const handleTradeReject = useCallback(() => {
-    const tradeId = gameStateRef.current.trade?.id ?? '';
+    const tradeId = snapshotRef.current.game.trade?.id ?? '';
     dispatch({ type: CommandType.RejectTrade, tradeId });
-    setTimeout(() => setGameState((prev) => ({ ...prev, trade: null })), 800);
-  }, [dispatch, gameStateRef, setGameState]);
+    setTimeout(() => setSnapshot((prev) => ({ ...prev, game: { ...prev.game, trade: null } })), 800);
+  }, [dispatch, snapshotRef, setSnapshot]);
 
   // Cancel = proposer withdraws; no protocol command yet — direct mock mutation.
   const handleTradeCancel = useCallback(() => {
-    setGameState((prev) => ({ ...prev, trade: null, turn: { ...prev.turn, phase: TurnPhase.PRE_ROLL } }));
-  }, [setGameState]);
+    setSnapshot((prev) => ({
+      ...prev,
+      game: { ...prev.game, trade: null, turn: { ...prev.game.turn, phase: TurnPhase.PRE_ROLL } },
+    }));
+  }, [setSnapshot]);
 
   const handleSendMessage = useCallback((text: string) => {
     const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
     const isSticker = stickerMatch !== null;
-    setGameState((prev) => ({
+    setSnapshot((prev) => ({
       ...prev,
-      log: [
-        ...prev.log,
-        {
-          id: `log_chat_${Date.now()}`,
-          kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
-          playerId: prev.viewerId,
-          playerName: viewer.displayName,
-          playerToken: viewer.token,
-          text,
-          stickerUrl: stickerMatch?.[1],
-          ts: new Date().toISOString(),
-        },
-      ],
+      game: {
+        ...prev.game,
+        log: [
+          ...prev.game.log,
+          {
+            id: `log_chat_${Date.now()}`,
+            kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
+            playerId: prev.game.viewerId,
+            playerName: viewer.displayName,
+            playerToken: viewer.token,
+            text,
+            stickerUrl: stickerMatch?.[1],
+            ts: new Date().toISOString(),
+          },
+        ],
+      },
     }));
-  }, [viewer]);
+  }, [viewer, setSnapshot]);
 
   // ── Guards (all hooks above, returns below) ────────────────────────────────
 
@@ -416,10 +427,10 @@ export default function GameRoomPage() {
               messages={logToChatMessages(gameState.log)}
               diceRoll={gameState.turn.diceRoll}
               isRolling={isRolling}
-              canRoll={actions.canRoll && !isRolling}
-              canBuy={actions.canBuy}
-              canBuild={actions.canBuild}
-              canTrade={actions.canTrade}
+              canRoll={permissions.canRoll && !isRolling}
+              canBuy={permissions.canBuyProperty}
+              canBuild={permissions.canBuildHouse || permissions.canBuildHotel}
+              canTrade={permissions.canTrade}
               onRoll={handleRoll}
               onSendMessage={handleSendMessage}
               onTrade={handleTrade}
@@ -431,7 +442,7 @@ export default function GameRoomPage() {
               auctionState={gameState.auction}
               auctionPropertyName={auctionPropertyName}
               auctionPlayers={auctionPlayers}
-              canBid={actions.canBid}
+              canBid={permissions.canBidAuction}
               onBid={handleBid}
               tradeState={gameState.trade}
               tradeProposer={tradeProposer}
