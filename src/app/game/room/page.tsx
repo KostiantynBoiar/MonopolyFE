@@ -19,7 +19,9 @@ import type { GameState, TradeState } from '@/shared/protocol/game-state.schema'
 import { TurnPhase, LogKind, AuctionTargetKind } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { applyMessage, ServerEventType } from '@/shared/protocol/network';
-import { tickAuction, advanceTurnEvent } from '@/shared/mocks/mock-server';
+import {
+  tickAuction, advanceTurnEvent, startAuctionEvent, resetViewerTurnEvent,
+} from '@/shared/mocks/mock-server';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { TradeParticipant } from '@/features/trade';
 import type { ChatMessage } from '@/features/chat/chat.types';
@@ -211,20 +213,13 @@ export default function GameRoomPage() {
     if (activeDeed !== null) return;
     const isViewerTurn = gameState.turn.currentPlayerId === gameState.viewerId;
     const t = setTimeout(() => {
+      const current = gameStateRef.current;
       if (isViewerTurn) {
-        // Viewer manually ends turns in real play; for the mock, reset to pre_roll
-        // so the UI stays interactive without requiring an explicit EndTurn click.
-        setGameState((prev) =>
-          applyMessage(prev, { type: ServerEventType.Patch, seq: 0, delta: {
-            turn: {
-              ...prev.turn, phase: TurnPhase.PRE_ROLL, diceRoll: null,
-              actionsAvailable: { ...prev.turn.actionsAvailable, canRoll: true, canBuy: false, canBuild: false, canEndTurn: false },
-            },
-          } }),
-        );
+        // Viewer manually ends turns in real play; for the mock, reset to pre_roll.
+        setGameState((prev) => applyMessage(prev, resetViewerTurnEvent(current)));
       } else {
         // Simulate the opponent finishing their turn.
-        setGameState((prev) => applyMessage(prev, advanceTurnEvent(prev)));
+        setGameState((prev) => applyMessage(prev, advanceTurnEvent(current)));
       }
     }, 1500);
     return () => clearTimeout(t);
@@ -286,34 +281,11 @@ export default function GameRoomPage() {
 
   const handleAuction = useCallback(() => {
     if (!activeDeed) return;
-    const { position, name } = activeDeed;
     autoBidFiredRef.current = false;
     setActiveDeed(null);
-    setGameState((prev) => ({
-      ...prev,
-      auction: {
-        target: { kind: AuctionTargetKind.PROPERTY, position },
-        bids: [],
-        highestBid: 0,
-        highestBidderId: null,
-        timeRemainingMs: 10_000,
-      },
-      turn: {
-        ...prev.turn,
-        phase: TurnPhase.AUCTION,
-        actionsAvailable: { ...prev.turn.actionsAvailable, canBid: true },
-      },
-      log: [
-        ...prev.log,
-        {
-          id: `log_auction_start_${Date.now()}`,
-          kind: LogKind.EVENT,
-          text: `${name} goes to auction!`,
-          ts: new Date().toISOString(),
-        },
-      ],
-    }));
-  }, [activeDeed]);
+    // Server decides the transition — permissions (canBid) set by the server event.
+    setGameState((prev) => applyMessage(prev, startAuctionEvent(prev, activeDeed.position)));
+  }, [activeDeed, setGameState]);
 
   // ── Place bid ──────────────────────────────────────────────────────────────
 
@@ -459,6 +431,7 @@ export default function GameRoomPage() {
               auctionState={gameState.auction}
               auctionPropertyName={auctionPropertyName}
               auctionPlayers={auctionPlayers}
+              canBid={actions.canBid}
               onBid={handleBid}
               tradeState={gameState.trade}
               tradeProposer={tradeProposer}

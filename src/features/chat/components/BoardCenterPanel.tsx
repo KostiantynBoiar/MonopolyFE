@@ -225,6 +225,7 @@ export function BoardCenterPanel({
   auctionState = null,
   auctionPropertyName = '',
   auctionPlayers = [],
+  canBid = false,
   onBid,
   tradeState = null,
   tradeProposer,
@@ -285,6 +286,7 @@ export function BoardCenterPanel({
           propertyName={auctionPropertyName}
           viewerId={viewerId ?? ''}
           players={auctionPlayers}
+          canBid={canBid}
           onBid={onBid ?? (() => {})}
         />
       ) : isTradeActive ? (

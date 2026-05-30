@@ -61,6 +61,7 @@ export type BoardCenterPanelProps = {
   auctionState?: AuctionState | null;
   auctionPropertyName?: string;
   auctionPlayers?: AuctionPlayer[];
+  canBid?: boolean;
   onBid?: (amount: number) => void;
   // Trade window (swaps chat container when active)
   tradeState?: TradeState | null;

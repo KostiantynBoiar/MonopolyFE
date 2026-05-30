@@ -10,5 +10,6 @@ export type AuctionPanelProps = {
   propertyName: string;
   viewerId: string;
   players: AuctionPlayer[];
+  canBid: boolean;            // from server permissions (actionsAvailable.canBid)
   onBid: (amount: number) => void;
 };

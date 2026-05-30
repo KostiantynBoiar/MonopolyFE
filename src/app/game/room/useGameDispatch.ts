@@ -9,8 +9,6 @@ import { dispatchToMockServer } from '@/shared/mocks/mock-server';
 import { getWalkSteps } from '@/features/game-board';
 import { getDeedInfo } from '@/features/deed';
 import type { DeedInfo } from '@/features/deed';
-import { BOARD } from '@/shared/config/board-layout';
-import { SpaceType } from '@/features/game-board/game-board.enums';
 import { WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import type { ServerMessage } from '@/shared/protocol/network';
 import { ServerEventType } from '@/shared/protocol/network';
@@ -118,16 +116,9 @@ export function useGameDispatch(
         applyMessages(messages, setGameState);
         isRollingRef.current = false;
 
-        // Show deed card if the viewer landed on an unowned purchasable space
-        const landedSpace = BOARD[newPos];
-        const isPurchasable =
-          landedSpace != null &&
-          (landedSpace.type === SpaceType.PROPERTY ||
-            landedSpace.type === SpaceType.RAILROAD ||
-            landedSpace.type === SpaceType.UTILITY);
-        const isUnowned = nextState.spaces[newPos]?.ownerId === null;
-
-        if (!nextState.activeCard && isPurchasable && isUnowned) {
+        // Show the deed card when the server says the viewer can buy.
+        // canBuy is the authoritative permission — no local ownership check needed.
+        if (nextState.turn.actionsAvailable.canBuy) {
           setActiveDeed(getDeedInfo(newPos));
         }
 

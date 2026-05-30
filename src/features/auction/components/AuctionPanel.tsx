@@ -9,13 +9,15 @@ function formatTime(ms: number): string {
   return `0:${String(s).padStart(2, '0')}`;
 }
 
-export function AuctionPanel({ auctionState, propertyName, viewerId, players, onBid }: AuctionPanelProps) {
+export function AuctionPanel({ auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid }: AuctionPanelProps) {
   const [bidInput, setBidInput] = useState('');
 
   const highestBidder = players.find((p) => p.id === auctionState.highestBidderId);
   const minBid = auctionState.highestBid + 1;
   const parsedBid = parseInt(bidInput, 10);
-  const canBid = !isNaN(parsedBid) && parsedBid >= minBid;
+  // canBidPermission: server says we're allowed to bid at all
+  // input validity: the entered amount is a valid number >= minimum
+  const canBid = canBidPermission && !isNaN(parsedBid) && parsedBid >= minBid;
   const isUrgent = auctionState.timeRemainingMs <= 4000;
 
   function submitBid() {

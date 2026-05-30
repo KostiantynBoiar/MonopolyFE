@@ -166,3 +166,55 @@ export function tickAuction(
 export function advanceTurnEvent(state: GameState): SnapshotMessage {
   return makeSnapshot(processCommand(state, { type: CommandType.EndTurn }));
 }
+
+/**
+ * Viewer passes on buying a property — the server starts a timed auction.
+ * Emits a Snapshot with the auction open and `canBid` set to true.
+ */
+export function startAuctionEvent(state: GameState, position: number): SnapshotMessage {
+  const entry: LogEntry = {
+    id: `log_auction_start_${Date.now()}`, kind: LogKind.EVENT,
+    text: `${BOARD[position]?.name ?? `#${position}`} goes to auction!`,
+    ts: new Date().toISOString(),
+  };
+  const next: GameState = {
+    ...state,
+    auction: {
+      target:          { kind: AuctionTargetKind.PROPERTY, position },
+      bids:            [],
+      highestBid:      0,
+      highestBidderId: null,
+      timeRemainingMs: 10_000,
+    },
+    turn: {
+      ...state.turn,
+      phase: TurnPhase.AUCTION,
+      actionsAvailable: { ...state.turn.actionsAvailable, canBid: true, canBuy: false },
+    },
+    log: [...state.log, entry],
+  };
+  return makeSnapshot(next);
+}
+
+/**
+ * Reset the current (viewer) player's turn to pre_roll without advancing.
+ * Used by the mock to simulate the server telling the viewer "your turn starts".
+ */
+export function resetViewerTurnEvent(state: GameState): SnapshotMessage {
+  const next: GameState = {
+    ...state,
+    turn: {
+      ...state.turn,
+      phase:    TurnPhase.PRE_ROLL,
+      diceRoll: null,
+      actionsAvailable: {
+        ...state.turn.actionsAvailable,
+        canRoll:    true,
+        canBuy:     false,
+        canBuild:   false,
+        canEndTurn: false,
+      },
+    },
+  };
+  return makeSnapshot(next);
+}
