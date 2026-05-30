@@ -570,7 +570,6 @@ export default function GameRoomPage() {
 
   // ── Trade handlers ─────────────────────────────────────────────────────────
 
->>>>>>> 7ab62cf (feat: title deed display, Buy/Auction flow, mock auction countdown)
   const handleTrade = useCallback(() => {
     setGameState((prev) => ({
       ...prev,

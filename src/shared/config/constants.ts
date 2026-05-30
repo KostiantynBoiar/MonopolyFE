@@ -5,16 +5,15 @@ import { StatusDot } from '@/features/lobby/lobby.enums';
 
 // ─── Board scaling ────────────────────────────────────────────────────────────
 
-/* Used for scaling the game board */
-export const BASE_PX = 686;
-
 // Tile pixel dimensions
-export const N = 56;  // narrow edge
-export const W = 91;  // wide edge (corner size)
+export const N  = 56;  // narrow tile height (row tiles)
+export const NW = 72;  // narrow tile width (column tiles) — wider board on landscape screens
+export const W  = 91;  // wide edge (corner size)
 
-export const gridCols = `${W}px repeat(9, ${N}px) ${W}px`;
+export const gridCols = `${W}px repeat(9, ${NW}px) ${W}px`;
 export const gridRows = `${W}px repeat(9, ${N}px) ${W}px`;
-export const BOARD_PX = W * 2 + N * 9; // 686
+export const BOARD_W  = W * 2 + NW * 9; // 830 — board pixel width
+export const BOARD_PX = W * 2 + N * 9;  // 686 — board pixel height
 
 export const bandColors: Record<PropertyColor, string> = {
   [PropertyColor.BROWN]: 'bg-band-brown',

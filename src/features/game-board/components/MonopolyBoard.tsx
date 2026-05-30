@@ -6,7 +6,7 @@ import type { BoardPlayer, WalkingPlayer } from '../game-board.types';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
-import { N, W, gridCols, gridRows, BOARD_PX, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { N, W, gridCols, gridRows, BOARD_W, BOARD_PX, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import type { TileContentProps, MonopolyBoardProps } from '../game-board.types';
 
 // ─── Tile rendering ───────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export function MonopolyBoard({
   return (
     <div
       style={{
-        width: BOARD_PX * scale,
+        width: BOARD_W * scale,
         height: BOARD_PX * scale,
         fontSize: `${scale}rem`,
       }}
@@ -167,7 +167,7 @@ export function MonopolyBoard({
           display: 'grid',
           gridTemplateColumns: gridCols,
           gridTemplateRows: gridRows,
-          width: BOARD_PX,
+          width: BOARD_W,
           height: BOARD_PX,
           transformOrigin: 'top left',
           transform: scale !== 1 ? `scale(${scale})` : undefined,

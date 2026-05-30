@@ -80,7 +80,7 @@ export function DeedCard({ deed, onBuy, onAuction }: DeedCardProps) {
         <div className="flex w-full gap-1">
           <button
             onClick={onBuy}
-            className="flex-1 rounded bg-green-600 py-1 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-green-700 active:scale-95"
+            className="flex-1 rounded bg-green py-1 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#186444] active:scale-95"
             style={{ fontSize: '0.6em' }}
           >
             Buy

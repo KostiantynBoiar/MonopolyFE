@@ -1,188 +1,458 @@
 import type { TokenColor } from '@/features/player-panel';
+import { CardKind, CardEffectType } from '@/features/card/card.enums';
+import { TradeStatus } from '@/features/trade/trade.enums';
+import { PropertyColor } from '@/features/game-board/game-board.enums';
+import { DiceRoll } from '@/features/chat/chat.types';
 export type { TokenColor };
 
-// ─── Primitives ───────────────────────────────────────────────────────────────
+// ======================================================
+// ENUMS
+// ======================================================
 
-export type GameStatus = 'lobby' | 'in_progress' | 'finished';
+export enum GameStatus {
+  Lobby = 'lobby',
+  InProgress = 'in_progress',
+  Finished = 'finished',
+}
 
-export type TurnPhase =
-  | 'pre_roll'            // awaiting dice roll (or jail-exit decision)
-  | 'jail_decision'       // in-jail player must choose: roll / pay / use card
-  | 'post_roll'           // moved; can buy, build, mortgage, trade before ending
-  | 'must_pay_rent'       // player owes rent; all other actions blocked
-  | 'drawing_card'        // resolving a Chance or Community Chest card
-  | 'auction'             // property up for auction (no one bought it)
-  | 'trade_negotiation'   // a trade offer is live and awaiting response
-  | 'bankrupt_resolution' // player cannot pay; assets being redistributed
-  | 'game_over';
+export enum TurnPhase {
+  PreRoll = 'pre_roll',
+  JailDecision = 'jail_decision',
+  PostRoll = 'post_roll',
+  MustPayRent = 'must_pay_rent',
+  DrawingCard = 'drawing_card',
+  Auction = 'auction',
+  TradeNegotiation = 'trade_negotiation',
+  BankruptResolution = 'bankrupt_resolution',
+  GameOver = 'game_over',
+}
 
-// ─── Sub-shapes ───────────────────────────────────────────────────────────────
+export enum LogKind {
+  Event = 'event',
+  Chat = 'chat',
+  Sticker = 'sticker',
+}
 
-export type DiceRoll = {
-  die1: number;   // 1–6
-  die2: number;   // 1–6
-  isDoubles: boolean;
+export enum AdvanceToNearestSpaceType {
+  Railroad = 'railroad',
+  Utility = 'utility',
+}
+
+export enum BoardSpaceType {
+  Go = 'go',
+  Property = 'property',
+  Railroad = 'railroad',
+  Utility = 'utility',
+  Chance = 'chance',
+  CommunityChest = 'community_chest',
+  IncomeTax = 'income_tax',
+  LuxuryTax = 'luxury_tax',
+  Jail = 'jail',
+  FreeParking = 'free_parking',
+  GoToJail = 'go_to_jail',
+}
+
+export enum AuctionTargetKind {
+  Property = 'property',
+  House = 'house',
+  Hotel = 'hotel',
+}
+
+export enum DebtCreditorType {
+  Bank = 'bank',
+  Player = 'player',
+}
+
+// ======================================================
+// COMMON
+// ======================================================
+
+export type IsoDateString = string;
+
+// ======================================================
+// BOARD DEFINITIONS (IMMUTABLE)
+// ======================================================
+
+export type PropertyDefinition = {
+  position: number;
+  name: string;
+
+  color: PropertyColor;
+
+  price: number;
+
+  mortgageValue: number;
+
+  houseCost: number;
+
+  rents: {
+    base: number;
+    monopoly: number;
+    oneHouse: number;
+    twoHouses: number;
+    threeHouses: number;
+    fourHouses: number;
+    hotel: number;
+  };
 };
+
+export type RailroadDefinition = {
+  position: number;
+  name: string;
+  price: number;
+  mortgageValue: number;
+};
+
+export type UtilityDefinition = {
+  position: number;
+  name: string;
+  price: number;
+  mortgageValue: number;
+};
+
+export type BoardSpaceDefinition =
+  | {
+      position: number;
+      type: BoardSpaceType.Property;
+      property: PropertyDefinition;
+    }
+  | {
+      position: number;
+      type: BoardSpaceType.Railroad;
+      railroad: RailroadDefinition;
+    }
+  | {
+      position: number;
+      type: BoardSpaceType.Utility;
+      utility: UtilityDefinition;
+    }
+  | {
+      position: number;
+      type:
+        | BoardSpaceType.Go
+        | BoardSpaceType.Chance
+        | BoardSpaceType.CommunityChest
+        | BoardSpaceType.IncomeTax
+        | BoardSpaceType.LuxuryTax
+        | BoardSpaceType.Jail
+        | BoardSpaceType.FreeParking
+        | BoardSpaceType.GoToJail;
+      name: string;
+    };
+
+// ======================================================
+// BANK
+// ======================================================
+
+export type BankState = {
+  availableHouses: number;
+  availableHotels: number;
+};
+
+// ======================================================
+// PROPERTY OWNERSHIP
+// ======================================================
+
+export type PropertyState = {
+  position: number;
+
+  ownerId: string | null;
+
+  houses: 0 | 1 | 2 | 3 | 4;
+
+  hotel: boolean;
+
+  isMortgaged: boolean;
+};
+
+// ======================================================
+// PLAYERS
+// ======================================================
 
 export type JailStatus = {
-  turnsRemaining: number;  // counts down 3 → 2 → 1; forced-pay on 0
+  attempts: number;
 };
+
+export type PlayerState = {
+  id: string;
+
+  userId: string;
+
+  displayName: string;
+
+  token: TokenColor;
+
+  avatarUrl: string | null;
+
+  turnOrder: number;
+
+  position: number;
+
+  balance: number;
+
+  ownedPositions: number[];
+
+  getOutOfJailCards: number;
+
+  jailStatus: JailStatus | null;
+
+  doublesStreak: number;
+
+  isBankrupt: boolean;
+
+  isConnected: boolean;
+};
+
+// ======================================================
+// TURN
+// ======================================================
 
 export type ActionSet = {
   canRoll: boolean;
-  canBuy: boolean;          // landed on unowned property this turn
-  canBuild: boolean;        // owns complete color group; houses available
+  canBuy: boolean;
+  canBuild: boolean;
+  canSellBuildings: boolean;
   canMortgage: boolean;
   canUnmortgage: boolean;
   canTrade: boolean;
   canEndTurn: boolean;
-  canPayJailFine: boolean;  // pay $50 to exit jail immediately
-  canUseJailCard: boolean;  // spend a Get Out of Jail Free card
-  canBid: boolean;          // auction phase only
+  canPayJailFine: boolean;
+  canUseJailCard: boolean;
+  canBid: boolean;
 };
-
-export type SpaceOwnership = {
-  position: number;
-  ownerId: string | null;   // null = bank / non-purchasable
-  houses: number;           // 0–4
-  hasHotel: boolean;        // 5th house becomes a hotel
-  isMortgaged: boolean;
-};
-
-// ─── Players ──────────────────────────────────────────────────────────────────
-
-export type PlayerState = {
-  id: string;
-  userId: string;
-  displayName: string;
-  token: TokenColor;
-  avatarUrl: string | null;
-  turnOrder: number;           // 0-based seat index (determines play order)
-
-  position: number;            // 0–39
-  balance: number;
-  ownedPositions: number[];
-  getOutOfJailCards: number;
-  jailStatus: JailStatus | null;  // null when not in jail
-  isBankrupt: boolean;
-  isConnected: boolean;
-
-  netWorth: number;            // balance + property values + building values
-};
-
-// ─── Turn ─────────────────────────────────────────────────────────────────────
 
 export type TurnState = {
   phase: TurnPhase;
+
   currentPlayerId: string;
-  turnNumber: number;          // increments each time the active player changes
-  roundNumber: number;         // increments after all players have gone once
-  diceRoll: DiceRoll | null;   // null before rolling
-  doublesStreak: number;       // 0–2; hitting 3 sends the player to jail
-  actionsAvailable: ActionSet; // scoped to the viewer (viewerId)
+
+  turnNumber: number;
+
+  roundNumber: number;
+
+  diceRoll: DiceRoll | null;
+
+  extraTurn: boolean;
+
+  actionsAvailable: ActionSet;
 };
 
-// ─── Auction ──────────────────────────────────────────────────────────────────
+// ======================================================
+// DEBT
+// ======================================================
+
+export type DebtState = {
+  debtorId: string;
+
+  creditorType: DebtCreditorType;
+
+  creditorId: string | null;
+
+  amount: number;
+};
+
+// ======================================================
+// AUCTIONS
+// ======================================================
 
 export type AuctionBid = {
   playerId: string;
   amount: number;
 };
 
+export type AuctionTarget =
+  | {
+      kind: AuctionTargetKind.Property;
+      position: number;
+    }
+  | {
+      kind: AuctionTargetKind.House;
+    }
+  | {
+      kind: AuctionTargetKind.Hotel;
+    };
+
 export type AuctionState = {
-  propertyPosition: number;
+  target: AuctionTarget;
+
   bids: AuctionBid[];
+
   highestBid: number;
+
   highestBidderId: string | null;
+
   timeRemainingMs: number;
 };
 
-// ─── Trade ────────────────────────────────────────────────────────────────────
+// ======================================================
+// TRADING
+// ======================================================
 
 export type TradeOffer = {
   money: number;
-  positions: number[];          // board positions of properties offered
+
+  positions: number[];
+
   getOutOfJailCards: number;
 };
 
 export type TradeState = {
   id: string;
+
   proposerId: string;
+
   targetId: string;
-  proposerOffer: TradeOffer;    // what the proposer gives
-  targetRequest: TradeOffer;    // what the proposer asks for in return
-  status: 'pending' | 'countered' | 'accepted' | 'rejected' | 'cancelled';
-  expiresAt: string;            // ISO 8601; UI shows countdown
+
+  proposerOffer: TradeOffer;
+
+  targetRequest: TradeOffer;
+
+  status: TradeStatus;
+
+  expiresAt: IsoDateString;
 };
 
-// ─── Cards ────────────────────────────────────────────────────────────────────
-
-export type CardKind = 'chance' | 'community_chest';
+// ======================================================
+// CARDS
+// ======================================================
 
 export type CardEffect =
-  | { type: 'advance_to'; position: number; collectGoBonus: boolean }
-  | { type: 'advance_to_nearest'; spaceType: 'railroad' | 'utility'; payDouble: boolean }
-  | { type: 'go_to_jail' }
-  | { type: 'go_back'; spaces: number }
-  | { type: 'collect'; amount: number }
-  | { type: 'pay'; amount: number }
-  | { type: 'collect_from_each_player'; amount: number }
-  | { type: 'pay_each_player'; amount: number }
-  | { type: 'get_out_of_jail_free' }
-  | { type: 'repairs'; perHouse: number; perHotel: number };
+  | {
+      type: CardEffectType.ADVANCE_TO;
+      position: number;
+      collectGoBonus: boolean;
+    }
+  | {
+      type: CardEffectType.ADVANCE_TO_NEAREST;
+      spaceType: AdvanceToNearestSpaceType;
+      payDouble: boolean;
+    }
+  | {
+      type: CardEffectType.GO_TO_JAIL;
+    }
+  | {
+      type: CardEffectType.GO_BACK;
+      spaces: number;
+    }
+  | {
+      type: CardEffectType.COLLECT;
+      amount: number;
+    }
+  | {
+      type: CardEffectType.PAY;
+      amount: number;
+    }
+  | {
+      type: CardEffectType.COLLECT_FROM_EACH_PLAYER;
+      amount: number;
+    }
+  | {
+      type: CardEffectType.PAY_EACH_PLAYER;
+      amount: number;
+    }
+  | {
+      type: CardEffectType.GET_OUT_OF_JAIL_FREE;
+    }
+  | {
+      type: CardEffectType.REPAIRS;
+      perHouse: number;
+      perHotel: number;
+    };
 
 export type ActiveCard = {
   id: string;
+
   kind: CardKind;
+
   text: string;
+
   effect: CardEffect;
+
   drawerId: string;
 };
 
-// ─── Chat / Event log ─────────────────────────────────────────────────────────
+export type DeckState = {
+  chance: string[];
 
-export type LogKind = 'event' | 'chat' | 'sticker';
+  communityChest: string[];
+
+  discardedChance: string[];
+
+  discardedCommunityChest: string[];
+};
+
+// ======================================================
+// BANKRUPTCY
+// ======================================================
+
+export type BankruptcyState = {
+  playerId: string;
+
+  creditorType: DebtCreditorType;
+
+  creditorId: string | null;
+};
+
+// ======================================================
+// LOG
+// ======================================================
 
 export type LogEntry = {
   id: string;
+
   kind: LogKind;
+
   playerId?: string;
+
   playerName?: string;
+
   playerToken?: TokenColor;
+
   text: string;
-  stickerUrl?: string;    // present only when kind === 'sticker'
-  ts: string;             // ISO 8601
+
+  stickerUrl?: string;
+
+  ts: IsoDateString;
 };
 
-// ─── Root game state ──────────────────────────────────────────────────────────
+// ======================================================
+// ROOT GAME STATE
+// ======================================================
 
 export type GameState = {
-  // Identity
   gameId: string;
-  sessionCode: string;    // e.g. "TYC-A7X2" — shown in invite UI
 
-  // Lifecycle
+  sessionCode: string;
+
   status: GameStatus;
-  createdAt: string;      // ISO 8601
-  startedAt: string | null;
-  finishedAt: string | null;
+
+  createdAt: IsoDateString;
+
+  startedAt: IsoDateString | null;
+
+  finishedAt: IsoDateString | null;
+
   winnerId: string | null;
 
-  // Participants (ordered by turnOrder)
   players: PlayerState[];
-  viewerId: string;       // which player this client controls
 
-  // Current turn
   turn: TurnState;
 
-  // Board ownership & buildings (40 entries, index === position)
-  spaces: SpaceOwnership[];
+  bank: BankState;
 
-  // At most one of these is non-null at a time
+  spaces: PropertyState[];
+
+  debt: DebtState | null;
+
   auction: AuctionState | null;
+
   trade: TradeState | null;
+
   activeCard: ActiveCard | null;
 
-  // Event & chat history (append-only; newest last)
+  bankruptcy: BankruptcyState | null;
+
+  decks: DeckState;
+
   log: LogEntry[];
 };

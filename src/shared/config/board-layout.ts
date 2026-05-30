@@ -1,6 +1,6 @@
 import { CornerVariant, PropertyColor, SpaceType, TileEdge } from '@/features/game-board/game-board.enums';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
-import { N, W } from '@/shared/config/constants';
+import { N, NW, W } from '@/shared/config/constants';
 
 export const BOARD: BoardSpace[] = [
   { pos: 0,  type: SpaceType.CORNER,   name: 'TYCOON',               corner: CornerVariant.GO },
@@ -74,9 +74,9 @@ export function getWalkSteps(from: number, to: number): number[] {
 /** Returns the pixel center of a board tile in the unscaled 686px coordinate space. */
 export function getTileCenter(pos: number): { x: number; y: number } {
   const { col, row } = getGridPos(pos);
-  const colStart = col === 0 ? 0 : col === 10 ? W + 9 * N : W + (col - 1) * N;
-  const rowStart = row === 0 ? 0 : row === 10 ? W + 9 * N : W + (row - 1) * N;
-  const colWidth  = col === 0 || col === 10 ? W : N;
+  const colStart  = col === 0 ? 0 : col === 10 ? W + 9 * NW : W + (col - 1) * NW;
+  const rowStart  = row === 0 ? 0 : row === 10 ? W + 9 * N  : W + (row - 1) * N;
+  const colWidth  = col === 0 || col === 10 ? W : NW;
   const rowHeight = row === 0 || row === 10 ? W : N;
   return { x: colStart + colWidth / 2, y: rowStart + rowHeight / 2 };
 }
