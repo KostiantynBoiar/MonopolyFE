@@ -18,6 +18,8 @@ function delay(ms: number): Promise<void> {
 
 type CommandHandler = (cmd: ClientCommand) => Promise<void>;
 
+const transport = useMemo(() => createTransport(), []);
+
 /**
  * Returns `dispatch(cmd)`.
  *
@@ -32,7 +34,6 @@ type CommandHandler = (cmd: ClientCommand) => Promise<void>;
 export function useGameDispatch() {
   const { setSnapshot, applyServerMessage } = useGameStore();
   const { setIsRolling, setWalkState, setActiveDeed } = useUiStore();
-  const transport = useMemo(() => createTransport(), []);
 
   const handleRollDice: CommandHandler = useCallback(
     async (cmd: ClientCommand): Promise<void> => {
