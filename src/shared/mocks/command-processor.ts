@@ -6,9 +6,9 @@
  * Permissions are computed separately by computePermissions() after every transition.
  */
 
-import type { GameState, ActiveCard, GameEvent } from '@/shared/protocol/game-state';
+import type { GameState, ActiveCard, DeckState, GameEvent } from '@/shared/protocol/game-state';
 import {
-  TurnPhase, CardKind, CardEffectType,
+  TurnPhase, CardKind,
   AuctionTargetKind, TradeStatus, GameEventType,
 } from '@/shared/protocol/game-state';
 import type { ClientCommand } from '@/shared/protocol/commands';
@@ -16,6 +16,8 @@ import { CommandType } from '@/shared/protocol/commands';
 import { getActivePlayers } from '@/shared/protocol/selectors';
 import { appendEvents } from '@/shared/protocol/log';
 import { applyMovement, resolveLanding, sendToJail } from './resolve-landing';
+import { drawCard } from './card-decks';
+import { resolveCardEffect } from './resolve-card-effect';
 import { BOARD } from '@/shared/config/board-layout';
 import { SpaceType } from '@/features/game-board/game-board.enums';
 
@@ -81,26 +83,15 @@ function advanceTurn(state: GameState): GameState {
   };
 }
 
-function mockCard(state: GameState, position: number): ActiveCard | null {
+/** Draw a card if `position` is a Chance/Chest space; returns the card + updated decks. */
+function drawForSpace(
+  state: GameState,
+  position: number,
+  drawerId: string,
+): { card: ActiveCard; decks: DeckState } | null {
   const spaceType = BOARD[position]?.type;
-  if (spaceType === SpaceType.CHANCE) {
-    return {
-      id:       `card_chance_${Date.now()}`,
-      kind:     CardKind.CHANCE,
-      text:     'Advance to GO. Collect M200.',
-      effect:   { type: CardEffectType.ADVANCE_TO, position: 0, collectGoBonus: true },
-      drawerId: state.viewerId,
-    };
-  }
-  if (spaceType === SpaceType.CHEST) {
-    return {
-      id:       `card_chest_${Date.now()}`,
-      kind:     CardKind.COMMUNITY_CHEST,
-      text:     'Bank error in your favor. Collect M200.',
-      effect:   { type: CardEffectType.COLLECT, amount: 200 },
-      drawerId: state.viewerId,
-    };
-  }
+  if (spaceType === SpaceType.CHANCE) return drawCard(state, CardKind.CHANCE, drawerId);
+  if (spaceType === SpaceType.CHEST)  return drawCard(state, CardKind.COMMUNITY_CHEST, drawerId);
   return null;
 }
 
@@ -142,13 +133,19 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
       const collectGo = newPos < oldPos;
       next = applyMovement(next, actorId, newPos, { collectGo, teleport: false });
 
-      // Chance / Community Chest → draw and pause for the overlay (effects in Phase 13).
-      const drawnCard = mockCard(next, newPos);
-      if (drawnCard) {
+      // Chance / Community Chest → draw and pause for the overlay; effect applies on ResolveCard.
+      const drawn = drawForSpace(next, newPos, actorId);
+      if (drawn) {
         return {
           ...next,
-          activeCard: drawnCard,
-          turn: { ...next.turn, phase: TurnPhase.DRAWING_CARD, extraTurn: isDoubles },
+          activeCard: drawn.card,
+          decks:      drawn.decks,
+          turn:       { ...next.turn, phase: TurnPhase.DRAWING_CARD, extraTurn: isDoubles },
+          log:        log({ ...next, activeCard: drawn.card }, {
+            type: GameEventType.CardDrawn,
+            playerId: actorId, playerName: actor.displayName,
+            cardKind: drawn.card.kind, text: drawn.card.text,
+          }),
         };
       }
 
@@ -418,6 +415,25 @@ export function processCommand(state: GameState, cmd: ClientCommand): GameState 
         ),
         turn: { ...next.turn, phase: TurnPhase.POST_ROLL },
       };
+    }
+
+    case CommandType.ResolveCard: {
+      const card = state.activeCard;
+      if (!card) return state;
+
+      let next = resolveCardEffect(state, card.effect, card.drawerId);
+      next = { ...next, activeCard: null };
+      next = { ...next, log: log(next, {
+        type: GameEventType.CardResolved,
+        playerId: card.drawerId, playerName: playerName(next, card.drawerId), text: card.text,
+      }) };
+
+      // A card may have moved the player into debt (keep MUST_PAY_RENT) or to jail
+      // (POST_ROLL ends the turn; next turn routes to JAIL_DECISION). Otherwise resume.
+      const phase = next.turn.phase === TurnPhase.MUST_PAY_RENT
+        ? TurnPhase.MUST_PAY_RENT
+        : TurnPhase.POST_ROLL;
+      return { ...next, turn: { ...next.turn, phase } };
     }
 
     default:

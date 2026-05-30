@@ -25,15 +25,16 @@ const JAIL_POSITION = 10;
 
 const spaceName = (pos: number) => BOARD[pos]?.name ?? `#${pos}`;
 
-function nameOf(state: GameState, playerId: string): string {
+export function nameOf(state: GameState, playerId: string): string {
   return state.players.find((p) => p.id === playerId)?.displayName ?? 'Player';
 }
 
-function log(state: GameState, ...events: GameEvent[]): GameState {
+/** Append typed events to the log, returning new state. Shared with the card resolver. */
+export function logEvents(state: GameState, ...events: GameEvent[]): GameState {
   return { ...state, log: appendEvents(state.log, ...events) };
 }
 
-function addBalance(state: GameState, playerId: string, delta: number): GameState {
+export function addBalance(state: GameState, playerId: string, delta: number): GameState {
   return {
     ...state,
     players: state.players.map((p) =>
@@ -51,7 +52,7 @@ function balanceOf(state: GameState, playerId: string): number {
  * Solvent → transfer immediately. Insolvent → record state.debt and enter
  * MUST_PAY_RENT (Phase 17 resolves via raise-cash / bankruptcy).
  */
-function charge(
+export function chargePlayer(
   state: GameState,
   debtorId: string,
   amount: number,
@@ -65,7 +66,7 @@ function charge(
 
   // Cannot cover — record the debt; resolution happens in Phase 17.
   return {
-    ...log(state, {
+    ...logEvents(state, {
       type: GameEventType.DebtIncurred,
       debtorId, debtorName: nameOf(state, debtorId), creditorId, amount,
     }),
@@ -102,7 +103,7 @@ export function applyMovement(
     ),
   };
 
-  next = log(next, {
+  next = logEvents(next, {
     type: GameEventType.PlayerMoved,
     playerId, playerName: player.displayName,
     from, to: targetPos, toName: spaceName(targetPos),
@@ -111,7 +112,7 @@ export function applyMovement(
 
   if (opts.collectGo) {
     next = addBalance(next, playerId, GO_BONUS);
-    next = log(next, {
+    next = logEvents(next, {
       type: GameEventType.PassedGo, playerId, playerName: player.displayName, amount: GO_BONUS,
     });
   }
@@ -135,7 +136,7 @@ export function sendToJail(
     ),
   };
 
-  return log(next, {
+  return logEvents(next, {
     type: GameEventType.SentToJail, playerId, playerName: player.displayName, reason,
   });
 }
@@ -162,8 +163,8 @@ export function resolveLanding(state: GameState, playerId: string): GameState {
   // Tax
   if (space.type === SpaceType.TAX) {
     const amount = space.price ?? 0;
-    const charged = charge(state, playerId, amount, null);
-    return log(charged, {
+    const charged = chargePlayer(state, playerId, amount, null);
+    return logEvents(charged, {
       type: GameEventType.TaxPaid,
       playerId, playerName: player.displayName, position: pos, taxName: space.name, amount,
     });
@@ -183,8 +184,8 @@ export function resolveLanding(state: GameState, playerId: string): GameState {
         rent = rent * (dice ? dice.die1 + dice.die2 : 0); // getPropertyRent returns the multiplier
       }
       if (rent > 0) {
-        const charged = charge(state, playerId, rent, ownerId);
-        return log(charged, {
+        const charged = chargePlayer(state, playerId, rent, ownerId);
+        return logEvents(charged, {
           type: GameEventType.RentPaid,
           payerId: playerId, payerName: player.displayName,
           ownerId, ownerName: nameOf(state, ownerId),

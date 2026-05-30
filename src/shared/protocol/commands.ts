@@ -28,6 +28,8 @@ export enum CommandType {
   PayJailFine = 'pay_jail_fine',
   UseJailCard = 'use_jail_card',
   RollInJail  = 'roll_in_jail',
+
+  ResolveCard = 'resolve_card',
 }
 
 // ======================================================
@@ -62,6 +64,7 @@ export type BidAuctionCommand  = { type: CommandType.BidAuction;  amount: number
 export type PayJailFineCommand = { type: CommandType.PayJailFine };
 export type UseJailCardCommand = { type: CommandType.UseJailCard };
 export type RollInJailCommand  = { type: CommandType.RollInJail };
+export type ResolveCardCommand = { type: CommandType.ResolveCard };
 
 // ======================================================
 // DISCRIMINATED UNION
@@ -83,4 +86,5 @@ export type ClientCommand =
   | BidAuctionCommand
   | PayJailFineCommand
   | UseJailCardCommand
-  | RollInJailCommand;
+  | RollInJailCommand
+  | ResolveCardCommand;
