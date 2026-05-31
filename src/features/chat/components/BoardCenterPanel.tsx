@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/features/player-panel';
+import { TokenColor } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { cn } from '@/shared/lib/cn';
 import { CardFlipOverlay } from '@/features/card';
@@ -12,7 +13,7 @@ import { DebtModal } from '@/features/bankruptcy';
 import { AuctionPanel } from '@/features/auction';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
-import { LogKind } from '@/shared/protocol/game-state';
+import { LogKind } from '@/shared/protocol/game-state.enums';
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ function EventRow({ text, playerName }: { text: string; playerName?: string }) {
 }
 
 function MessageRow({ author, token, text }: { author?: string; token?: TokenColor; text: string }) {
-  const color = token ? TOKEN_COLORS[token] : '#10182E';
+  const color = (token ? TOKEN_COLORS[token as TokenColor] : undefined) ?? '#10182E';
   const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
 
   if (stickerMatch) {

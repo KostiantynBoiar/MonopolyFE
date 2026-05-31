@@ -7,7 +7,7 @@ import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState } from '@/shared/protocol/game-state.schema';
-import { TurnPhase, AuctionTargetKind, LogKind } from '@/shared/protocol/game-state';
+import { TurnPhase, AuctionTargetKind, LogKind } from '@/shared/protocol/game-state.enums';
 import type { LogEntry } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { getPlayerPositions, getPlayerProperties, getPropertyRent, hasMonopoly } from '@/shared/protocol/selectors';

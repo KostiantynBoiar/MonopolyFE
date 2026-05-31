@@ -1,4 +1,4 @@
-import type { TokenColor } from '@/features/player-panel';
+import type { TokenColor } from '@/shared/protocol/game-state.enums';
 import type { LogEntry } from '@/shared/protocol/game-state';
 import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state.schema';
 import type { TradeParticipant } from '@/features/trade';

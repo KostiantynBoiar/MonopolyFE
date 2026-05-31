@@ -33,7 +33,7 @@ import {
   TradeStatus,
   DebtCreditorType,
   AuctionTargetKind,
-} from '@/shared/protocol/game-state';
+} from '@/shared/protocol/game-state.enums';
 import type { GameSnapshot, PlayerPermissions } from '@/shared/protocol/permissions';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
 
@@ -303,7 +303,11 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
   // The BE broadcasts the current player's actions_available to all viewers in the
   // same frame, so we must gate every turn-specific action on viewer identity.
   // Auction bidding is the exception: all players can bid simultaneously.
-  const isCurrentPlayer = state.viewer_id === state.turn.current_player_id;
+  // Gate turn-specific actions on viewer identity only when the BE provides viewer_id.
+  // If viewer_id is absent the field is undefined and we fall back to trusting
+  // actions_available as-is (avoids breaking older BE builds that omit the field).
+  const isCurrentPlayer =
+    state.viewer_id == null || state.viewer_id === state.turn.current_player_id;
   const a = isCurrentPlayer ? (state.turn.actions_available ?? {}) : {};
   const rawA = state.turn.actions_available ?? {};
   const inJail = state.turn.phase === TurnPhase.JAIL_DECISION;

@@ -1,5 +1,5 @@
 import { PropertyColor } from '@/features/game-board/game-board.enums';
-import { TokenColor } from '@/features/player-panel/player-panel.schema';
+import { TokenColor } from '@/shared/protocol/game-state.enums';
 import { SocketStatus } from '../socket';
 import { StatusDot } from '@/features/lobby/lobby.enums';
 
@@ -70,4 +70,4 @@ export const STATUS_DOT: Record<SocketStatus, StatusDot> = {
 
 export const BASE_DELAY_MS = 1_000;
 export const MAX_DELAY_MS  = 30_000;
-export const JITTER_RATIO  = 0.2;   // ±20% randomisation to spread reconnect storms
+export const JITTER_RATIO  = 0.2;   // ±20% randomization to spread reconnect storms
