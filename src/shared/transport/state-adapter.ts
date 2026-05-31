@@ -324,9 +324,11 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
     // No backend "sell property to bank" command exists.
     canSellProperty: false,
     canTrade: !!a.can_trade,
-    // All players can bid in an auction whenever one is active — don't gate on
-    // actions_available, which is only populated for the current turn player.
-    canBidAuction: state.auction != null,
+    // Bidding is open to every viewer while an auction is running.
+    // `rawA.can_bid` reads from the unfiltered broadcast action set (same frame for
+    // all viewers); `state.auction != null` is the fallback for BEs that omit can_bid.
+    // Never use `a.can_bid` here — `a` is `{}` for non-current-turn players.
+    canBidAuction: !!rawA.can_bid || state.auction != null,
     canPayJailFine: !!a.can_pay_jail_fine,
     canUseJailCard: !!a.can_use_jail_card,
     // In jail, rolling for doubles is the normal roll action.

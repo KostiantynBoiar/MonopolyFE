@@ -6,11 +6,12 @@ import { TokenColor } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { cn } from '@/shared/lib/cn';
 import { CardFlipOverlay } from '@/features/card';
-import { TradeWindow } from '@/features/trade';
+import { TradeWindow, TradeBuilder } from '@/features/trade';
 import { DeedCard } from '@/features/deed';
 import { JailModal } from '@/features/jail';
 import { DebtModal } from '@/features/bankruptcy';
 import { AuctionPanel } from '@/features/auction';
+import { ManagePropertiesModal } from '@/features/manage';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
 import { LogKind } from '@/shared/protocol/game-state.enums';
@@ -258,6 +259,28 @@ export function BoardCenterPanel({
   onTradeReject,
   onTradeCounter,
   onTradeCancel,
+  manageOpen = false,
+  manageProperties = [],
+  canBuildHouse = false,
+  canBuildHotel = false,
+  canMortgage = false,
+  canUnmortgage = false,
+  onBuildHouse,
+  onBuildHotel,
+  onSellHouse,
+  onSellHotel,
+  onMortgage,
+  onUnmortgage,
+  onCloseManage,
+  tradeBuilderOpen = false,
+  tradeMe,
+  tradeOthers = [],
+  tradeMyProperties = [],
+  tradeMyJailCards = 0,
+  tradePropertiesOf,
+  tradeJailCardsOf,
+  onTradePropose,
+  onCloseTradeBuilder,
 }: BoardCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
@@ -491,6 +514,53 @@ export function BoardCenterPanel({
             onManage={onManageDebt ?? (() => {})}
             onBankrupt={onDeclareBankruptcy ?? (() => {})}
           />
+        </div>
+      )}
+
+      {/* ── Manage properties overlay ── */}
+      {manageOpen && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
+          onClick={onCloseManage}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <ManagePropertiesModal
+              properties={manageProperties}
+              canBuildHouse={canBuildHouse}
+              canBuildHotel={canBuildHotel}
+              canMortgage={canMortgage}
+              canUnmortgage={canUnmortgage}
+              onBuildHouse={onBuildHouse ?? (() => {})}
+              onBuildHotel={onBuildHotel ?? (() => {})}
+              onSellHouse={onSellHouse ?? (() => {})}
+              onSellHotel={onSellHotel ?? (() => {})}
+              onMortgage={onMortgage ?? (() => {})}
+              onUnmortgage={onUnmortgage ?? (() => {})}
+              onSellProperty={undefined}
+              onClose={onCloseManage ?? (() => {})}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Trade builder overlay ── */}
+      {tradeBuilderOpen && tradeMe && tradeOthers.length > 0 && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
+          onClick={onCloseTradeBuilder}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <TradeBuilder
+              me={tradeMe}
+              others={tradeOthers}
+              myProperties={tradeMyProperties}
+              myJailCards={tradeMyJailCards}
+              propertiesOf={tradePropertiesOf ?? (() => [])}
+              jailCardsOf={tradeJailCardsOf ?? (() => 0)}
+              onPropose={onTradePropose ?? (() => {})}
+              onClose={onCloseTradeBuilder ?? (() => {})}
+            />
+          </div>
         </div>
       )}
     </div>

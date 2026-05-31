@@ -38,7 +38,7 @@ const focusRing =
 export function Button(props: ButtonProps) {
   const { variant = 'blue', size = 'md', className, children } = props;
   const classes = cn(
-    'inline-flex items-center justify-center gap-2 rounded-sm font-semibold transition-colors active:translate-y-px',
+    'inline-flex items-center justify-center gap-2 rounded-sm font-semibold transition-colors active:translate-y-px appearance-none',
     variantClasses[variant],
     sizeClasses[size],
     focusRing,
@@ -46,7 +46,7 @@ export function Button(props: ButtonProps) {
   );
 
   if (props.as === 'a') {
-    const { as: _as, href, ...rest } = props;
+    const { as: _as, href, variant: _v, size: _s, className: _c, children: _ch, ...rest } = props;
     const isInternal = href.startsWith('/');
 
     if (isInternal) {
@@ -64,7 +64,7 @@ export function Button(props: ButtonProps) {
     );
   }
 
-  const { as: _as, ...rest } = props;
+  const { as: _as, variant: _v, size: _s, className: _c, children: _ch, ...rest } = props;
   return (
     <button type="button" className={classes} {...rest}>
       {children}

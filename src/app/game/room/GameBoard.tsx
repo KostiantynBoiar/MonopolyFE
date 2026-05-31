@@ -12,17 +12,17 @@ import type { LogEntry } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { getPlayerPositions, getPlayerProperties, getPropertyRent, hasMonopoly } from '@/shared/protocol/selectors';
 import { BOARD } from '@/shared/config/board-layout';
-import { ManagePropertiesModal } from '@/features/manage';
 import type { WsErrorPayload } from '@/shared/socket';
 import type { ManageProperty } from '@/features/manage';
 import type { TradeParticipant, TradeAsset } from '@/features/trade';
-import { TradeBuilder } from '@/features/trade';
 import type { TradeOffer } from '@/shared/protocol/game-state';
 import { useGameStore, useUiStore, useSocketStore } from '@/stores';
 import { resolveCardGate } from '@/shared/socket/snapshot-animator';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
 import { useGameDispatch } from './useGameDispatch';
+import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
+import { playSfx } from '@/shared/lib/sfx';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -82,6 +82,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   const { messages: wsMessages } = useSocketStore();
 
   const { dispatch } = useGameDispatch();
+  useBoardSfx(gameState);
 
   // ── Viewer ───────────────────────────────────────────────────────────────────
 
@@ -112,6 +113,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
 
   const handleRoll = useCallback(() => {
     if (!permissions.canRoll || isRolling) return;
+    playSfx('dice_roll');
     dispatch({ type: CommandType.RollDice });
   }, [permissions.canRoll, isRolling, dispatch]);
 
@@ -142,6 +144,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   }, [activeDeed, dispatch, setActiveDeed]);
 
   const handleBid = useCallback((amount: number) => {
+    playSfx('auction_bid');
     dispatch({ type: CommandType.BidAuction, amount });
   }, [dispatch]);
 
@@ -340,7 +343,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               auctionState={gameState.auction}
               auctionPropertyName={auctionPropertyName}
               auctionPlayers={auctionPlayers}
-              canBid={permissions.canBidAuction}
+              canBid={gameState.auction !== null && !(viewer?.isBankrupt ?? false)}
               onBid={handleBid}
               tradeState={gameState.trade}
               tradeProposer={tradeProposer}
@@ -350,20 +353,8 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               onTradeReject={handleTradeReject}
               onTradeCounter={handleTradeCounter}
               onTradeCancel={handleTradeCancel}
-            />
-          }
-        />
-      </div>
-      <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-        <PlayerSidebar players={deriveSidebarPlayers(gameState)} />
-      </aside>
-
-      {/* Property management modal */}
-      {openedModal === 'manage' && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40" onClick={() => setOpenedModal(null)}>
-          <div onClick={(e) => e.stopPropagation()}>
-            <ManagePropertiesModal
-              properties={manageProperties}
+              manageOpen={openedModal === 'manage'}
+              manageProperties={manageProperties}
               canBuildHouse={permissions.canBuildHouse}
               canBuildHotel={permissions.canBuildHotel}
               canMortgage={permissions.canMortgage}
@@ -374,30 +365,23 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               onSellHotel={handleSellHotel}
               onMortgage={handleMortgage}
               onUnmortgage={handleUnmortgage}
-              onSellProperty={undefined}
-              onClose={() => setOpenedModal(null)}
+              onCloseManage={() => setOpenedModal(null)}
+              tradeBuilderOpen={openedModal === 'trade'}
+              tradeMe={{ id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 }}
+              tradeOthers={tradeOthers}
+              tradeMyProperties={propertiesOf(gameState.viewerId)}
+              tradeMyJailCards={jailCardsOf(gameState.viewerId)}
+              tradePropertiesOf={propertiesOf}
+              tradeJailCardsOf={jailCardsOf}
+              onTradePropose={handleProposeTrade}
+              onCloseTradeBuilder={() => setOpenedModal(null)}
             />
-          </div>
-        </div>
-      )}
-
-      {/* Trade builder modal */}
-      {openedModal === 'trade' && tradeOthers.length > 0 && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40" onClick={() => setOpenedModal(null)}>
-          <div onClick={(e) => e.stopPropagation()}>
-            <TradeBuilder
-              me={{ id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 }}
-              others={tradeOthers}
-              myProperties={propertiesOf(gameState.viewerId)}
-              myJailCards={jailCardsOf(gameState.viewerId)}
-              propertiesOf={propertiesOf}
-              jailCardsOf={jailCardsOf}
-              onPropose={handleProposeTrade}
-              onClose={() => setOpenedModal(null)}
-            />
-          </div>
-        </div>
-      )}
+          }
+        />
+      </div>
+      <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
+        <PlayerSidebar players={deriveSidebarPlayers(gameState)} />
+      </aside>
     </div>
   );
 }

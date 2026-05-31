@@ -1,9 +1,10 @@
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
-import type { LogEntry } from '@/shared/protocol/game-state';
+import type { LogEntry, TradeOffer } from '@/shared/protocol/game-state';
 import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state.schema';
-import type { TradeParticipant } from '@/features/trade';
+import type { TradeParticipant, TradePlayer, TradeAsset } from '@/features/trade';
 import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
+import type { ManageProperty } from '@/features/manage';
 import { ActionKey } from './chat.enums';
 
 /**
@@ -119,6 +120,36 @@ export type TradeWindowProps = {
   onTradeCancel?: () => void;
 };
 
+/** Manage properties modal overlay props */
+export type ManageOverlayProps = {
+  manageOpen?: boolean;
+  manageProperties?: ManageProperty[];
+  canBuildHouse?: boolean;
+  canBuildHotel?: boolean;
+  canMortgage?: boolean;
+  canUnmortgage?: boolean;
+  onBuildHouse?: (position: number) => void;
+  onBuildHotel?: (position: number) => void;
+  onSellHouse?: (position: number) => void;
+  onSellHotel?: (position: number) => void;
+  onMortgage?: (position: number) => void;
+  onUnmortgage?: (position: number) => void;
+  onCloseManage?: () => void;
+};
+
+/** Trade builder modal overlay props */
+export type TradeBuilderOverlayProps = {
+  tradeBuilderOpen?: boolean;
+  tradeMe?: TradePlayer;
+  tradeOthers?: TradePlayer[];
+  tradeMyProperties?: TradeAsset[];
+  tradeMyJailCards?: number;
+  tradePropertiesOf?: (playerId: string) => TradeAsset[];
+  tradeJailCardsOf?: (playerId: string) => number;
+  onTradePropose?: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
+  onCloseTradeBuilder?: () => void;
+};
+
 /** Combined props for the BoardCenterPanel component */
 export type BoardCenterPanelProps = LogAndActionsProps &
   CardOverlayProps &
@@ -126,4 +157,6 @@ export type BoardCenterPanelProps = LogAndActionsProps &
   JailOverlayProps &
   DebtOverlayProps &
   AuctionPanelProps &
-  TradeWindowProps;
+  TradeWindowProps &
+  ManageOverlayProps &
+  TradeBuilderOverlayProps;
