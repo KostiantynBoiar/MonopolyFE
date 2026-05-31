@@ -44,9 +44,8 @@ export type Action = {
   handler?: () => void;
 };
 
-export type BoardCenterPanelProps = {
-  /** In-game activity log — consumed directly from GameState.log. 
-   * TODO: Divide it to props */
+/** Core game log and turn actions */
+export type LogAndActionsProps = {
   log: LogEntry[];
   diceRoll?: DiceRoll | null;
   isRolling?: boolean;
@@ -61,16 +60,22 @@ export type BoardCenterPanelProps = {
   onTrade?: () => void;
   onEndTurn?: () => void;
   onSendMessage?: (text: string) => void;
+};
 
-  // ── Card overlay ──
+/** Card flip overlay props */
+export type CardOverlayProps = {
   activeCard?: ActiveCard | null;
   onCardProceed?: () => void;
+};
 
-  // ── Deed (buy/auction) overlay ──
+/** Deed (buy/auction) overlay props */
+export type DeedOverlayProps = {
   activeDeed?: DeedInfo | null;
   onAuction?: () => void;
+};
 
-  // ── Jail decision overlay ──
+/** Jail decision overlay props */
+export type JailOverlayProps = {
   jailDecision?: boolean;
   jailAttempts?: number;
   canPayJailFine?: boolean;
@@ -79,23 +84,29 @@ export type BoardCenterPanelProps = {
   onPayJailFine?: () => void;
   onUseJailCard?: () => void;
   onRollInJail?: () => void;
+};
 
-  // ── Debt / bankruptcy overlay ──
+/** Debt and bankruptcy overlay props */
+export type DebtOverlayProps = {
   debtPending?: boolean;
   debtAmount?: number;
   canPayDebt?: boolean;
   onPayDebt?: () => void;
   onManageDebt?: () => void;
   onDeclareBankruptcy?: () => void;
+};
 
-  // ── Auction panel (swaps the chat container when active) ──
+/** Auction panel props (swaps the chat container when active) */
+export type AuctionPanelProps = {
   auctionState?: AuctionState | null;
   auctionPropertyName?: string;
   auctionPlayers?: AuctionPlayer[];
   canBid?: boolean;
   onBid?: (amount: number) => void;
+};
 
-  // ── Trade window (swaps the chat container when active) ──
+/** Trade window props (swaps the chat container when active) */
+export type TradeWindowProps = {
   tradeState?: TradeState | null;
   tradeProposer?: TradeParticipant;
   tradeTarget?: TradeParticipant;
@@ -105,3 +116,12 @@ export type BoardCenterPanelProps = {
   onTradeCounter?: () => void;
   onTradeCancel?: () => void;
 };
+
+/** Combined props for the BoardCenterPanel component */
+export type BoardCenterPanelProps = LogAndActionsProps &
+  CardOverlayProps &
+  DeedOverlayProps &
+  JailOverlayProps &
+  DebtOverlayProps &
+  AuctionPanelProps &
+  TradeWindowProps;
