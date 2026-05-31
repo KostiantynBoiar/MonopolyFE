@@ -1,18 +1,20 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/features/player-panel';
+import { TokenColor } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { cn } from '@/shared/lib/cn';
 import { CardFlipOverlay } from '@/features/card';
-import { TradeWindow } from '@/features/trade';
+import { TradeWindow, TradeBuilder } from '@/features/trade';
 import { DeedCard } from '@/features/deed';
 import { JailModal } from '@/features/jail';
 import { DebtModal } from '@/features/bankruptcy';
 import { AuctionPanel } from '@/features/auction';
+import { ManagePropertiesModal } from '@/features/manage';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
-import { LogKind } from '@/shared/protocol/game-state';
+import { LogKind } from '@/shared/protocol/game-state.enums';
 
 // ─── Sticker manifest ─────────────────────────────────────────────────────────
 
@@ -31,18 +33,19 @@ function useStickerPacks() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function EventRow({ text }: { text: string }) {
+function EventRow({ text, playerName }: { text: string; playerName?: string }) {
+  const displayText = playerName ? `${playerName}: ${text}` : text;
   return (
     <div className="flex items-center gap-2 py-0.5">
       <div className="h-px flex-1 bg-line" />
-      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{text}</span>
+      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{displayText}</span>
       <div className="h-px flex-1 bg-line" />
     </div>
   );
 }
 
 function MessageRow({ author, token, text }: { author?: string; token?: TokenColor; text: string }) {
-  const color = token ? TOKEN_COLORS[token] : '#10182E';
+  const color = (token ? TOKEN_COLORS[token as TokenColor] : undefined) ?? '#10182E';
   const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
 
   if (stickerMatch) {
@@ -216,10 +219,12 @@ export function BoardCenterPanel({
   canBuy = false,
   canManage = false,
   canTrade = false,
+  canEndTurn = false,
   onRoll,
   onBuy,
   onManage,
   onTrade,
+  onEndTurn,
   onSendMessage,
   activeCard = null,
   onCardProceed,
@@ -230,6 +235,8 @@ export function BoardCenterPanel({
   canPayJailFine = false,
   canUseJailCard = false,
   canRollInJail = false,
+  jailDiceRoll = null,
+  jailIsRolling = false,
   onPayJailFine,
   onUseJailCard,
   onRollInJail,
@@ -252,6 +259,28 @@ export function BoardCenterPanel({
   onTradeReject,
   onTradeCounter,
   onTradeCancel,
+  manageOpen = false,
+  manageProperties = [],
+  canBuildHouse = false,
+  canBuildHotel = false,
+  canMortgage = false,
+  canUnmortgage = false,
+  onBuildHouse,
+  onBuildHotel,
+  onSellHouse,
+  onSellHotel,
+  onMortgage,
+  onUnmortgage,
+  onCloseManage,
+  tradeBuilderOpen = false,
+  tradeMe,
+  tradeOthers = [],
+  tradeMyProperties = [],
+  tradeMyJailCards = 0,
+  tradePropertiesOf,
+  tradeJailCardsOf,
+  onTradePropose,
+  onCloseTradeBuilder,
 }: BoardCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
@@ -283,12 +312,19 @@ export function BoardCenterPanel({
     canManage && { key: ActionKey.MANAGE, label: 'Manage',       enabled: true, handler: onManage },
     canBuy    && { key: ActionKey.BUY,    label: 'Buy Property', enabled: true, handler: onBuy },
     canTrade  && { key: ActionKey.TRADE,  label: 'Trade',        enabled: true, handler: onTrade },
-    {
+    canRoll && {
       key: ActionKey.ROLL,
       label: isRolling ? 'Rolling…' : 'Roll Dice',
       primary: true,
       enabled: canRoll && !isRolling,
       handler: onRoll,
+    },
+    canEndTurn && {
+      key: ActionKey.END_TURN,
+      label: 'End Turn',
+      primary: true,
+      enabled: true,
+      handler: onEndTurn,
     },
   ].filter(Boolean) as Action[];
 
@@ -340,7 +376,7 @@ export function BoardCenterPanel({
               >
                 {log.map((entry) =>
                   entry.kind === LogKind.EVENT ? (
-                    <EventRow key={entry.id} text={entry.text} />
+                    <EventRow key={entry.id} playerName={entry.playerName} text={entry.text} />
                   ) : (
                     <MessageRow
                       key={entry.id}
@@ -433,9 +469,9 @@ export function BoardCenterPanel({
         </>
       )}
 
-      {/* ── Card flip overlay ── */}
+      {/* ── Card flip overlay ── highest priority overlay; always on top ── */}
       {activeCard && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center">
+        <div className="absolute inset-0 z-30 flex items-center justify-center">
           <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} />
         </div>
       )}
@@ -451,14 +487,16 @@ export function BoardCenterPanel({
         </div>
       )}
 
-      {/* ── Jail decision overlay ── */}
-      {jailDecision && (
+      {/* ── Jail decision overlay — hidden while a card awaits consent ── */}
+      {jailDecision && !activeCard && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <JailModal
             attempts={jailAttempts}
             canPayFine={canPayJailFine}
             canUseCard={canUseJailCard}
             canRoll={canRollInJail}
+            diceRoll={jailDiceRoll}
+            isRolling={jailIsRolling}
             onPayFine={onPayJailFine ?? (() => {})}
             onUseCard={onUseJailCard ?? (() => {})}
             onRoll={onRollInJail ?? (() => {})}
@@ -476,6 +514,53 @@ export function BoardCenterPanel({
             onManage={onManageDebt ?? (() => {})}
             onBankrupt={onDeclareBankruptcy ?? (() => {})}
           />
+        </div>
+      )}
+
+      {/* ── Manage properties overlay ── */}
+      {manageOpen && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
+          onClick={onCloseManage}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <ManagePropertiesModal
+              properties={manageProperties}
+              canBuildHouse={canBuildHouse}
+              canBuildHotel={canBuildHotel}
+              canMortgage={canMortgage}
+              canUnmortgage={canUnmortgage}
+              onBuildHouse={onBuildHouse ?? (() => {})}
+              onBuildHotel={onBuildHotel ?? (() => {})}
+              onSellHouse={onSellHouse ?? (() => {})}
+              onSellHotel={onSellHotel ?? (() => {})}
+              onMortgage={onMortgage ?? (() => {})}
+              onUnmortgage={onUnmortgage ?? (() => {})}
+              onSellProperty={undefined}
+              onClose={onCloseManage ?? (() => {})}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Trade builder overlay ── */}
+      {tradeBuilderOpen && tradeMe && tradeOthers.length > 0 && (
+        <div
+          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
+          onClick={onCloseTradeBuilder}
+        >
+          <div onClick={(e) => e.stopPropagation()}>
+            <TradeBuilder
+              me={tradeMe}
+              others={tradeOthers}
+              myProperties={tradeMyProperties}
+              myJailCards={tradeMyJailCards}
+              propertiesOf={tradePropertiesOf ?? (() => [])}
+              jailCardsOf={tradeJailCardsOf ?? (() => 0)}
+              onPropose={onTradePropose ?? (() => {})}
+              onClose={onCloseTradeBuilder ?? (() => {})}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -4,4 +4,5 @@ export enum ActionKey {
   BUY = 'buy',
   TRADE = 'trade',
   ROLL = 'roll',
+  END_TURN = 'end_turn',
 }

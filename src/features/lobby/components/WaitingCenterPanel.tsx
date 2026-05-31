@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
-import { TOKEN_COLORS, type TokenColor } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/features/player-panel';
+import { TokenColor } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { SESSION_MIN_PLAYERS_TO_START, STATUS_DOT } from '@/shared/config/constants';
 import { MemberRole } from '../lobby.enums';

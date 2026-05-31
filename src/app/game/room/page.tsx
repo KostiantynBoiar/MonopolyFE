@@ -60,12 +60,19 @@ export default function GameRoomPage() {
   }, [wasKicked, clearSession, router]);
 
   useEffect(() => {
+    if (!ready || resolvingCode || currentSession) return;
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (code) return;
+    router.replace('/lobby');
+  }, [ready, resolvingCode, currentSession, router]);
+
+  useEffect(() => {
     if (!ready || !token || currentSession) return;
     const code = new URLSearchParams(window.location.search).get('code');
     if (!code) return;
     setResolvingCode(true);
     let cancelled = false;
-    joinByCode(token, { invite_code: code }, user?.id ?? '', user?.display_name ?? '')
+    joinByCode({ invite_code: code })
       .then(({ session }) => { if (!cancelled) setSession(session); })
       .catch((err) => {
         if (!cancelled) router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
@@ -102,15 +109,15 @@ export default function GameRoomPage() {
 
   async function handleLeave() {
     setIsLeaving(true);
-    if (token && currentSession) await leaveSession(token, currentSession.id);
+    if (currentSession) await leaveSession(currentSession.id);
     clearSession();
     router.push('/lobby');
   }
 
   async function handleStart() {
     setIsStarting(true);
-    if (token && currentSession) {
-      await startGame(token, currentSession.id);
+    if (currentSession) {
+      await startGame(currentSession.id);
       setSession({ ...currentSession, status: SessionStatus.IN_PROGRESS });
     }
     setIsStarting(false);
@@ -147,5 +154,5 @@ export default function GameRoomPage() {
     );
   }
 
-  return <GameBoard wsError={wsError} onClearWsError={clearWsError} />;
+  return <GameBoard wsError={wsError} onClearWsError={clearWsError} onSendChat={handleWaitingMessage} />;
 }

@@ -1,19 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+type DiceRoll = { die1: number; die2: number; isDoubles: boolean };
+
+function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
+  const [displayed, setDisplayed] = useState(value);
+  useEffect(() => {
+    if (!rolling) { setDisplayed(value); return; }
+    const iv = setInterval(() => setDisplayed(Math.ceil(Math.random() * 6)), 80);
+    return () => clearInterval(iv);
+  }, [rolling, value]);
+  return (
+    <div className="flex h-7 w-7 items-center justify-center rounded border-2 border-ink bg-white shadow-sm">
+      <span className="font-display text-[1em] font-bold leading-none text-ink">{displayed}</span>
+    </div>
+  );
+}
+
 export type JailModalProps = {
-  attempts:       number;       // failed escape rolls so far (0–2)
-  canPayFine:     boolean;
-  canUseCard:     boolean;
-  canRoll:        boolean;
-  onPayFine:      () => void;
-  onUseCard:      () => void;
-  onRoll:         () => void;
+  attempts:    number;       // failed escape rolls so far (0–2)
+  canPayFine:  boolean;
+  canUseCard:  boolean;
+  canRoll:     boolean;
+  diceRoll?:   DiceRoll | null;
+  isRolling?:  boolean;
+  onPayFine:   () => void;
+  onUseCard:   () => void;
+  onRoll:      () => void;
 };
 
 export function JailModal({
-  attempts, canPayFine, canUseCard, canRoll, onPayFine, onUseCard, onRoll,
+  attempts, canPayFine, canUseCard, canRoll,
+  diceRoll = null, isRolling = false,
+  onPayFine, onUseCard, onRoll,
 }: JailModalProps) {
   const triesLeft = Math.max(0, 3 - attempts);
+  const showDice = isRolling || diceRoll !== null;
 
   return (
     <div
@@ -30,6 +53,21 @@ export function JailModal({
           Get Out
         </span>
       </div>
+
+      {/* Dice result */}
+      {showDice && (
+        <div className="flex flex-col items-center gap-1 border-b border-ink/20 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <DiceFace value={isRolling ? 1 : (diceRoll?.die1 ?? 1)} rolling={isRolling} />
+            <DiceFace value={isRolling ? 1 : (diceRoll?.die2 ?? 1)} rolling={isRolling} />
+          </div>
+          {!isRolling && diceRoll && (
+            <span className="font-mono text-muted" style={{ fontSize: '0.58em' }}>
+              {diceRoll.die1 + diceRoll.die2}{diceRoll.isDoubles ? ' — doubles!' : ' — no doubles'}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Status */}
       <div className="border-b border-ink/20 px-3 py-1.5 text-center">

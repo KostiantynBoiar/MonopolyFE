@@ -1,9 +1,10 @@
-import type { TokenColor } from '@/features/player-panel';
-import type { LogEntry } from '@/shared/protocol/game-state';
+import type { TokenColor } from '@/shared/protocol/game-state.enums';
+import type { LogEntry, TradeOffer } from '@/shared/protocol/game-state';
 import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state.schema';
-import type { TradeParticipant } from '@/features/trade';
+import type { TradeParticipant, TradePlayer, TradeAsset } from '@/features/trade';
 import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
+import type { ManageProperty } from '@/features/manage';
 import { ActionKey } from './chat.enums';
 
 /**
@@ -44,61 +45,8 @@ export type Action = {
   handler?: () => void;
 };
 
-/** Active card drawing overlay props */
-export type ActiveCardProps = {
-  card: ActiveCard;
-  onProceed: () => void;
-};
-
-/** Deed card overlay props (shown when landing on unowned purchasable property) */
-export type DeedOverlayProps = {
-  deed: DeedInfo;
-  onAuction: () => void;
-};
-
-/** Jail decision overlay props (shown when the viewer is jailed on their turn) */
-export type JailOverlayProps = {
-  attempts: number;
-  canPayFine: boolean;
-  canUseCard: boolean;
-  canRoll: boolean;
-  onPayFine: () => void;
-  onUseCard: () => void;
-  onRoll: () => void;
-};
-
-/** Debt overlay props (shown when the viewer owes more than they can immediately pay) */
-export type DebtOverlayProps = {
-  amount: number;
-  canPayDebt: boolean;
-  onPayDebt: () => void;
-  onManageDebt: () => void;
-  onDeclareBankruptcy: () => void;
-};
-
-/** Auction panel props (swaps chat container when active) */
-export type AuctionPanelProps = {
-  state: AuctionState;
-  propertyName: string;
-  players: AuctionPlayer[];
-  canBid: boolean;
-  onBid: (amount: number) => void;
-};
-
-/** Trade window props (swaps chat container when active) */
-export type TradePanelProps = {
-  state: TradeState;
-  proposer: TradeParticipant;
-  target: TradeParticipant;
-  viewerId: string;
-  onAccept: () => void;
-  onReject: () => void;
-  onCounter: () => void;
-  onCancel: () => void;
-};
-
-export type BoardCenterPanelProps = {
-  /** In-game activity log — consumed directly from GameState.log. */
+/** Core game log and turn actions */
+export type LogAndActionsProps = {
   log: LogEntry[];
   diceRoll?: DiceRoll | null;
   isRolling?: boolean;
@@ -106,16 +54,109 @@ export type BoardCenterPanelProps = {
   canBuy?: boolean;
   canManage?: boolean;
   canTrade?: boolean;
+  canEndTurn?: boolean;
   onRoll?: () => void;
   onBuy?: () => void;
   onManage?: () => void;
   onTrade?: () => void;
+  onEndTurn?: () => void;
   onSendMessage?: (text: string) => void;
-  // Overlays
-  activeCard?: ActiveCardProps | null;
-  activeDeed?: DeedOverlayProps | null;
-  jail?: JailOverlayProps | null;
-  debt?: DebtOverlayProps | null;
-  auction?: AuctionPanelProps | null;
-  trade?: TradePanelProps | null;
 };
+
+/** Card flip overlay props */
+export type CardOverlayProps = {
+  activeCard?: ActiveCard | null;
+  onCardProceed?: () => void;
+};
+
+/** Deed (buy/auction) overlay props */
+export type DeedOverlayProps = {
+  activeDeed?: DeedInfo | null;
+  onAuction?: () => void;
+};
+
+/** Jail decision overlay props */
+export type JailOverlayProps = {
+  jailDecision?: boolean;
+  jailAttempts?: number;
+  canPayJailFine?: boolean;
+  canUseJailCard?: boolean;
+  canRollInJail?: boolean;
+  jailDiceRoll?: DiceRoll | null;
+  jailIsRolling?: boolean;
+  onPayJailFine?: () => void;
+  onUseJailCard?: () => void;
+  onRollInJail?: () => void;
+};
+
+/** Debt and bankruptcy overlay props */
+export type DebtOverlayProps = {
+  debtPending?: boolean;
+  debtAmount?: number;
+  canPayDebt?: boolean;
+  onPayDebt?: () => void;
+  onManageDebt?: () => void;
+  onDeclareBankruptcy?: () => void;
+};
+
+/** Auction panel props (swaps the chat container when active) */
+export type AuctionPanelProps = {
+  auctionState?: AuctionState | null;
+  auctionPropertyName?: string;
+  auctionPlayers?: AuctionPlayer[];
+  canBid?: boolean;
+  onBid?: (amount: number) => void;
+};
+
+/** Trade window props (swaps the chat container when active) */
+export type TradeWindowProps = {
+  tradeState?: TradeState | null;
+  tradeProposer?: TradeParticipant;
+  tradeTarget?: TradeParticipant;
+  viewerId?: string;
+  onTradeAccept?: () => void;
+  onTradeReject?: () => void;
+  onTradeCounter?: () => void;
+  onTradeCancel?: () => void;
+};
+
+/** Manage properties modal overlay props */
+export type ManageOverlayProps = {
+  manageOpen?: boolean;
+  manageProperties?: ManageProperty[];
+  canBuildHouse?: boolean;
+  canBuildHotel?: boolean;
+  canMortgage?: boolean;
+  canUnmortgage?: boolean;
+  onBuildHouse?: (position: number) => void;
+  onBuildHotel?: (position: number) => void;
+  onSellHouse?: (position: number) => void;
+  onSellHotel?: (position: number) => void;
+  onMortgage?: (position: number) => void;
+  onUnmortgage?: (position: number) => void;
+  onCloseManage?: () => void;
+};
+
+/** Trade builder modal overlay props */
+export type TradeBuilderOverlayProps = {
+  tradeBuilderOpen?: boolean;
+  tradeMe?: TradePlayer;
+  tradeOthers?: TradePlayer[];
+  tradeMyProperties?: TradeAsset[];
+  tradeMyJailCards?: number;
+  tradePropertiesOf?: (playerId: string) => TradeAsset[];
+  tradeJailCardsOf?: (playerId: string) => number;
+  onTradePropose?: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
+  onCloseTradeBuilder?: () => void;
+};
+
+/** Combined props for the BoardCenterPanel component */
+export type BoardCenterPanelProps = LogAndActionsProps &
+  CardOverlayProps &
+  DeedOverlayProps &
+  JailOverlayProps &
+  DebtOverlayProps &
+  AuctionPanelProps &
+  TradeWindowProps &
+  ManageOverlayProps &
+  TradeBuilderOverlayProps;

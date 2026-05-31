@@ -5,33 +5,28 @@ import { listSessions, joinSession, joinByCode as joinByCodeApi } from '../api';
 import { POLL_INTERVAL_MS } from '@/shared/config/constants';
 import type { SessionSummary } from '../lobby.types';
 
-export function useLobby(token: string | null, viewerId: string | undefined) {
-  const [sessions, setSessions]       = useState<SessionSummary[]>([]);
-  const [nextCursor, setNextCursor]   = useState<string | null>(null);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState<string | null>(null);
+export function useLobby() {
+  const [sessions, setSessions]           = useState<SessionSummary[]>([]);
+  const [nextCursor, setNextCursor]       = useState<string | null>(null);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [joiningId, setJoiningId]     = useState<string | null>(null);
+  const [joiningId, setJoiningId]         = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Always fetches page 1; replaces session list (used for initial load + polling)
-  const fetch = useCallback(
-    async (silent = false) => {
-      if (!token) return;
-      if (!silent) setLoading(true);
-      try {
-        const data = await listSessions(token);
-        setSessions(data.sessions);
-        setNextCursor(data.next_cursor);
-        setError(null);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        if (!silent) setLoading(false);
-      }
-    },
-    [token],
-  );
+  const fetch = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const data = await listSessions();
+      setSessions(data.sessions);
+      setNextCursor(data.next_cursor);
+      setError(null);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     fetch();
@@ -39,12 +34,11 @@ export function useLobby(token: string | null, viewerId: string | undefined) {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetch]);
 
-  // Appends the next page using the current cursor
   const loadMore = useCallback(async () => {
-    if (!token || !nextCursor || isLoadingMore) return;
+    if (!nextCursor || isLoadingMore) return;
     setIsLoadingMore(true);
     try {
-      const data = await listSessions(token, nextCursor);
+      const data = await listSessions(nextCursor);
       setSessions((prev) => [...prev, ...data.sessions]);
       setNextCursor(data.next_cursor);
     } catch (err) {
@@ -52,30 +46,22 @@ export function useLobby(token: string | null, viewerId: string | undefined) {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [token, nextCursor, isLoadingMore]);
+  }, [nextCursor, isLoadingMore]);
 
-  const join = useCallback(
-    async (sessionId: string, viewerName: string) => {
-      if (!token || !viewerId) throw new Error('Not authenticated');
-      setJoiningId(sessionId);
-      try {
-        const { session } = await joinSession(token, sessionId, viewerId, viewerName);
-        return session;
-      } finally {
-        setJoiningId(null);
-      }
-    },
-    [token, viewerId],
-  );
-
-  const joinWithCode = useCallback(
-    async (code: string, viewerName: string) => {
-      if (!token || !viewerId) throw new Error('Not authenticated');
-      const { session } = await joinByCodeApi(token, { invite_code: code }, viewerId, viewerName);
+  const join = useCallback(async (sessionId: string) => {
+    setJoiningId(sessionId);
+    try {
+      const { session } = await joinSession(sessionId);
       return session;
-    },
-    [token, viewerId],
-  );
+    } finally {
+      setJoiningId(null);
+    }
+  }, []);
+
+  const joinWithCode = useCallback(async (code: string) => {
+    const { session } = await joinByCodeApi({ invite_code: code });
+    return session;
+  }, []);
 
   return {
     sessions,

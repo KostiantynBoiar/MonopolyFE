@@ -56,4 +56,5 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
 export type GameSnapshot = {
   game:        GameState;
   permissions: PlayerPermissions;
+  // TODO:  animationTimeline: AnimationInstruction[]
 };

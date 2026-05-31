@@ -6,7 +6,7 @@
  * and deed.utils.ts (PROPERTY_RENT). Both now import from here.
  */
 
-import { PropertyColor } from './game-state';
+import { PropertyColor } from './game-state.enums';
 
 export const RAILROAD_POSITIONS = [5, 15, 25, 35] as const;
 export const UTILITY_POSITIONS  = [12, 28] as const;

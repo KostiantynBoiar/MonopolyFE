@@ -5,6 +5,7 @@ import {
   buildPong,
   buildChatSend,
   buildStickerSend,
+  buildGameCommand,
 } from '@/shared/protocol/messages.schema';
 import type { WsInbound } from '@/shared/protocol/messages.schema';
 
@@ -53,6 +54,11 @@ export class GameSocket {
 
   sendSticker(url: string) {
     this._send(buildStickerSend(url));
+  }
+
+  /** Send a serialized game command ({ type, payload } from the command serializer). */
+  sendCommand(type: string, payload: Record<string, unknown>) {
+    this._send(buildGameCommand(type, payload));
   }
 
   onMessage(handler: MessageHandler) {

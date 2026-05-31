@@ -16,6 +16,9 @@ export enum WsInboundType {
   CHAT_STICKER    = 'chat.sticker',
   SESSION_UPDATED = 'session.updated',
   SYSTEM_ERROR    = 'system.error',
+  // Full per-viewer game snapshot. Payload is the backend GameState (snake_case)
+  // with `viewer_id` and `turn.actions_available`; translated by the state adapter.
+  GAME_STATE      = 'game.state',
 }
 
 export enum WsOutboundType {
@@ -64,6 +67,10 @@ export type WsSessionUpdatedPayload = {
   session: SessionDetail;
 };
 
+// Backend GameState payload (snake_case). Kept loosely typed here; the state
+// adapter (BeGameState) owns the structural contract.
+export type WsGameStatePayload = Record<string, unknown>;
+
 export type WsErrorPayload = {
   code: 'malformed' | 'unsupported_version' | 'unknown_type' | 'unauthorized' | 'not_member' | 'rate_limited' | 'internal';
   message: string;
@@ -78,6 +85,7 @@ export type WsChatMessage    = WsEnvelope<WsInboundType.CHAT_MESSAGE,    WsChatM
 export type WsChatSticker    = WsEnvelope<WsInboundType.CHAT_STICKER,    WsChatStickerPayload>;
 export type WsSessionUpdated = WsEnvelope<WsInboundType.SESSION_UPDATED, WsSessionUpdatedPayload>;
 export type WsError          = WsEnvelope<WsInboundType.SYSTEM_ERROR,    WsErrorPayload>;
+export type WsGameState      = WsEnvelope<WsInboundType.GAME_STATE,      WsGameStatePayload>;
 
 export type WsInbound =
   | WsWelcome
@@ -85,7 +93,8 @@ export type WsInbound =
   | WsChatMessage
   | WsChatSticker
   | WsSessionUpdated
-  | WsError;
+  | WsError
+  | WsGameState;
 
 // ─── Outbound message builders (client → server) ─────────────────────────────
 
@@ -107,4 +116,11 @@ export function buildChatSend(text: string): WsOutboundEnvelope<WsOutboundType.C
 
 export function buildStickerSend(sticker_url: string): WsOutboundEnvelope<WsOutboundType.CHAT_STICKER_SEND, { sticker_url: string }> {
   return { v: WS_PROTOCOL_VERSION, type: WsOutboundType.CHAT_STICKER_SEND, ts: new Date().toISOString(), payload: { sticker_url } };
+}
+
+// Generic envelope for game commands (type/payload produced by the command serializer).
+export function buildGameCommand(type: string, payload: Record<string, unknown>): {
+  v: typeof WS_PROTOCOL_VERSION; type: string; ts: string; payload: Record<string, unknown>;
+} {
+  return { v: WS_PROTOCOL_VERSION, type, ts: new Date().toISOString(), payload };
 }

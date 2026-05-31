@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
 import { loginSchema } from '../auth.schema';
-import { TelegramLoginWidget } from './TelegramLoginWidget';
-import { env } from '@/shared/config/env';
+import { OAuthButtons } from './OAuthButtons';
 import { LoginFields } from '../auth.types';
 
 export function LoginForm() {
@@ -95,18 +94,12 @@ export function LoginForm() {
         {isLoading ? 'Signing in…' : 'Sign in'}
       </Button>
 
-      {env.telegramBotName && (
-        <>
-          <div className="relative flex items-center gap-3">
-            <div className="flex-1 border-t border-line" />
-            <span className="text-xs text-muted">or continue with</span>
-            <div className="flex-1 border-t border-line" />
-          </div>
-          <div className="flex justify-center">
-            <TelegramLoginWidget />
-          </div>
-        </>
-      )}
+      <div className="relative flex items-center gap-3">
+        <div className="flex-1 border-t border-line" />
+        <span className="text-xs text-muted">or continue with</span>
+        <div className="flex-1 border-t border-line" />
+      </div>
+      <OAuthButtons disabled={isLoading} />
     </form>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/shared/lib/cn';
 import type { AuctionPanelProps } from '../auction.types';
 
@@ -11,6 +11,18 @@ function formatTime(ms: number): string {
 
 export function AuctionPanel({ auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid }: AuctionPanelProps) {
   const [bidInput, setBidInput] = useState('');
+  // Client-side countdown — re-syncs to server value on each new snapshot.
+  const [displayMs, setDisplayMs] = useState(auctionState.timeRemainingMs);
+
+  useEffect(() => {
+    setDisplayMs(auctionState.timeRemainingMs);
+  }, [auctionState.timeRemainingMs]);
+
+  useEffect(() => {
+    if (displayMs <= 0) return;
+    const iv = setInterval(() => setDisplayMs((ms) => Math.max(0, ms - 1000)), 1000);
+    return () => clearInterval(iv);
+  }, [displayMs]);
 
   const highestBidder = players.find((p) => p.id === auctionState.highestBidderId);
   const minBid = auctionState.highestBid + 1;
@@ -18,7 +30,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
   // canBidPermission: server says we're allowed to bid at all
   // input validity: the entered amount is a valid number >= minimum
   const canBid = canBidPermission && !isNaN(parsedBid) && parsedBid >= minBid;
-  const isUrgent = auctionState.timeRemainingMs <= 4000;
+  const isUrgent = displayMs <= 4000;
 
   function submitBid() {
     if (!canBid) return;
@@ -51,7 +63,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             )}
             style={{ fontSize: '1.4em' }}
           >
-            {formatTime(auctionState.timeRemainingMs)}
+            {formatTime(displayMs)}
           </div>
           <div
             className="font-sans uppercase tracking-wide text-muted"

@@ -1,5 +1,5 @@
 import type { TradeState, TradeOffer } from '@/shared/protocol/game-state.schema';
-import type { TokenColor } from '@/features/player-panel';
+import type { TokenColor } from '@/shared/protocol/game-state.enums';
 
 export type TradeParticipant = {
   id: string;

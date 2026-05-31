@@ -13,19 +13,18 @@ export default function LobbyPage() {
   const searchParams = useSearchParams();
   const wasKicked = searchParams.get('kicked') === '1';
 
-  const { ready, token, user } = useRequireAuth();
+  const { ready } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
 
   const {
     sessions, loading, error, joiningId,
     nextCursor, isLoadingMore,
     refresh, loadMore, join, joinWithCode,
-  } = useLobby(token, user?.id);
+  } = useLobby();
 
   async function handleJoin(sessionId: string) {
-    if (!user) return;
     try {
-      const session = await join(sessionId, user.display_name);
+      const session = await join(sessionId);
       setSession(session);
       router.push('/game/room');
     } catch (err) {
@@ -34,8 +33,7 @@ export default function LobbyPage() {
   }
 
   async function handleJoinByCode(code: string) {
-    if (!user) return;
-    const session = await joinWithCode(code, user.display_name);
+    const session = await joinWithCode(code);
     setSession(session);
     router.push('/game/room');
   }

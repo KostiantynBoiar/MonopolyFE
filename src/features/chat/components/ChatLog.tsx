@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { TOKEN_COLORS } from '@/features/player-panel';
-import { LogKind } from '@/shared/protocol/game-state';
+import { LogKind } from '@/shared/protocol/game-state.enums';
 import type { ChatLogProps } from '../chat.types';
 
 export function ChatLog({ log }: ChatLogProps) {
