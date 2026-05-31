@@ -12,7 +12,7 @@ import { cn } from '@/shared/lib/cn';
 
 export default function NewLobbyPage() {
   const router = useRouter();
-  const { ready, token, user } = useRequireAuth();
+  const { ready } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
 
   const [visibility, setVisibility] = useState<SessionVisibility>(SessionVisibility.PUBLIC);
@@ -21,11 +21,10 @@ export default function NewLobbyPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!token || !user) return;
     setLoading(true);
     setError(null);
     try {
-      const { session } = await createSession(token, { visibility }, user.id, user.display_name);
+      const { session } = await createSession({ visibility });
       setSession(session);
       router.push('/game/room');
     } catch (err) {

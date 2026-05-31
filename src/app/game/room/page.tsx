@@ -72,7 +72,7 @@ export default function GameRoomPage() {
     if (!code) return;
     setResolvingCode(true);
     let cancelled = false;
-    joinByCode(token, { invite_code: code }, user?.id ?? '', user?.display_name ?? '')
+    joinByCode({ invite_code: code })
       .then(({ session }) => { if (!cancelled) setSession(session); })
       .catch((err) => {
         if (!cancelled) router.replace(`/lobby?error=${encodeURIComponent((err as Error).message)}`);
@@ -109,15 +109,15 @@ export default function GameRoomPage() {
 
   async function handleLeave() {
     setIsLeaving(true);
-    if (token && currentSession) await leaveSession(token, currentSession.id);
+    if (currentSession) await leaveSession(currentSession.id);
     clearSession();
     router.push('/lobby');
   }
 
   async function handleStart() {
     setIsStarting(true);
-    if (token && currentSession) {
-      await startGame(token, currentSession.id);
+    if (currentSession) {
+      await startGame(currentSession.id);
       setSession({ ...currentSession, status: SessionStatus.IN_PROGRESS });
     }
     setIsStarting(false);
