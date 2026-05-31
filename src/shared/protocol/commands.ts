@@ -9,6 +9,7 @@ export enum CommandType {
   EndTurn     = 'end_turn',
 
   BuyProperty = 'buy_property',
+  PassBuy     = 'pass_buy',
 
   BuildHouse  = 'build_house',
   BuildHotel  = 'build_hotel',
@@ -46,6 +47,7 @@ export type RollDiceCommand    = { type: CommandType.RollDice };
 export type EndTurnCommand     = { type: CommandType.EndTurn };
 
 export type BuyPropertyCommand = { type: CommandType.BuyProperty; position: number };
+export type PassBuyCommand     = { type: CommandType.PassBuy };
 
 export type BuildHouseCommand  = { type: CommandType.BuildHouse;  position: number };
 export type BuildHotelCommand  = { type: CommandType.BuildHotel;  position: number };
@@ -91,6 +93,7 @@ export type ClientCommand =
   | RollDiceCommand
   | EndTurnCommand
   | BuyPropertyCommand
+  | PassBuyCommand
   | BuildHouseCommand
   | BuildHotelCommand
   | SellHouseCommand

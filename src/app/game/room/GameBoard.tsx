@@ -1,18 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
 import { BoardContainer } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState } from '@/shared/protocol/game-state.schema';
-import { TurnPhase, LogKind, AuctionTargetKind, GameStatus } from '@/shared/protocol/game-state';
+import { TurnPhase, AuctionTargetKind } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
-import {
-  tickAuction, advanceTurnEvent, startAuctionEvent,
-} from '@/shared/mocks/mock-server';
-import { runOpponentTurn, opponentRespondToTrade } from '@/shared/mocks/opponent-ai';
 import { getPlayerPositions, getPlayerProperties, getPropertyRent, hasMonopoly } from '@/shared/protocol/selectors';
 import { BOARD } from '@/shared/config/board-layout';
 import { ManagePropertiesModal } from '@/features/manage';
@@ -21,12 +17,10 @@ import type { ManageProperty } from '@/features/manage';
 import type { TradeParticipant, TradeAsset } from '@/features/trade';
 import { TradeBuilder } from '@/features/trade';
 import type { TradeOffer } from '@/shared/protocol/game-state';
-import { useGameStore, useSocketStore, useUiStore } from '@/stores';
+import { useGameStore, useUiStore } from '@/stores';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
 import { useGameDispatch } from './useGameDispatch';
-
-const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -71,108 +65,23 @@ function deriveTradeParticipant(gs: GameState, playerId: string): TradeParticipa
 interface GameBoardProps {
   wsError: WsErrorPayload | null;
   onClearWsError: () => void;
+  /** Send a chat/sticker message over the live socket (lifted from the page). */
+  onSendChat: (text: string) => void;
 }
 
-export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
-  const { snapshot, applyServerMessage, updateGame } = useGameStore();
+export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProps) {
+  // Server-authoritative: this component only renders the latest snapshot and sends
+  // commands. There is NO client-side game simulation — opponents are real players
+  // and every transition (turns, auctions, trades) is driven by the backend.
+  const { snapshot, updateGame } = useGameStore();
   const { game: gameState, permissions } = snapshot;
 
   const { isRolling, walkState, activeDeed, setActiveDeed, openedModal, setOpenedModal } = useUiStore();
 
   const { dispatch } = useGameDispatch();
 
-  // ── Game loop state ───────────────────────────────────────────────────────────
+  // ── Viewer ───────────────────────────────────────────────────────────────────
 
-  const autoBidFiredRef = useRef(false);
-  const opponentTurnRef = useRef(false);
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
-
-  // End the viewer's turn automatically after POST_ROLL (no explicit End Turn button yet).
-  // advanceTurnEvent re-rolls the viewer on doubles (extraTurn) or hands off to the next player.
-  useEffect(() => {
-    if (gameState.turn.phase !== TurnPhase.POST_ROLL) return;
-    if (gameState.turn.currentPlayerId !== gameState.viewerId) return;
-    if (activeDeed !== null) return;
-    if (openedModal !== null) return;   // don't end the turn while a modal is open
-    const t = setTimeout(() => {
-      applyServerMessage(advanceTurnEvent(useGameStore.getState().snapshot.game));
-    }, 1500);
-    return () => clearTimeout(t);
-  }, [
-    gameState.turn.phase, gameState.turn.turnNumber,
-    gameState.turn.currentPlayerId, gameState.viewerId,
-    activeDeed, openedModal, applyServerMessage,
-  ]);
-
-  // Drive opponents' turns. A self-contained async loop plays each opponent turn
-  // (reading fresh state every step), applying snapshots on a timer so the human
-  // watches it happen. The ref guard prevents re-entry; crucially there is NO cleanup
-  // that cancels playback — applying a snapshot changes this effect's deps, and a
-  // cleanup would otherwise tear the loop down after the very first message (the roll).
-  useEffect(() => {
-    const isOpponentTurn =
-      gameState.status !== GameStatus.FINISHED &&
-      gameState.turn.currentPlayerId !== gameState.viewerId &&
-      (gameState.turn.phase === TurnPhase.PRE_ROLL || gameState.turn.phase === TurnPhase.JAIL_DECISION);
-    if (!isOpponentTurn || opponentTurnRef.current) return;
-
-    opponentTurnRef.current = true;
-    void (async () => {
-      while (mountedRef.current) {
-        const game = useGameStore.getState().snapshot.game;
-        if (game.status === GameStatus.FINISHED) break;
-        if (game.turn.currentPlayerId === game.viewerId) break;
-        if (game.turn.phase !== TurnPhase.PRE_ROLL && game.turn.phase !== TurnPhase.JAIL_DECISION) break;
-
-        for (const msg of runOpponentTurn(game)) {
-          if (!mountedRef.current) return;
-          applyServerMessage(msg);
-          await delay(750);
-        }
-        await delay(300);   // brief pause between consecutive opponent turns
-      }
-      opponentTurnRef.current = false;
-    })();
-  }, [gameState.turn.currentPlayerId, gameState.turn.phase, gameState.status, gameState.viewerId, applyServerMessage]);
-
-  // An opponent who is the target of the viewer's pending trade auto-responds.
-  useEffect(() => {
-    const trade = gameState.trade;
-    if (!trade || trade.status !== 'pending') return;
-    if (trade.targetId === gameState.viewerId) return;   // human is the target → they decide
-    const t = setTimeout(() => {
-      for (const msg of opponentRespondToTrade(useGameStore.getState().snapshot.game)) {
-        applyServerMessage(msg);
-      }
-    }, 1200);
-    return () => clearTimeout(t);
-  }, [gameState.trade, gameState.viewerId, applyServerMessage]);
-
-  // Auction countdown — simulates server ticks
-  useEffect(() => {
-    if (gameState.turn.phase !== TurnPhase.AUCTION) {
-      autoBidFiredRef.current = false;
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const current = useGameStore.getState().snapshot.game;
-      if (current.turn.phase !== TurnPhase.AUCTION || !current.auction) return;
-
-      const { messages, bobBidFired } = tickAuction(current, 1000, autoBidFiredRef.current);
-      autoBidFiredRef.current = bobBidFired;
-      for (const msg of messages) applyServerMessage(msg);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [gameState.turn.phase, applyServerMessage]);
-
-  // ── Viewer state ───────────────────────────────────────────────────────────────
-
-  // viewer is derived here (after all hooks) rather than at the top of the component,
-  // so an unmatched viewerId (e.g. during initialization) doesn't crash before the
-  // !ready / isWaiting guards below.
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId) ?? null;
 
   // ── Game handlers ──────────────────────────────────────────────────────────────
@@ -182,9 +91,16 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
     dispatch({ type: CommandType.RollDice });
   }, [permissions.canRoll, isRolling, dispatch]);
 
+  const handleEndTurn = useCallback(() => {
+    if (!permissions.canEndTurn) return;
+    dispatch({ type: CommandType.EndTurn });
+  }, [permissions.canEndTurn, dispatch]);
+
+  // Cards are auto-resolved by the backend; "Proceed" just dismisses the overlay
+  // locally until the next snapshot (which no longer carries the card) arrives.
   const handleCardProceed = useCallback(() => {
-    dispatch({ type: CommandType.ResolveCard });
-  }, [dispatch]);
+    updateGame((g) => ({ ...g, activeCard: null }));
+  }, [updateGame]);
 
   const handleBuy = useCallback(() => {
     if (!activeDeed) return;
@@ -192,12 +108,12 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
     dispatch({ type: CommandType.BuyProperty, position: activeDeed.position });
   }, [activeDeed, dispatch, setActiveDeed]);
 
+  // Declining to buy → pass_buy, which opens the auction on the backend.
   const handleAuction = useCallback(() => {
     if (!activeDeed) return;
-    autoBidFiredRef.current = false;
     setActiveDeed(null);
-    applyServerMessage(startAuctionEvent(useGameStore.getState().snapshot.game, activeDeed.position));
-  }, [activeDeed, applyServerMessage, setActiveDeed]);
+    dispatch({ type: CommandType.PassBuy });
+  }, [activeDeed, dispatch, setActiveDeed]);
 
   const handleBid = useCallback((amount: number) => {
     dispatch({ type: CommandType.BidAuction, amount });
@@ -216,7 +132,6 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
   const handleSellHotel = useCallback((position: number) => dispatch({ type: CommandType.SellHotel, position }), [dispatch]);
   const handleMortgage = useCallback((position: number) => dispatch({ type: CommandType.Mortgage, position }), [dispatch]);
   const handleUnmortgage = useCallback((position: number) => dispatch({ type: CommandType.Unmortgage, position }), [dispatch]);
-  const handleSellProperty = useCallback((position: number) => dispatch({ type: CommandType.SellProperty, position }), [dispatch]);
 
   // ── Debt resolution ──────────────────────────────────────────────────────
   const handlePayDebt = useCallback(() => dispatch({ type: CommandType.PayDebt }), [dispatch]);
@@ -235,22 +150,17 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
   const handleTradeAccept = useCallback(() => {
     const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
     dispatch({ type: CommandType.AcceptTrade, tradeId });
-    // Clear the resolved trade after the result animation — but only if it's still
-    // the same trade. A newer trade/counter-offer arriving in the window is left intact.
-    setTimeout(() => updateGame((g) => (g.trade?.id === tradeId ? { ...g, trade: null } : g)), 800);
-  }, [dispatch, updateGame]);
+  }, [dispatch]);
 
   const handleTradeReject = useCallback(() => {
     const tradeId = useGameStore.getState().snapshot.game.trade?.id ?? '';
     dispatch({ type: CommandType.RejectTrade, tradeId });
-    setTimeout(() => updateGame((g) => (g.trade?.id === tradeId ? { ...g, trade: null } : g)), 800);
-  }, [dispatch, updateGame]);
+  }, [dispatch]);
 
   const handleTradeCounter = useCallback(() => {
-    // Mock counter: the target mirrors the deal back (gives what was requested,
-    // requests what was offered). A real builder UI would let them edit the terms.
     const trade = useGameStore.getState().snapshot.game.trade;
     if (!trade) return;
+    // Mirror the deal back: give what was requested, request what was offered.
     dispatch({
       type: CommandType.CounterTrade,
       tradeId: trade.id,
@@ -259,29 +169,15 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
     });
   }, [dispatch]);
 
-  const handleTradeCancel = useCallback(() => {
-    updateGame((g) => ({ ...g, trade: null, turn: { ...g.turn, phase: TurnPhase.PRE_ROLL } }));
-  }, [updateGame]);
+  // The backend has no "cancel my own offer" command; the offer simply expires.
+  // The button closes the local view without mutating authoritative state.
+  const handleTradeCancel = useCallback(() => {}, []);
 
   const handleSendMessage = useCallback((text: string) => {
-    const stickerMatch = text.match(/^\[sticker:(.+?)\]$/);
-    const isSticker = stickerMatch !== null;
-    updateGame((g) => ({
-      ...g,
-      log: [...g.log, {
-        id: `log_chat_${Date.now()}`,
-        kind: isSticker ? LogKind.STICKER : LogKind.CHAT,
-        playerId:    g.viewerId,
-        playerName:  viewer?.displayName,
-        playerToken: viewer?.token,
-        text,
-        stickerUrl:  stickerMatch?.[1],
-        ts: new Date().toISOString(),
-      }],
-    }));
-  }, [viewer?.displayName, viewer?.token, updateGame]);
+    onSendChat(text);
+  }, [onSendChat]);
 
-  // ── Game state derivations ─────────────────────────────────────────────────────
+  // ── Derivations ────────────────────────────────────────────────────────────────
 
   const tradeProposer = gameState.trade
     ? deriveTradeParticipant(gameState, gameState.trade.proposerId) : undefined;
@@ -360,7 +256,9 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
               canBuy={permissions.canBuyProperty}
               canManage={canManage}
               canTrade={permissions.canTrade}
+              canEndTurn={permissions.canEndTurn}
               onRoll={handleRoll}
+              onEndTurn={handleEndTurn}
               onSendMessage={handleSendMessage}
               onManage={handleManage}
               onTrade={handleTrade}
@@ -420,7 +318,7 @@ export function GameBoard({ wsError, onClearWsError }: GameBoardProps) {
               onSellHotel={handleSellHotel}
               onMortgage={handleMortgage}
               onUnmortgage={handleUnmortgage}
-              onSellProperty={permissions.canSellProperty ? handleSellProperty : undefined}
+              onSellProperty={undefined}
               onClose={() => setOpenedModal(null)}
             />
           </div>

@@ -14,6 +14,12 @@ import type {
   WsWelcomePayload,
   WsErrorPayload,
 } from '@/shared/protocol/messages.schema';
+import type { ClientCommand } from '@/shared/protocol/commands';
+import { adaptGameStateFrame, type BeGameState } from '@/shared/transport/state-adapter';
+import { serializeCommand } from '@/shared/transport/command-serializer';
+import { enqueueSnapshot, resetSnapshotPipeline } from './snapshot-animator';
+import { useCommandBus } from '@/stores/command-bus';
+import { useUiStore } from '@/stores/ui-store';
 import { GameSocket } from './GameSocket';
 
 export function useGameSocket(sessionId: string | null) {
@@ -25,6 +31,7 @@ export function useGameSocket(sessionId: string | null) {
     setStatus, setWsError, setWasKicked, addMessage,
     incrementReconnect, resetReconnect,
   } = useSocketStore();
+  const setSendCommand = useCommandBus((s) => s.setSendCommand);
 
   const socketRef   = useRef<GameSocket | null>(null);
   const seqStartRef = useRef<number>(0);
@@ -92,9 +99,20 @@ export function useGameSocket(sessionId: string | null) {
           break;
         }
 
+        case WsInboundType.GAME_STATE: {
+          // Server-authoritative full snapshot. Translate then hand to the animation
+          // pipeline, which diffs against the committed state and commits to the store.
+          const snapshot = adaptGameStateFrame(msg.payload as unknown as BeGameState);
+          enqueueSnapshot(snapshot);
+          break;
+        }
+
         case WsInboundType.SYSTEM_ERROR: {
           const p = msg.payload as WsErrorPayload;
           setWsError(p);
+          // A rejected command (e.g. illegal move) means no snapshot is coming, so
+          // release any optimistic rolling lock the dispatcher set.
+          useUiStore.getState().setIsRolling(false);
           break;
         }
 
@@ -105,11 +123,19 @@ export function useGameSocket(sessionId: string | null) {
 
     socket.connect();
 
+    // Publish the live command sender so the dispatch layer can reach this socket.
+    setSendCommand((cmd: ClientCommand) => {
+      const wire = serializeCommand(cmd);
+      if (wire) socket.sendCommand(wire.type, wire.payload);
+    });
+
     return () => {
       offStatus();
       offMessage();
       socket.destroy();
       socketRef.current = null;
+      setSendCommand(null);
+      resetSnapshotPipeline();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, token]);

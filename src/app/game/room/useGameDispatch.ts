@@ -1,131 +1,31 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { CommandType } from '@/shared/protocol/commands';
-import type { SnapshotMessage } from '@/shared/protocol/network';
-import { ServerEventType } from '@/shared/protocol/network';
-import { createTransport } from '@/shared/transport';
-import { getWalkSteps } from '@/features/game-board';
-import { getDeedInfo } from '@/features/deed';
-import { WALK_STEP_DURATION_MS } from '@/shared/config/constants';
-import { useGameStore } from '@/stores/game-store';
+import { useCommandBus } from '@/stores/command-bus';
 import { useUiStore } from '@/stores/ui-store';
 
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-type CommandHandler = (cmd: ClientCommand) => Promise<void>;
-
-const transport = useMemo(() => createTransport(), []);
-
 /**
- * Returns `dispatch(cmd)`.
+ * Returns `dispatch(cmd)` — the single entry point for player actions.
  *
- * Reads the latest state synchronously via store.getState() inside async
- * callbacks — no stale-closure problem, no prop threading.
+ * Server-authoritative: dispatch serializes the command and sends it over the live
+ * WebSocket (via the command bus). It does NOT mutate game state — the resulting
+ * `game.state` snapshot arrives asynchronously and is folded in (with animation) by
+ * the snapshot pipeline in `useGameSocket`.
  *
- * Flow:
- *   ClientCommand → transport.send → ServerMessage[] → applyServerMessage
- * The transport is the mock by default; a real socket would deliver messages
- * asynchronously via onMessage (subscribed at the app level).
+ * The only local side effect is an optimistic rolling lock, so the Roll button can't
+ * be double-fired during the network round-trip; the pipeline clears it on the next
+ * snapshot, and a server error clears it too (see useGameSocket).
  */
 export function useGameDispatch() {
-  const { setSnapshot, applyServerMessage } = useGameStore();
-  const { setIsRolling, setWalkState, setActiveDeed } = useUiStore();
-
-  const handleRollDice: CommandHandler = useCallback(
-    async (cmd: ClientCommand): Promise<void> => {
-      if (useUiStore.getState().isRolling) return;
-
-      const { snapshot } = useGameStore.getState();
-      setIsRolling(true);
-
-      const messages  = transport.send(snapshot.game, cmd);
-      const snapshotMsg = messages.find(
-        (m): m is SnapshotMessage => m.type === ServerEventType.Snapshot,
-      );
-      if (!snapshotMsg) {
-        setIsRolling(false);
-        return;
-      }
-
-      const nextGame = snapshotMsg.game;
-      const { diceRoll } = nextGame.turn;
-      const viewerId = snapshot.game.viewerId;
-      const oldPos   = snapshot.game.players.find((p) => p.id === viewerId)?.position ?? 0;
-      const nextPlayer = nextGame.players.find((p) => p.id === viewerId);
-      const newPos   = nextPlayer?.position ?? oldPos;
-      // Sent to jail this roll (3 doubles / go-to-jail corner) → teleport, don't walk a lap.
-      const teleported = nextPlayer?.jailStatus != null;
-
-      // Phase 1 — dice spin
-      await delay(1200);
-      setIsRolling(false);
-
-      // Show dice result; mark canRoll false immediately
-      // Read store right before write to ensure fresh data
-      const { snapshot: current } = useGameStore.getState();
-      setSnapshot({
-        game:        { ...current.game, turn: { ...current.game.turn, diceRoll } },
-        permissions: { ...current.permissions, canRoll: false },
-      });
-      await delay(500);
-
-      // Phase 2 — walk token step-by-step (skipped on teleport)
-      if (!teleported) {
-        const steps = getWalkSteps(oldPos, newPos);
-        setWalkState({ playerId: viewerId, currentPos: oldPos });
-
-        await new Promise<void>((resolve) => {
-          let i = 0;
-          function step() {
-            if (i >= steps.length) { resolve(); return; }
-            setWalkState({ playerId: viewerId, currentPos: steps[i++] });
-            setTimeout(step, WALK_STEP_DURATION_MS);
-          }
-          setTimeout(step, 80);
-        });
-      }
-
-      // Phase 3 — apply all server messages, clear walk overlay
-      setWalkState(null);
-      for (const msg of messages) applyServerMessage(msg);
-
-      if (snapshotMsg.permissions.canBuyProperty) {
-        setActiveDeed(getDeedInfo(newPos));
-      }
-    },
-    [transport, setSnapshot, applyServerMessage, setIsRolling, setWalkState, setActiveDeed],
-  );
-
-  const handleGeneric: CommandHandler = useCallback(
-    async (cmd: ClientCommand): Promise<void> => {
-      const { snapshot } = useGameStore.getState();
-      const messages     = transport.send(snapshot.game, cmd);
-      for (const msg of messages) applyServerMessage(msg);
-    },
-    [transport, applyServerMessage],
-  );
-
-  const handlers: Partial<Record<CommandType, CommandHandler>> = useMemo(
-    () => ({
-      [CommandType.RollDice]: handleRollDice,
-      // future: [CommandType.BuyProperty]: handleBuyProperty,
-    }),
-    [handleRollDice],
-  );
-
-  const dispatch = useCallback(
-    async (cmd: ClientCommand): Promise<void> => {
-      const handler = handlers[cmd.type];
-      if (handler) return handler(cmd);
-      // fallthrough: generic send
-      return handleGeneric(cmd);
-    },
-    [handlers, handleGeneric],
-  );
+  const dispatch = useCallback((cmd: ClientCommand) => {
+    if (cmd.type === CommandType.RollDice || cmd.type === CommandType.RollInJail) {
+      useUiStore.getState().setIsRolling(true);
+    }
+    const send = useCommandBus.getState().sendCommand;
+    send?.(cmd);
+  }, []);
 
   return { dispatch };
 }

@@ -147,5 +147,5 @@ export default function GameRoomPage() {
     );
   }
 
-  return <GameBoard wsError={wsError} onClearWsError={clearWsError} />;
+  return <GameBoard wsError={wsError} onClearWsError={clearWsError} onSendChat={handleWaitingMessage} />;
 }

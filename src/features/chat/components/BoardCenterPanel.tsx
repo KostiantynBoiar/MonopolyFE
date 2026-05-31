@@ -216,10 +216,12 @@ export function BoardCenterPanel({
   canBuy = false,
   canManage = false,
   canTrade = false,
+  canEndTurn = false,
   onRoll,
   onBuy,
   onManage,
   onTrade,
+  onEndTurn,
   onSendMessage,
   activeCard = null,
   onCardProceed,
@@ -283,12 +285,19 @@ export function BoardCenterPanel({
     canManage && { key: ActionKey.MANAGE, label: 'Manage',       enabled: true, handler: onManage },
     canBuy    && { key: ActionKey.BUY,    label: 'Buy Property', enabled: true, handler: onBuy },
     canTrade  && { key: ActionKey.TRADE,  label: 'Trade',        enabled: true, handler: onTrade },
-    {
+    canRoll && {
       key: ActionKey.ROLL,
       label: isRolling ? 'Rolling…' : 'Roll Dice',
       primary: true,
       enabled: canRoll && !isRolling,
       handler: onRoll,
+    },
+    canEndTurn && {
+      key: ActionKey.END_TURN,
+      label: 'End Turn',
+      primary: true,
+      enabled: true,
+      handler: onEndTurn,
     },
   ].filter(Boolean) as Action[];
 
