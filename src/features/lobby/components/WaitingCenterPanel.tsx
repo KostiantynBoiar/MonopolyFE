@@ -79,7 +79,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
     return () => clearTimeout(t);
   }, [isTgs, index]);
   return (
-    <button className="flex items-center justify-center rounded p-0.5 hover:bg-gray-300 active:scale-95" onClick={onSelect} title={file}>
+    <button className="flex items-center justify-center rounded p-0.5 hover:bg-line active:scale-95" onClick={onSelect} title={file}>
       {isTgs
         ? (mounted ? <TgsPlayer src={url} size={48} loop={false} /> : <div style={{ width: 48, height: 48 }} />)
         : <img src={url} alt={file} className="h-12 w-12 object-contain" />}
@@ -121,13 +121,13 @@ function ActionBtn({ label, primary, enabled, handler }: { label: string; primar
       onClick={handler}
       disabled={!enabled}
       className={cn(
-        'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors text-[0.62em]',
+        'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors text-[1em]',
         primary && enabled  ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
         : primary           ? 'cursor-not-allowed border-line bg-paper text-muted'
         : enabled           ? 'border-line-2 bg-surface text-ink hover:bg-paper'
                             : 'cursor-not-allowed border-line bg-paper text-muted',
       )}
-      style={{ padding: '0.55em 0.4em' }}
+      style={{ padding: '0.65em 0.6em' }}
     >
       {label}
     </button>
@@ -186,14 +186,14 @@ export function WaitingCenterPanel({
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100" style={{ fontSize: '0.72em' }}>
+    <div className="flex h-full w-full flex-col overflow-hidden bg-paper" style={{ fontSize: '0.72em' }}>
 
       {/* ── Log + Controls row ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
 
         {/* Chat log */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center gap-2 border-b border-line bg-gray-200 px-3 py-1.5">
+          <div className="flex shrink-0 items-center gap-2 border-b border-line bg-line/30 px-3 py-1.5">
             <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
               Chat
             </span>
@@ -216,8 +216,8 @@ export function WaitingCenterPanel({
         </div>
 
         {/* Session controls */}
-        <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
-          <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
+        <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
+          <div className="shrink-0 border-b border-line bg-line/30 px-3 py-1.5">
             <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
               Room
             </span>
@@ -253,7 +253,7 @@ export function WaitingCenterPanel({
       </div>
 
       {/* ── Input bar ── */}
-      <div className="relative shrink-0 border-t border-line bg-gray-200 px-2 py-2">
+      <div className="relative shrink-0 border-t border-line bg-line/30 px-2 py-2">
         <div className="flex items-center gap-1.5">
           <input
             className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"

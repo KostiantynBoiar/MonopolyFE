@@ -90,12 +90,12 @@ function TokenDots({ players }: { players: BoardPlayer[] }) {
         <div
           key={p.id}
           style={{
-            width: 9,
-            height: 9,
+            width: 13,
+            height: 13,
             borderRadius: '50%',
             background: p.tokenColor,
-            border: '1.5px solid white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+            border: '2px solid white',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
             flexShrink: 0,
           }}
         />
@@ -126,13 +126,13 @@ function WalkingTokenOverlay({ players }: { players: WalkingPlayer[] }) {
               position: 'absolute',
               left: 0,
               top: 0,
-              width: 12,
-              height: 12,
+              width: 17,
+              height: 17,
               borderRadius: '50%',
               background: p.tokenColor,
-              border: '2px solid white',
+              border: '2.5px solid white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
-              transform: `translate(${x - 6}px, ${y - 6}px)`,
+              transform: `translate(${x - 8.5}px, ${y - 8.5}px)`,
               transition: `transform ${WALK_STEP_DURATION_MS}ms ease-in-out`,
               willChange: 'transform',
             }}

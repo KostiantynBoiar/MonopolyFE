@@ -400,7 +400,7 @@ export function BoardCenterPanel({
             </div>
 
             {/* Actions */}
-            <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
+            <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
               <div className="shrink-0 border-b border-line bg-line/30 px-3 py-1.5">
                 <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
                   Actions
@@ -488,7 +488,7 @@ export function BoardCenterPanel({
       {/* ── Deed card overlay (unowned purchasable property) ── */}
       {activeDeed && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
-          <div style={{ fontSize: '2em' }}>
+          <div style={{ fontSize: '3em' }}>
           <DeedCard
             deed={activeDeed}
             canBuy={canBuyDeed}
