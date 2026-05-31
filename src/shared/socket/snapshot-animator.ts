@@ -146,9 +146,9 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
   // ── Fast path: nothing to animate ────────────────────────────────────────────
   if (!diceChanged && !walked && !cardMoved && directCardSquare === null) {
     commit(next);
-    // Still check for a pending buy — the backend may set can_buy in a separate
-    // frame from the movement frame (e.g. on a doubles roll).
-    maybeSurfaceDeed(next, newPos);
+    // Still check for a pending buy — the backend may set pending_buy_position in a
+    // separate frame from the movement frame (e.g. on a doubles roll).
+    maybeSurfaceDeed(next);
     return;
   }
 
@@ -165,6 +165,9 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
     ui.setWalkState({ playerId: moverId, currentPos: oldPos });
     await walkSteps(moverId, steps, WALK_STEP_DURATION_MS);
     ui.setWalkState(null);
+    // Clear rolling lock in case diceChanged was false (same dice result) and
+    // Phase 1 was skipped, leaving the optimistic isRolling=true from dispatch.
+    ui.setIsRolling(false);
   }
 
   // ── Phase 2b: Direct card move ────────────────────────────────────────────────
@@ -196,7 +199,7 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
     prevCommittedHadCard = false;
     useGameStore.getState().setSnapshot({ ...next, game: { ...next.game, activeCard: null } });
 
-    maybeSurfaceDeed(next, newPos);
+    maybeSurfaceDeed(next);
     return;
   }
 
@@ -209,7 +212,7 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
 
   // ── Phase 4: Commit ───────────────────────────────────────────────────────────
   commit(next);
-  maybeSurfaceDeed(next, newPos);
+  maybeSurfaceDeed(next);
 
   // ── Phase 5: Card gate (two-frame flow — pause until Proceed) ────────────────
   if (next.game.activeCard !== null) {
@@ -235,13 +238,13 @@ function patchMoverPosition(
   };
 }
 
-function maybeSurfaceDeed(snapshot: GameSnapshot, pos: number | null): void {
-  if (
-    pos !== null &&
-    snapshot.permissions.canBuyProperty &&
-    snapshot.game.turn.currentPlayerId === snapshot.game.viewerId
-  ) {
-    const deed = getDeedInfo(pos);
+function maybeSurfaceDeed(snapshot: GameSnapshot): void {
+  const pendingPos = snapshot.game.turn.pendingBuyPosition;
+  const viewerId = snapshot.game.viewerId;
+  // Treat absent/empty viewerId as "is the current player" — mirrors derivePermissions.
+  const isViewer = !viewerId || viewerId === snapshot.game.turn.currentPlayerId;
+  if (pendingPos !== null && isViewer) {
+    const deed = getDeedInfo(pendingPos);
     if (deed) useUiStore.getState().setActiveDeed(deed);
   }
 }

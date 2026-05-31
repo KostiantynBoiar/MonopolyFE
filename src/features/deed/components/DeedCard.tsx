@@ -11,7 +11,7 @@ const SPACE_ICON: Record<DeedSpaceType, string> = {
   [DeedSpaceType.UTILITY]:  '⚡',
 };
 
-export function DeedCard({ deed, onBuy, onAuction }: DeedCardProps) {
+export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, viewOnly = false }: DeedCardProps) {
   const icon = SPACE_ICON[deed.spaceType];
   const hasColor = deed.color != null;
 
@@ -73,17 +73,23 @@ export function DeedCard({ deed, onBuy, onAuction }: DeedCardProps) {
       </div>
 
       {/* Price + actions */}
-      <div className="flex flex-col items-center gap-1.5 px-2 py-2">
+      {!viewOnly && <div className="flex flex-col items-center gap-1.5 px-2 py-2">
         <span className="font-display font-black uppercase tracking-wide text-ink" style={{ fontSize: '0.78em' }}>
           Price M{deed.price}
         </span>
         <div className="flex w-full gap-1">
           <button
-            onClick={onBuy}
-            className="flex-1 rounded bg-green py-1 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#186444] active:scale-95"
+            onClick={canBuy ? onBuy : undefined}
+            disabled={!canBuy}
+            className={cn(
+              'flex-1 rounded py-1 font-display font-bold uppercase tracking-wide transition-colors',
+              canBuy
+                ? 'bg-green text-white hover:bg-[#186444] active:scale-95'
+                : 'cursor-not-allowed bg-paper text-muted',
+            )}
             style={{ fontSize: '0.6em' }}
           >
-            Buy
+            {canBuy ? 'Buy' : "Can't Afford"}
           </button>
           <button
             onClick={onAuction}
@@ -93,7 +99,16 @@ export function DeedCard({ deed, onBuy, onAuction }: DeedCardProps) {
             Auction
           </button>
         </div>
-      </div>
+        {!canBuy && canManage && (
+          <button
+            onClick={onManage}
+            className="w-full rounded border border-line-2 bg-surface py-1 font-display font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper active:scale-95"
+            style={{ fontSize: '0.58em' }}
+          >
+            Manage Properties
+          </button>
+        )}
+      </div>}
     </div>
   );
 }

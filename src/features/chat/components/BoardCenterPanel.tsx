@@ -94,13 +94,13 @@ function ActionBtn({
       disabled={!enabled}
       className={cn(
         'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors',
-        'text-[0.62em]',
+        'text-[1em]',
         primary && enabled  ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
         : primary           ? 'cursor-not-allowed border-line bg-paper text-muted'
         : enabled           ? 'border-line-2 bg-surface text-ink hover:bg-paper'
                             : 'cursor-not-allowed border-line bg-paper text-muted',
       )}
-      style={{ padding: '0.55em 0.4em' }}
+      style={{ padding: '0.65em 0.6em' }}
     >
       {label}
     </button>
@@ -229,7 +229,10 @@ export function BoardCenterPanel({
   activeCard = null,
   onCardProceed,
   activeDeed = null,
+  canBuyDeed = true,
+  canManageDeed = false,
   onAuction,
+  onManageDeed,
   jailDecision = false,
   jailAttempts = 0,
   canPayJailFine = false,
@@ -479,11 +482,16 @@ export function BoardCenterPanel({
       {/* ── Deed card overlay (unowned purchasable property) ── */}
       {activeDeed && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div style={{ fontSize: '2em' }}>
           <DeedCard
             deed={activeDeed}
+            canBuy={canBuyDeed}
+            canManage={canManageDeed}
             onBuy={onBuy ?? (() => {})}
             onAuction={onAuction ?? (() => {})}
+            onManage={onManageDeed ?? (() => {})}
           />
+          </div>
         </div>
       )}
 
@@ -519,48 +527,38 @@ export function BoardCenterPanel({
 
       {/* ── Manage properties overlay ── */}
       {manageOpen && (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
-          onClick={onCloseManage}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <ManagePropertiesModal
-              properties={manageProperties}
-              canBuildHouse={canBuildHouse}
-              canBuildHotel={canBuildHotel}
-              canMortgage={canMortgage}
-              canUnmortgage={canUnmortgage}
-              onBuildHouse={onBuildHouse ?? (() => {})}
-              onBuildHotel={onBuildHotel ?? (() => {})}
-              onSellHouse={onSellHouse ?? (() => {})}
-              onSellHotel={onSellHotel ?? (() => {})}
-              onMortgage={onMortgage ?? (() => {})}
-              onUnmortgage={onUnmortgage ?? (() => {})}
-              onSellProperty={undefined}
-              onClose={onCloseManage ?? (() => {})}
-            />
-          </div>
+        <div className="absolute inset-0 z-40">
+          <ManagePropertiesModal
+            properties={manageProperties}
+            canBuildHouse={canBuildHouse}
+            canBuildHotel={canBuildHotel}
+            canMortgage={canMortgage}
+            canUnmortgage={canUnmortgage}
+            onBuildHouse={onBuildHouse ?? (() => {})}
+            onBuildHotel={onBuildHotel ?? (() => {})}
+            onSellHouse={onSellHouse ?? (() => {})}
+            onSellHotel={onSellHotel ?? (() => {})}
+            onMortgage={onMortgage ?? (() => {})}
+            onUnmortgage={onUnmortgage ?? (() => {})}
+            onSellProperty={undefined}
+            onClose={onCloseManage ?? (() => {})}
+          />
         </div>
       )}
 
       {/* ── Trade builder overlay ── */}
       {tradeBuilderOpen && tradeMe && tradeOthers.length > 0 && (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
-          onClick={onCloseTradeBuilder}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <TradeBuilder
-              me={tradeMe}
-              others={tradeOthers}
-              myProperties={tradeMyProperties}
-              myJailCards={tradeMyJailCards}
-              propertiesOf={tradePropertiesOf ?? (() => [])}
-              jailCardsOf={tradeJailCardsOf ?? (() => 0)}
-              onPropose={onTradePropose ?? (() => {})}
-              onClose={onCloseTradeBuilder ?? (() => {})}
-            />
-          </div>
+        <div className="absolute inset-0 z-40" style={{ fontSize: '1.25em' }}>
+          <TradeBuilder
+            me={tradeMe}
+            others={tradeOthers}
+            myProperties={tradeMyProperties}
+            myJailCards={tradeMyJailCards}
+            propertiesOf={tradePropertiesOf ?? (() => [])}
+            jailCardsOf={tradeJailCardsOf ?? (() => 0)}
+            onPropose={onTradePropose ?? (() => {})}
+            onClose={onCloseTradeBuilder ?? (() => {})}
+          />
         </div>
       )}
     </div>

@@ -209,6 +209,13 @@ export function MonopolyBoard({
             overflow: 'hidden',
             background: '#d9e8d6',
             border: '1.5px solid #10182E',
+            // The outer board div sets fontSize: `${scale}rem` so that tile content
+            // scales through the em cascade. The inner grid is then CSS-transformed
+            // by scale. Without this correction, em-based overlay sizes inside the
+            // center panel are scaled twice (cascade × transform = scale²). Cancel
+            // the cascade here so only the CSS transform drives visual size, keeping
+            // every overlay at a constant fraction of the center area at all scales.
+            fontSize: `${1 / scale}em`,
           }}
         >
           {centerContent ?? (

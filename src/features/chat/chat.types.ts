@@ -72,7 +72,10 @@ export type CardOverlayProps = {
 /** Deed (buy/auction) overlay props */
 export type DeedOverlayProps = {
   activeDeed?: DeedInfo | null;
+  canBuyDeed?: boolean;
+  canManageDeed?: boolean;
   onAuction?: () => void;
+  onManageDeed?: () => void;
 };
 
 /** Jail decision overlay props */

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BoardContainer } from '@/features/game-board';
-import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
+import { FloatingPlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
@@ -299,7 +299,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
       <WsErrorBanner error={wsError} onDismiss={onClearWsError} />
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="flex-1 overflow-hidden p-4 md:pr-72">
         <BoardContainer
           spaces={gameState.spaces}
           players={deriveBoardPlayers(gameState)}
@@ -322,8 +322,11 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               activeCard={gameState.activeCard}
               onCardProceed={handleCardProceed}
               activeDeed={activeDeed}
+              canBuyDeed={permissions.canBuyProperty}
+              canManageDeed={activeDeed !== null && manageProperties.some((p) => !p.isMortgaged)}
               onBuy={handleBuy}
               onAuction={handleAuction}
+              onManageDeed={handleManage}
               jailDecision={jailDecision}
               jailAttempts={viewer?.jailStatus?.attempts ?? 0}
               canPayJailFine={permissions.canPayJailFine}
@@ -343,7 +346,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               auctionState={gameState.auction}
               auctionPropertyName={auctionPropertyName}
               auctionPlayers={auctionPlayers}
-              canBid={gameState.auction !== null && !(viewer?.isBankrupt ?? false)}
+              canBid={permissions.canBidAuction}
               onBid={handleBid}
               tradeState={gameState.trade}
               tradeProposer={tradeProposer}
@@ -379,9 +382,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
           }
         />
       </div>
-      <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-        <PlayerSidebar players={deriveSidebarPlayers(gameState)} />
-      </aside>
+      <FloatingPlayerSidebar players={deriveSidebarPlayers(gameState)} />
     </div>
   );
 }

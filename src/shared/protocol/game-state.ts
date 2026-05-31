@@ -142,13 +142,14 @@ export type DiceRoll = {
 };
 
 export type TurnState = {
-  phase:           TurnPhase;
-  currentPlayerId: string;
-  turnNumber:      number;
-  roundNumber:     number;
-  diceRoll:        DiceRoll | null;
-  doublesStreak:   number;
-  extraTurn:       boolean;
+  phase:              TurnPhase;
+  currentPlayerId:    string;
+  turnNumber:         number;
+  roundNumber:        number;
+  diceRoll:           DiceRoll | null;
+  doublesStreak:      number;
+  extraTurn:          boolean;
+  pendingBuyPosition: number | null;
 };
 
 // ======================================================

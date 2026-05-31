@@ -19,6 +19,10 @@ export type DeedInfo = {
 
 export type DeedCardProps = {
   deed: DeedInfo;
+  canBuy: boolean;
+  canManage: boolean;
   onBuy: () => void;
   onAuction: () => void;
+  onManage: () => void;
+  viewOnly?: boolean;
 };
