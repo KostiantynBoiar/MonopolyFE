@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BoardContainer } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
@@ -227,9 +227,37 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     id: p.id, name: p.displayName,
   }));
 
+  // Phase-based: show the jail modal exactly when the backend says so.
+  // Do NOT use jailStatus or diceRoll here — stale dice (from a free player's
+  // previous roll) would re-trigger the modal on the next jail entry.
   const jailDecision =
     gameState.turn.phase === TurnPhase.JAIL_DECISION &&
     gameState.turn.currentPlayerId === gameState.viewerId;
+
+  // If the backend leaves JAIL_DECISION without granting doubles the player's
+  // turn is over — auto-dispatch EndTurn so other actions stay locked.
+  // Track the previous value of jailDecision to detect the falling edge.
+  const prevJailDecisionRef = useRef(jailDecision);
+  const jailRollEndedRef = useRef(false);
+  useEffect(() => {
+    const prev = prevJailDecisionRef.current;
+    prevJailDecisionRef.current = jailDecision;
+
+    const failedJailRoll =
+      prev && !jailDecision &&                             // just left JAIL_DECISION
+      viewer?.jailStatus !== null &&                       // still in jail (no doubles)
+      gameState.turn.currentPlayerId === gameState.viewerId &&
+      !!gameState.turn.diceRoll && !gameState.turn.diceRoll.isDoubles &&
+      permissions.canEndTurn;
+
+    if (failedJailRoll && !jailRollEndedRef.current) {
+      jailRollEndedRef.current = true;
+      dispatch({ type: CommandType.EndTurn });
+    }
+    // Reset guard when the condition is gone (next turn / new jail stint)
+    if (!failedJailRoll) jailRollEndedRef.current = false;
+  }, [jailDecision, viewer?.jailStatus, gameState.turn.currentPlayerId,
+      gameState.turn.diceRoll, permissions.canEndTurn, dispatch]);
 
   const debtPending =
     gameState.turn.phase === TurnPhase.MUST_PAY_RENT &&
@@ -298,6 +326,8 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               canPayJailFine={permissions.canPayJailFine}
               canUseJailCard={permissions.canUseJailCard}
               canRollInJail={permissions.canRollInJail}
+              jailDiceRoll={jailDecision || isRolling ? gameState.turn.diceRoll : null}
+              jailIsRolling={isRolling && jailDecision}
               onPayJailFine={handlePayJailFine}
               onUseJailCard={handleUseJailCard}
               onRollInJail={handleRollInJail}

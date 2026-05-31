@@ -146,6 +146,9 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
   // ── Fast path: nothing to animate ────────────────────────────────────────────
   if (!diceChanged && !walked && !cardMoved && directCardSquare === null) {
     commit(next);
+    // Still check for a pending buy — the backend may set can_buy in a separate
+    // frame from the movement frame (e.g. on a doubles roll).
+    maybeSurfaceDeed(next, newPos);
     return;
   }
 

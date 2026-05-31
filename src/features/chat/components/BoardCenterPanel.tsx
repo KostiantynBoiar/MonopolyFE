@@ -234,6 +234,8 @@ export function BoardCenterPanel({
   canPayJailFine = false,
   canUseJailCard = false,
   canRollInJail = false,
+  jailDiceRoll = null,
+  jailIsRolling = false,
   onPayJailFine,
   onUseJailCard,
   onRollInJail,
@@ -444,9 +446,9 @@ export function BoardCenterPanel({
         </>
       )}
 
-      {/* ── Card flip overlay ── */}
+      {/* ── Card flip overlay ── highest priority overlay; always on top ── */}
       {activeCard && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center">
+        <div className="absolute inset-0 z-30 flex items-center justify-center">
           <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} />
         </div>
       )}
@@ -462,14 +464,16 @@ export function BoardCenterPanel({
         </div>
       )}
 
-      {/* ── Jail decision overlay ── */}
-      {jailDecision && (
+      {/* ── Jail decision overlay — hidden while a card awaits consent ── */}
+      {jailDecision && !activeCard && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <JailModal
             attempts={jailAttempts}
             canPayFine={canPayJailFine}
             canUseCard={canUseJailCard}
             canRoll={canRollInJail}
+            diceRoll={jailDiceRoll}
+            isRolling={jailIsRolling}
             onPayFine={onPayJailFine ?? (() => {})}
             onUseCard={onUseJailCard ?? (() => {})}
             onRoll={onRollInJail ?? (() => {})}

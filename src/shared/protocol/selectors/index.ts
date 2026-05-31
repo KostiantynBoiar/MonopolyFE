@@ -5,7 +5,7 @@
  */
 
 import type { GameState, PlayerState, PropertyState } from '../game-state';
-import { PropertyColor } from '../game-state';
+import { PropertyColor } from '../game-state.enums';
 import {
   RENT, PRICE, HOUSE_COST, COLOR_POSITIONS, POSITION_COLOR,
   RAILROAD_POSITIONS, UTILITY_POSITIONS,

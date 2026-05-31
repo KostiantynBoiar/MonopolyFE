@@ -1,5 +1,5 @@
 import type { GameEvent, LogEntry } from '../game-state';
-import { LogKind } from '../game-state';
+import { LogKind } from '../game-state.enums';
 import { renderEvent } from './format-event';
 
 export { renderEvent };

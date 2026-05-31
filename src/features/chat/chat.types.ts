@@ -81,6 +81,8 @@ export type JailOverlayProps = {
   canPayJailFine?: boolean;
   canUseJailCard?: boolean;
   canRollInJail?: boolean;
+  jailDiceRoll?: DiceRoll | null;
+  jailIsRolling?: boolean;
   onPayJailFine?: () => void;
   onUseJailCard?: () => void;
   onRollInJail?: () => void;

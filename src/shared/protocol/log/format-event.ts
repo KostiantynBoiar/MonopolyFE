@@ -8,7 +8,7 @@
  */
 
 import type { GameEvent } from '../game-state';
-import { GameEventType } from '../game-state';
+import { GameEventType } from '../game-state.enums';
 
 const M = (n: number) => `M${n}`;
 
