@@ -17,7 +17,7 @@ export function FloatingPlayerSidebar({ players }: Props) {
         onClick={() => setOpen(true)}
         aria-label="Show players"
         className={cn(
-          'fixed bottom-4 right-4 z-40 flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 shadow-md',
+          'fixed right-3 top-3 z-40 flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-2 shadow-md',
           'text-xs font-semibold text-ink transition-opacity',
           'md:hidden',
           open && 'opacity-0 pointer-events-none',

@@ -149,7 +149,7 @@ function StickerCell({
 
   return (
     <button
-      className="flex items-center justify-center rounded p-0.5 hover:bg-gray-300 active:scale-95"
+      className="flex items-center justify-center rounded p-0.5 hover:bg-line active:scale-95"
       onClick={onSelect}
       title={file}
     >
@@ -284,7 +284,13 @@ export function BoardCenterPanel({
   tradeJailCardsOf,
   onTradePropose,
   onCloseTradeBuilder,
-}: BoardCenterPanelProps) {
+  compact = false,
+}: BoardCenterPanelProps & { compact?: boolean }) {
+  // On mobile the center panel is hidden — all actions/overlays are rendered
+  // at full viewport size outside the scaled board transform.
+  if (compact) {
+    return <div className="h-full w-full" />;
+  }
   const bottomRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -333,7 +339,7 @@ export function BoardCenterPanel({
 
   return (
     <div
-      className="relative flex h-full w-full flex-col overflow-hidden bg-gray-100"
+      className="relative flex h-full w-full flex-col overflow-hidden bg-paper"
       style={{ fontSize: '0.72em' }}
     >
       {/* ── Auction panel (swaps whole area when auction is active) ── */}
@@ -368,7 +374,7 @@ export function BoardCenterPanel({
           >
             {/* Game log */}
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
+              <div className="shrink-0 border-b border-line bg-line/30 px-3 py-1.5">
                 <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
                   Game Log
                 </span>
@@ -395,7 +401,7 @@ export function BoardCenterPanel({
 
             {/* Actions */}
             <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
-              <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
+              <div className="shrink-0 border-b border-line bg-line/30 px-3 py-1.5">
                 <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
                   Actions
                 </span>
@@ -424,7 +430,7 @@ export function BoardCenterPanel({
           {/* ── Input bar ── */}
           <div
             className={cn(
-              'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
+              'relative shrink-0 border-t border-line bg-line/30 px-2 py-2 transition-opacity duration-300',
               activeCard || activeDeed || jailDecision || debtPending ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
