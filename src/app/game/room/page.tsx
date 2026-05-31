@@ -60,6 +60,13 @@ export default function GameRoomPage() {
   }, [wasKicked, clearSession, router]);
 
   useEffect(() => {
+    if (!ready || resolvingCode || currentSession) return;
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (code) return;
+    router.replace('/lobby');
+  }, [ready, resolvingCode, currentSession, router]);
+
+  useEffect(() => {
     if (!ready || !token || currentSession) return;
     const code = new URLSearchParams(window.location.search).get('code');
     if (!code) return;
