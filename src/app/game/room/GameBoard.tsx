@@ -1,13 +1,14 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { BoardContainer } from '@/features/game-board';
 import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState } from '@/shared/protocol/game-state.schema';
-import { TurnPhase, AuctionTargetKind } from '@/shared/protocol/game-state';
+import { TurnPhase, AuctionTargetKind, LogKind } from '@/shared/protocol/game-state';
+import type { LogEntry } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { getPlayerPositions, getPlayerProperties, getPropertyRent, hasMonopoly } from '@/shared/protocol/selectors';
 import { BOARD } from '@/shared/config/board-layout';
@@ -17,7 +18,8 @@ import type { ManageProperty } from '@/features/manage';
 import type { TradeParticipant, TradeAsset } from '@/features/trade';
 import { TradeBuilder } from '@/features/trade';
 import type { TradeOffer } from '@/shared/protocol/game-state';
-import { useGameStore, useUiStore } from '@/stores';
+import { useGameStore, useUiStore, useSocketStore } from '@/stores';
+import { resolveCardGate } from '@/shared/socket/snapshot-animator';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
 import { useGameDispatch } from './useGameDispatch';
@@ -77,12 +79,34 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   const { game: gameState, permissions } = snapshot;
 
   const { isRolling, walkState, activeDeed, setActiveDeed, openedModal, setOpenedModal } = useUiStore();
+  const { messages: wsMessages } = useSocketStore();
 
   const { dispatch } = useGameDispatch();
 
   // ── Viewer ───────────────────────────────────────────────────────────────────
 
   const viewer = gameState.players.find((p) => p.id === gameState.viewerId) ?? null;
+
+  // Merge in-game WS chat messages with the server game log. Chat entries are kept
+  // separately from the snapshot (they're not in game.state.log) and re-merged on
+  // each render so that incoming snapshots don't wipe them out.
+  const combinedLog = useMemo<LogEntry[]>(() => {
+    const chatEntries: LogEntry[] = wsMessages.map((m) => {
+      const player = gameState.players.find((p) => p.userId === m.from_user_id);
+      return {
+        id:          m.id,
+        kind:        m.kind === 'sticker' ? LogKind.STICKER : LogKind.CHAT,
+        playerId:    m.from_user_id,
+        playerName:  m.display_name,
+        playerToken: player?.token,
+        text:        m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
+        ts:          m.ts,
+      };
+    });
+    return [...gameState.log, ...chatEntries].sort(
+      (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime(),
+    );
+  }, [wsMessages, gameState.log, gameState.players]);
 
   // ── Game handlers ──────────────────────────────────────────────────────────────
 
@@ -96,9 +120,11 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     dispatch({ type: CommandType.EndTurn });
   }, [permissions.canEndTurn, dispatch]);
 
-  // Cards are auto-resolved by the backend; "Proceed" just dismisses the overlay
-  // locally until the next snapshot (which no longer carries the card) arrives.
+  // Cards are auto-resolved by the backend. "Proceed" (1) unblocks the snapshot
+  // pipeline so the resolved frame can be applied and (2) dismisses the overlay
+  // locally so the card disappears immediately rather than waiting for the commit.
   const handleCardProceed = useCallback(() => {
+    resolveCardGate();
     updateGame((g) => ({ ...g, activeCard: null }));
   }, [updateGame]);
 
@@ -249,7 +275,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
           walkingPlayers={walkingBoardPlayers}
           centerContent={
             <BoardCenterPanel
-              log={gameState.log}
+              log={combinedLog}
               diceRoll={gameState.turn.diceRoll}
               isRolling={isRolling}
               canRoll={permissions.canRoll && !isRolling}

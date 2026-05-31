@@ -31,11 +31,12 @@ function useStickerPacks() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function EventRow({ text }: { text: string }) {
+function EventRow({ text, playerName }: { text: string; playerName?: string }) {
+  const displayText = playerName ? `${playerName}: ${text}` : text;
   return (
     <div className="flex items-center gap-2 py-0.5">
       <div className="h-px flex-1 bg-line" />
-      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{text}</span>
+      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{displayText}</span>
       <div className="h-px flex-1 bg-line" />
     </div>
   );
@@ -349,7 +350,7 @@ export function BoardCenterPanel({
               >
                 {log.map((entry) =>
                   entry.kind === LogKind.EVENT ? (
-                    <EventRow key={entry.id} text={entry.text} />
+                    <EventRow key={entry.id} playerName={entry.playerName} text={entry.text} />
                   ) : (
                     <MessageRow
                       key={entry.id}
