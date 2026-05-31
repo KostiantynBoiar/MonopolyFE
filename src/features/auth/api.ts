@@ -26,3 +26,24 @@ export function login(data: LoginInput): Promise<AuthResponse> {
 export function getMe(token: string): Promise<MeResponse> {
   return request('/me', { headers: { Authorization: `Bearer ${token}` } });
 }
+
+/** Exchange a refresh token for a fresh access + refresh pair (old refresh is rotated). */
+export function refresh(refreshToken: string): Promise<AuthResponse> {
+  return request('/refresh', {
+    method: 'POST',
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+}
+
+/** Revoke a refresh token server-side. Best-effort; ignores failures. */
+export async function logout(refreshToken: string): Promise<void> {
+  try {
+    await fetch(`${BASE}/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+  } catch {
+    /* logout is best-effort; the client clears local state regardless */
+  }
+}
