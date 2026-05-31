@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MobileNav } from './MobileNav';
-import { Badge, Container } from '@/shared/ui';
+import { Badge, Container, ThemeToggle } from '@/shared/ui';
 import { UserMenu } from '@/features/auth/components/UserMenu';
 
 const navLinks = [
@@ -31,6 +31,7 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <ThemeToggle />
           <UserMenu />
         </nav>
 

@@ -6,7 +6,9 @@ export type IconName =
   | 'chat'
   | 'arrow'
   | 'menu'
-  | 'close';
+  | 'close'
+  | 'sun'
+  | 'moon';
 
 type IconProps = {
   name: IconName;

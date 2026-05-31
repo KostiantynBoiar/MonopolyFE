@@ -8,3 +8,5 @@ export type { IconName } from './Icon';
 export { Input } from './Input';
 export { StatusDot } from './StatusDot';
 export { TgsPlayer } from './TgsPlayer';
+export { ThemeProvider, useTheme } from './ThemeProvider';
+export { ThemeToggle } from './ThemeToggle';
