@@ -300,7 +300,12 @@ function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
 // ─── Permissions ──────────────────────────────────────────────────────────────
 
 function derivePermissions(state: BeGameState): PlayerPermissions {
-  const a = state.turn.actions_available ?? {};
+  // The BE broadcasts the current player's actions_available to all viewers in the
+  // same frame, so we must gate every turn-specific action on viewer identity.
+  // Auction bidding is the exception: all players can bid simultaneously.
+  const isCurrentPlayer = state.viewer_id === state.turn.current_player_id;
+  const a = isCurrentPlayer ? (state.turn.actions_available ?? {}) : {};
+  const rawA = state.turn.actions_available ?? {};
   const inJail = state.turn.phase === TurnPhase.JAIL_DECISION;
   return {
     canRoll: !!a.can_roll && !inJail,
@@ -315,7 +320,8 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
     // No backend "sell property to bank" command exists.
     canSellProperty: false,
     canTrade: !!a.can_trade,
-    canBidAuction: !!a.can_bid,
+    // All players can bid in an auction — read directly without viewer gate.
+    canBidAuction: !!rawA.can_bid,
     canPayJailFine: !!a.can_pay_jail_fine,
     canUseJailCard: !!a.can_use_jail_card,
     // In jail, rolling for doubles is the normal roll action.

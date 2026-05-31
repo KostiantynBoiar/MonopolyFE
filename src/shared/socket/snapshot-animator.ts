@@ -1,19 +1,18 @@
 /**
  * Snapshot animation pipeline.
  *
- * The server is authoritative and sends full snapshots — it does NOT stream the
- * granular move/landing events the old mock emitted. So we recover the dice-spin +
- * step-walk animation by DIFFING the previous committed snapshot against each
- * incoming one: if the current player advanced by exactly the dice sum (a normal
- * roll, not a teleport/card/jail move), we play the spin, walk the token tile by
- * tile, then commit. Everything else commits immediately.
- *
  * Frames are processed through a serial queue so a burst of snapshots (e.g. roll
  * then auto-advance) animates in order instead of overlapping.
  *
- * Card gate — when a committed frame carries an activeCard the pipeline pauses and
- * waits for resolveCardGate() before processing the next frame. GameBoard calls
- * resolveCardGate() when the player clicks "Proceed" on the card overlay.
+ * Two card-move flows are supported:
+ *
+ *   Two-frame (BE sends card-square frame then destination frame separately):
+ *     Frame 1 → walk to card square → commit (card visible) → gate
+ *     Frame 2 → card walk to destination → commit (card gone)
+ *
+ *   Single-frame (BE has already applied the card effect; player.position = destination):
+ *     Frame 1 → walk to card square → commit patched (player at square, card visible) →
+ *               gate → walk to destination → commit final (card cleared)
  */
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
@@ -38,9 +37,9 @@ const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 let queue: GameSnapshot[] = [];
 let running = false;
 
-// Whether the last *committed* snapshot contained an activeCard. Tracked here
-// separately from the store so that a local updateGame({ activeCard: null }) by
-// the Proceed handler doesn't confuse the next frame's cardResolved detection.
+// Whether the last *committed* snapshot contained an activeCard. Tracked separately
+// from the store so updateGame({ activeCard: null }) from the Proceed handler doesn't
+// confuse the next frame's cardResolved detection.
 let prevCommittedHadCard = false;
 
 // Card gate — resolves when the player clicks Proceed (or on timeout/reset).
@@ -105,18 +104,24 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
   const sum = dice ? dice.die1 + dice.die2 : null;
   const sentToJail = !prevPlayer?.jailStatus && !!nextPlayer?.jailStatus;
 
-  // Normal dice-driven walk: mover advanced by exactly the dice sum, not jailed.
+  // Where the dice would have landed (ignoring any card-driven displacement).
+  const diceSquare =
+    sum !== null && oldPos !== null ? (oldPos + sum) % BOARD_SIZE : null;
+
+  // ── Move classifications ──────────────────────────────────────────────────────
+
+  // Normal dice walk: player ends up exactly at the dice square (no card, or card
+  // square is the final position because BE sends it separately in a second frame).
   const walked =
     oldPos !== null &&
     newPos !== null &&
     oldPos !== newPos &&
-    sum !== null &&
-    (oldPos + sum) % BOARD_SIZE === newPos &&
+    diceSquare !== null &&
+    diceSquare === newPos &&
     !sentToJail;
 
-  // Card-driven move: the previous committed frame had a card; this frame resolves
-  // it. Only animate when going forward and the path is short enough (> MAX_FORWARD_STEPS
-  // means the player moved backward — don't march them around the whole board).
+  // Card-resolved walk (two-frame flow): the previous committed frame had a card,
+  // this one clears it — animate from old position to the card's destination.
   const cardResolved = prevCommittedHadCard && !next.game.activeCard;
   const cardSteps =
     cardResolved && oldPos !== null && newPos !== null && oldPos !== newPos && !sentToJail
@@ -124,20 +129,34 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
       : null;
   const cardMoved = cardSteps !== null && cardSteps.length <= MAX_FORWARD_STEPS;
 
-  // Nothing animated → commit immediately.
-  if (!diceChanged && !walked && !cardMoved) {
+  // Direct card move (single-frame flow): the BE applied the card effect in the same
+  // frame as the roll, so player.position is already the destination, not the card
+  // square. diceSquare points at the card square the player physically stepped on.
+  const directCardSquare =
+    !walked &&
+    diceChanged &&
+    diceSquare !== null &&
+    newPos !== null &&
+    diceSquare !== newPos &&
+    !!next.game.activeCard &&
+    !sentToJail
+      ? diceSquare
+      : null;
+
+  // ── Fast path: nothing to animate ────────────────────────────────────────────
+  if (!diceChanged && !walked && !cardMoved && directCardSquare === null) {
     commit(next);
     return;
   }
 
-  // Phase 1 — dice spin.
+  // ── Phase 1: Dice spin ────────────────────────────────────────────────────────
   if (diceChanged) {
     ui.setIsRolling(true);
     await delay(DICE_SPIN_MS);
     ui.setIsRolling(false);
   }
 
-  // Phase 2 — dice-driven walk, tile by tile.
+  // ── Phase 2a: Normal dice walk ────────────────────────────────────────────────
   if (walked && oldPos !== null && newPos !== null) {
     const steps = getWalkSteps(oldPos, newPos);
     ui.setWalkState({ playerId: moverId, currentPos: oldPos });
@@ -145,25 +164,82 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
     ui.setWalkState(null);
   }
 
-  // Phase 3 — card-driven walk (after Proceed was clicked, resolved in prior gate).
+  // ── Phase 2b: Direct card move ────────────────────────────────────────────────
+  // Single-frame: walk to card square → show card → wait for consent → walk to dest.
+  if (directCardSquare !== null && oldPos !== null && newPos !== null) {
+    // Step 1: walk to the card square the dice pointed at.
+    const toCardSteps = getWalkSteps(oldPos, directCardSquare);
+    ui.setWalkState({ playerId: moverId, currentPos: oldPos });
+    await walkSteps(moverId, toCardSteps, WALK_STEP_DURATION_MS);
+    ui.setWalkState(null);
+
+    // Step 2: commit a patched snapshot showing the player standing on the card
+    // square (not the destination) so the card overlay makes spatial sense.
+    commit(patchMoverPosition(next, moverId, directCardSquare));
+    // prevCommittedHadCard is now true (patched snapshot still has activeCard).
+
+    // Step 3: wait for the player to acknowledge the card.
+    await waitForCardProceed();
+    // handleCardProceed already called updateGame({ activeCard: null }), which
+    // cleared the card from the store. We now animate the card-driven displacement.
+
+    // Step 4: walk from the card square to the final destination.
+    const toDestSteps = getWalkSteps(directCardSquare, newPos);
+    ui.setWalkState({ playerId: moverId, currentPos: directCardSquare });
+    await walkSteps(moverId, toDestSteps, CARD_WALK_STEP_MS);
+    ui.setWalkState(null);
+
+    // Step 5: commit the authoritative snapshot with the card cleared.
+    prevCommittedHadCard = false;
+    useGameStore.getState().setSnapshot({ ...next, game: { ...next.game, activeCard: null } });
+
+    maybeSurfaceDeed(next, newPos);
+    return;
+  }
+
+  // ── Phase 3: Card-driven walk (two-frame flow) ────────────────────────────────
   if (cardMoved && cardSteps && oldPos !== null) {
     ui.setWalkState({ playerId: moverId, currentPos: oldPos });
     await walkSteps(moverId, cardSteps, CARD_WALK_STEP_MS);
     ui.setWalkState(null);
   }
 
-  // Phase 4 — commit the authoritative snapshot.
+  // ── Phase 4: Commit ───────────────────────────────────────────────────────────
   commit(next);
+  maybeSurfaceDeed(next, newPos);
 
-  // Surface the deed modal when the viewer can buy the tile they just landed on.
-  if (next.permissions.canBuyProperty && next.game.turn.currentPlayerId === next.game.viewerId) {
-    const deed = newPos !== null ? getDeedInfo(newPos) : null;
-    if (deed) useUiStore.getState().setActiveDeed(deed);
-  }
-
-  // Card gate — pause the pipeline until the player dismisses the card overlay.
+  // ── Phase 5: Card gate (two-frame flow — pause until Proceed) ────────────────
   if (next.game.activeCard !== null) {
     await waitForCardProceed();
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function patchMoverPosition(
+  snapshot: GameSnapshot,
+  playerId: string,
+  position: number,
+): GameSnapshot {
+  return {
+    ...snapshot,
+    game: {
+      ...snapshot.game,
+      players: snapshot.game.players.map((p) =>
+        p.id === playerId ? { ...p, position } : p,
+      ),
+    },
+  };
+}
+
+function maybeSurfaceDeed(snapshot: GameSnapshot, pos: number | null): void {
+  if (
+    pos !== null &&
+    snapshot.permissions.canBuyProperty &&
+    snapshot.game.turn.currentPlayerId === snapshot.game.viewerId
+  ) {
+    const deed = getDeedInfo(pos);
+    if (deed) useUiStore.getState().setActiveDeed(deed);
   }
 }
 
