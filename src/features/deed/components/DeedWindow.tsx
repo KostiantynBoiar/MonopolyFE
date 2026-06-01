@@ -1,8 +1,7 @@
 'use client';
 
 import type { BoardSpace } from '@/features/game-board';
-import { SpaceType } from '@/features/game-board';
-import { CornerVariant } from '@/features/game-board/game-board.enums';
+import { CornerVariant, SpaceType } from '@/features/game-board/game-board.enums';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { DeedInfo } from '../deed.types';
 import { DeedSpaceType } from '../deed.enums';
@@ -74,33 +73,13 @@ function getCornerText(corner: CornerVariant | undefined) {
 function getSpecialText(space: BoardSpace) {
   switch (space.type) {
     case SpaceType.CHANCE:
-      return {
-        eyebrow: 'Chance',
-        title: 'Draw a chance card.',
-        value: 'DRAW',
-        details: ['Random event', 'Can move, pay, or collect'],
-      };
+      return { eyebrow: 'Chance', title: 'Draw a chance card.', value: 'DRAW' };
     case SpaceType.CHEST:
-      return {
-        eyebrow: 'Community',
-        title: 'Open the community chest.',
-        value: 'DRAW',
-        details: ['Shared event deck', 'Usually cash or movement'],
-      };
+      return { eyebrow: 'Community', title: 'Open the community chest.', value: 'DRAW' };
     case SpaceType.TAX:
-      return {
-        eyebrow: 'Tax',
-        title: 'Pay the listed amount.',
-        value: `$${space.price ?? 0}`,
-        details: ['Mandatory payment'],
-      };
+      return { eyebrow: 'Tax', title: 'Pay the listed amount.', value: `$${space.price ?? 0}` };
     default:
-      return {
-        eyebrow: 'Status',
-        title: 'Field details unavailable.',
-        value: '--',
-        details: ['No extra rules'],
-      };
+      return { eyebrow: 'Status', title: 'Field details unavailable.', value: '--' };
   }
 }
 
@@ -114,13 +93,8 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
 
   return (
     <section
-      className="grid h-full min-h-0 overflow-hidden rounded-[18px] border p-[3px]"
+      className="grid h-full min-h-0 grid-rows-[auto_auto_1fr_auto] overflow-hidden rounded-[18px] border p-[3px]"
       style={{
-        gridTemplateRows: isDeed
-          ? showActions
-            ? 'auto auto auto minmax(0, 1fr)'
-            : 'auto auto minmax(0, 1fr)'
-          : 'auto auto',
         backgroundColor: GAME_BOARD_COLORS.deedShell,
         borderColor: GAME_BOARD_COLORS.deedShellBorder,
         color: GAME_BOARD_COLORS.tileText,
@@ -143,44 +117,41 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
       </div>
 
       <div
-        className="flex items-center justify-center rounded-[12px] border px-3 py-2 text-center"
+        className="rounded-[12px] border px-3 py-2 text-center"
         style={{
-          minHeight: isDeed ? '33%' : 'calc(100% - 6px)',
           backgroundColor: GAME_BOARD_COLORS.deedBody,
           borderColor: GAME_BOARD_COLORS.deedRule,
           boxShadow: `inset 0 1px 0 ${GAME_BOARD_COLORS.deedBodyInset}`,
         }}
       >
-        <div className="flex flex-col items-center justify-center">
-          <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.tileText }}>
-            {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? specialText?.eyebrow ?? 'Status'}
+        <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.tileText }}>
+          {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? specialText?.eyebrow ?? 'Status'}
+        </p>
+        <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
+          {isDeed && headlineRent
+            ? `$${headlineRent.replace(/^M/, '')}`
+            : cornerText?.value ?? specialText?.value ?? '--'}
+        </p>
+        {!isDeed && (
+          <p className="mt-2 text-sm font-medium" style={{ color: GAME_BOARD_COLORS.priceText }}>
+            {cornerText?.title ?? specialText?.title}
           </p>
-          <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
-            {isDeed && headlineRent
-              ? `$${headlineRent.replace(/^M/, '')}`
-              : cornerText?.value ?? specialText?.value ?? '--'}
-          </p>
-          {!isDeed && (
-            <p className="mt-2 text-sm font-medium" style={{ color: GAME_BOARD_COLORS.priceText }}>
-              {cornerText?.title ?? specialText?.title}
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
-      {isDeed && deed && (
-        <div
-          className="min-h-0 overflow-hidden rounded-[12px] border px-3 py-2"
-          style={{
-            backgroundColor: GAME_BOARD_COLORS.deedBody,
-            borderColor: GAME_BOARD_COLORS.deedRule,
-          }}
-        >
-          <div className="grid gap-1">
+      <div
+        className="min-h-0 overflow-hidden rounded-[12px] border px-3 py-2"
+        style={{
+          backgroundColor: GAME_BOARD_COLORS.deedBody,
+          borderColor: GAME_BOARD_COLORS.deedRule,
+        }}
+      >
+        {isDeed && deed ? (
+          <div className="grid gap-1.5">
             {deed.rentRows.slice(1).map((row) => (
               <div
                 key={row.labelKey}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-[11px]"
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-[12px]"
                 style={{ color: '#1e1e1e' }}
               >
                 <span className="truncate font-medium">
@@ -195,52 +166,75 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
                       backgroundRepeat: 'repeat-x',
                     }}
                   />
-                  <span className="shrink-0 text-[9px] font-bold">
+                  <span className="shrink-0 font-bold">
                     ${row.amount.replace(/^M/, '')}
                   </span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="grid gap-2 text-left text-[12px]" style={{ color: '#1e1e1e' }}>
+            <div className="rounded-[10px] border px-2 py-2" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
+              <p className="font-semibold" style={{ color: GAME_BOARD_COLORS.tileMuted }}>Type</p>
+              <p className="mt-1 font-bold uppercase">{space.type}</p>
+            </div>
+            {space.price != null && (
+              <div className="rounded-[10px] border px-2 py-2" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
+                <p className="font-semibold" style={{ color: GAME_BOARD_COLORS.tileMuted }}>Value</p>
+                <p className="mt-1 font-bold">${space.price}</p>
+              </div>
+            )}
+            <div className="rounded-[10px] border px-2 py-2" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
+              <p className="font-semibold" style={{ color: GAME_BOARD_COLORS.tileMuted }}>Status</p>
+              <p className="mt-1 font-medium">{cornerText?.title ?? specialText?.title ?? 'Board space information.'}</p>
+            </div>
+          </div>
+        )}
+      </div>
 
-      {showActions && (
-        <div
-          className="grid h-full min-h-0 grid-cols-2 gap-3 rounded-[12px] border p-2"
-          style={{
-            backgroundColor: GAME_BOARD_COLORS.deedBody,
-            borderColor: GAME_BOARD_COLORS.deedRule,
-          }}
-        >
-          <button
-            type="button"
-            onClick={onBuy}
-            className="h-full rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
-            style={{
-              background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedBuy} 0%, ${GAME_BOARD_COLORS.deedBuyDark} 100%)`,
-              borderColor: '#69d27f',
-              color: '#f8fff9',
-              boxShadow: '0 2px 0 rgba(0,0,0,0.18)',
-            }}
-          >
-            Buy ${space.price}
-          </button>
-          <button
-            type="button"
-            onClick={onAuction}
-            className="h-full rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
-            style={{
-              background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedAuction} 0%, #f2f2f2 100%)`,
-              borderColor: '#d6d6d6',
-              color: GAME_BOARD_COLORS.deedAuctionText,
-              boxShadow: '0 2px 0 rgba(0,0,0,0.14)',
-            }}
-          >
-            Auction
-          </button>
-        </div>
-      )}
+      <div
+        className="grid grid-cols-2 gap-3 rounded-[12px] border p-2"
+        style={{
+          backgroundColor: GAME_BOARD_COLORS.deedBody,
+          borderColor: GAME_BOARD_COLORS.deedRule,
+        }}
+      >
+        {showActions ? (
+          <>
+            <button
+              type="button"
+              onClick={onBuy}
+              className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
+              style={{
+                background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedBuy} 0%, ${GAME_BOARD_COLORS.deedBuyDark} 100%)`,
+                borderColor: '#69d27f',
+                color: '#f8fff9',
+                boxShadow: '0 2px 0 rgba(0,0,0,0.18)',
+              }}
+            >
+              Buy ${space.price}
+            </button>
+            <button
+              type="button"
+              onClick={onAuction}
+              className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
+              style={{
+                background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedAuction} 0%, #f2f2f2 100%)`,
+                borderColor: '#d6d6d6',
+                color: GAME_BOARD_COLORS.deedAuctionText,
+                boxShadow: '0 2px 0 rgba(0,0,0,0.14)',
+              }}
+            >
+              Auction
+            </button>
+          </>
+        ) : (
+          <div className="col-span-2 rounded-[12px] border px-3 py-2 text-center text-sm font-semibold" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
+            No property action available here
+          </div>
+        )}
+      </div>
     </section>
   );
 }
