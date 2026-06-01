@@ -103,9 +103,13 @@ export function serializeCommand(cmd: ClientCommand): WireCommand | null {
     case CommandType.DeclareBankruptcy:
       return { type: 'game.declare_bankruptcy', payload: {} };
 
+    // Paying debt = ending the turn; the backend auto-deducts once the player
+    // has raised enough cash and calls end_turn.
+    case CommandType.PayDebt:
+      return { type: 'game.end_turn', payload: {} };
+
     // No backend equivalent — handled client-side or dropped.
     case CommandType.SellProperty:
-    case CommandType.PayDebt:
     case CommandType.ResolveCard:
       return null;
 

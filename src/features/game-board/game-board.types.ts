@@ -6,6 +6,7 @@ export type WalkingPlayer = {
   id: string;
   currentPos: number;
   tokenColor: string;
+  fast?: boolean;
 };
 
 export type BoardContainerProps = {

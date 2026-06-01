@@ -7,7 +7,7 @@ import { getProperty, getOwner, isMortgaged } from '@/shared/protocol/selectors'
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
-import { N, W, gridCols, gridRows, BOARD_W, BOARD_PX, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { N, W, gridCols, gridRows, BOARD_W, BOARD_PX, WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import type { TileContentProps, MonopolyBoardProps } from '../game-board.types';
 
 // ─── Tile rendering ───────────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ function WalkingTokenOverlay({ players }: { players: WalkingPlayer[] }) {
               border: '2.5px solid white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
               transform: `translate(${x - 8.5}px, ${y - 8.5}px)`,
-              transition: `transform ${WALK_STEP_DURATION_MS}ms ease-in-out`,
+              transition: `transform ${p.fast ? CARD_WALK_STEP_DURATION_MS : WALK_STEP_DURATION_MS}ms ease-in-out`,
               willChange: 'transform',
             }}
           />

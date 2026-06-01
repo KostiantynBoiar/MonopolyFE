@@ -1,12 +1,12 @@
 /**
  * Property cost calculation utilities.
- * Extracted to a separate file for reusability across the application.
+ *
+ * Note: house/hotel build cost is a fixed per-color-group amount stored in
+ * board-data.ts (HOUSE_COST), NOT derived from the property purchase price.
+ * Do not add a generic buildCost(price) helper here — it would be wrong.
  */
 
-/** Cost to build a house or hotel on a property (50% of property price). */
-export const buildCost = (price: number): number => Math.floor(price / 2);
-
-/** Refund when selling a house or hotel (25% of property price). */
+/** Refund when selling a house or hotel (half of its build cost; ≈ 25% of property price). */
 export const sellRefund = (price: number): number => Math.floor(price / 4);
 
 /** Mortgage value of a property (50% of property price). */

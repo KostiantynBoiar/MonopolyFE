@@ -337,8 +337,9 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
     canUseJailCard: !!a.can_use_jail_card,
     // In jail, rolling for doubles is the normal roll action.
     canRollInJail: !!a.can_roll && inJail,
-    // No explicit pay-debt command; rent is auto-deducted, the player just ends turn.
-    canPayDebt: false,
+    // When in MUST_PAY_RENT, can_end_turn means the player has raised enough cash
+    // and the backend will auto-deduct on EndTurn — that IS the "pay debt" action.
+    canPayDebt: !!a.can_end_turn && state.turn.phase === TurnPhase.MUST_PAY_RENT,
     canDeclareBankruptcy: !!a.can_declare_bankruptcy,
   };
 }

@@ -163,6 +163,7 @@ export function WaitingCenterPanel({
   socketStatus,
 }: WaitingCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
@@ -172,6 +173,17 @@ export function WaitingCenterPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPicker]);
 
   function sendText() {
     const t = draft.trim();
@@ -290,7 +302,7 @@ export function WaitingCenterPanel({
           </button>
         </div>
         {showPicker && (
-          <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
+          <div ref={pickerRef} className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
             <StickerPicker onSticker={sendSticker} />
           </div>
         )}

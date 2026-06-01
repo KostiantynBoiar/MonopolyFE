@@ -18,11 +18,13 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
     setDisplayMs(auctionState.timeRemainingMs);
   }, [auctionState.timeRemainingMs]);
 
+  // Single stable interval — functional setState always sees the current value,
+  // so this doesn't need displayMs as a dep (which would restart the clock every tick).
   useEffect(() => {
-    if (displayMs <= 0) return;
     const iv = setInterval(() => setDisplayMs((ms) => Math.max(0, ms - 1000)), 1000);
     return () => clearInterval(iv);
-  }, [displayMs]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const highestBidder = players.find((p) => p.id === auctionState.highestBidderId);
   const minBid = auctionState.highestBid + 1;
@@ -54,7 +56,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
       </div>
 
       {/* Timer + current bid */}
-      <div className="shrink-0 flex items-center justify-around border-b border-line bg-gray-200 px-3 py-2">
+      <div className="shrink-0 flex items-center justify-around border-b border-line bg-line/30 px-3 py-2">
         <div className="text-center">
           <div
             className={cn(
@@ -106,7 +108,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             return (
               <div
                 key={i}
-                className="flex items-center justify-between rounded px-2 py-0.5 hover:bg-gray-200"
+                className="flex items-center justify-between rounded px-2 py-0.5 hover:bg-line/30"
               >
                 <span
                   className={cn(
@@ -127,7 +129,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
       </div>
 
       {/* Bid input */}
-      <div className="shrink-0 border-t border-line bg-gray-200 p-2">
+      <div className="shrink-0 border-t border-line bg-line/30 p-2">
         <div className="flex gap-1.5">
           <div className="relative flex-1">
             <span

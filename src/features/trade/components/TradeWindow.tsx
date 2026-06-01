@@ -124,7 +124,7 @@ export function TradeWindow({
     : `${target.name} gives`;
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-paper">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b-2 border-ink/20 bg-ink px-4 py-2.5">
         <span className="font-mono text-[0.72em] font-bold uppercase tracking-widest text-white/70">
@@ -161,7 +161,7 @@ export function TradeWindow({
       </div>
 
       {/* Action bar */}
-      <div className="flex shrink-0 items-center justify-end gap-2 border-t-2 border-ink/20 bg-gray-200 px-4 py-2.5">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t-2 border-ink/20 bg-line/30 px-4 py-2.5">
         {viewerRole === TradeParty.TARGET && (
           <>
             <button
@@ -200,7 +200,7 @@ export function TradeWindow({
         )}
         {viewerRole === TradeParty.OBSERVER && (
           <span className="font-sans text-[0.68em] italic text-muted">
-            Waiting for {target.name}…
+            Spectating
           </span>
         )}
       </div>

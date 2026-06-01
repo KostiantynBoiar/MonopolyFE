@@ -286,12 +286,9 @@ export function BoardCenterPanel({
   onCloseTradeBuilder,
   compact = false,
 }: BoardCenterPanelProps & { compact?: boolean }) {
-  // On mobile the center panel is hidden — all actions/overlays are rendered
-  // at full viewport size outside the scaled board transform.
-  if (compact) {
-    return <div className="h-full w-full" />;
-  }
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // Hooks must come before any early return (React rules of hooks).
+  const bottomRef  = useRef<HTMLDivElement>(null);
+  const pickerRef  = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
@@ -304,6 +301,23 @@ export function BoardCenterPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [log]);
+
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPicker]);
+
+  // On mobile the center panel is hidden — all actions/overlays are rendered
+  // at full viewport size outside the scaled board transform.
+  if (compact) {
+    return <div className="h-full w-full" />;
+  }
 
   function sendText() {
     const t = draft.trim();
@@ -470,7 +484,7 @@ export function BoardCenterPanel({
               </button>
             </div>
             {showPicker && (
-              <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
+              <div ref={pickerRef} className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
                 <StickerPicker onSticker={sendSticker} />
               </div>
             )}

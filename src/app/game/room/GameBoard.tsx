@@ -195,17 +195,12 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     dispatch({ type: CommandType.RejectTrade, tradeId });
   }, [dispatch]);
 
+  // Counter = open the trade builder so the target can compose their own terms.
+  // The CounterTrade command is reserved for when the UI supports editing pre-filled
+  // terms; for now, Reject + propose a new trade is the correct UX.
   const handleTradeCounter = useCallback(() => {
-    const trade = useGameStore.getState().snapshot.game.trade;
-    if (!trade) return;
-    // Mirror the deal back: give what was requested, request what was offered.
-    dispatch({
-      type: CommandType.CounterTrade,
-      tradeId: trade.id,
-      offer:   trade.targetRequest,
-      request: trade.proposerOffer,
-    });
-  }, [dispatch]);
+    setOpenedModal('trade');
+  }, [setOpenedModal]);
 
   // The backend has no "cancel my own offer" command; the offer simply expires.
   // The button closes the local view without mutating authoritative state.
@@ -226,7 +221,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     ? gameState.players.find((p) => p.id === walkState.playerId)?.token
     : undefined;
   const walkingBoardPlayers: WalkingPlayer[] = walkState && walkingToken
-    ? [{ id: walkState.playerId, currentPos: walkState.currentPos, tokenColor: TOKEN_COLORS[walkingToken] }]
+    ? [{ id: walkState.playerId, currentPos: walkState.currentPos, tokenColor: TOKEN_COLORS[walkingToken], fast: walkState.fast }]
     : [];
 
   const auctionPropertyName = gameState.auction
@@ -342,7 +337,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     jailAttempts:       viewer?.jailStatus?.attempts ?? 0,
     canPayJailFine:     permissions.canPayJailFine,
     canUseJailCard:     permissions.canUseJailCard,
-    canRollInJail:      permissions.canRollInJail,
+    canRollInJail:      permissions.canRollInJail && !isRolling,
     jailDiceRoll:       jailDecision || isRolling ? gameState.turn.diceRoll : null,
     jailIsRolling:      isRolling && jailDecision,
     onPayJailFine:      handlePayJailFine,

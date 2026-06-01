@@ -70,23 +70,15 @@ type OAuthButtonsProps = {
 };
 
 export function OAuthButtons({ disabled }: OAuthButtonsProps) {
-  function handleMockOAuth(provider: string) {
-    // eslint-disable-next-line no-console
-    console.info(`[mock] ${provider} OAuth — not yet implemented`);
-  }
-
   return (
-    <div className="flex gap-3">
-      <OAuthButton
-        provider="google"
-        disabled={disabled}
-        onClick={() => handleMockOAuth('Google')}
-      />
-      <OAuthButton
-        provider="telegram"
-        disabled={disabled}
-        onClick={() => handleMockOAuth('Telegram')}
-      />
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-3">
+        <OAuthButton provider="google"   disabled />
+        <OAuthButton provider="telegram" disabled />
+      </div>
+      <p className="text-center font-sans text-xs text-muted">
+        Social login coming soon
+      </p>
     </div>
   );
 }

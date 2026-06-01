@@ -23,6 +23,7 @@ export default function LobbyPage() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [hideFullRooms, setHideFullRooms] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const {
     sessions, loading, error, joiningId,
@@ -31,12 +32,13 @@ export default function LobbyPage() {
   } = useLobby();
 
   async function handleJoin(sessionId: string) {
+    setJoinError(null);
     try {
       const session = await join(sessionId);
       setSession(session);
       router.push('/game/room');
     } catch (err) {
-      alert((err as Error).message);
+      setJoinError((err as Error).message);
     }
   }
 
@@ -57,6 +59,14 @@ export default function LobbyPage() {
           <Button as="a" href="/lobby" variant="ghost" size="sm" className="ml-auto shrink-0">
             Dismiss
           </Button>
+        </div>
+      )}
+
+      {/* Join error */}
+      {joinError && (
+        <div className="mb-4 flex items-center gap-2 rounded-sm border border-red/30 bg-red/5 px-3 py-2 sm:mb-5 sm:gap-3 sm:px-4 sm:py-3">
+          <span className="min-w-0 flex-1 text-xs text-red sm:text-sm">{joinError}</span>
+          <button onClick={() => setJoinError(null)} className="shrink-0 text-xs text-red/60 hover:text-red">✕</button>
         </div>
       )}
 
