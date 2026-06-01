@@ -4,6 +4,17 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BoardContainer } from '@/features/game-board';
 import { FloatingPlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
+import type {
+  LogAndActionsProps,
+  CardOverlayProps,
+  DeedOverlayProps,
+  JailOverlayProps,
+  DebtOverlayProps,
+  AuctionPanelProps,
+  TradeWindowProps,
+  ManageOverlayProps,
+  TradeBuilderOverlayProps,
+} from '@/features/chat/chat.types';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState } from '@/shared/protocol/game-state.schema';
@@ -311,80 +322,116 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     tradeProposer != null &&
     tradeTarget != null;
 
-  const centerPanelProps = {
-    log:                combinedLog,
-    diceRoll:           gameState.turn.diceRoll,
+  const logAndActionsProps: LogAndActionsProps = {
+    log:          combinedLog,
+    diceRoll:     gameState.turn.diceRoll,
     isRolling,
-    canRoll:            permissions.canRoll && !isRolling,
-    canBuy:             permissions.canBuyProperty,
+    canRoll:      permissions.canRoll && !isRolling,
+    canBuy:       permissions.canBuyProperty,
     canManage,
-    canTrade:           permissions.canTrade,
-    canEndTurn:         permissions.canEndTurn,
-    onRoll:             handleRoll,
-    onEndTurn:          handleEndTurn,
-    onSendMessage:      handleSendMessage,
-    onManage:           handleManage,
-    onTrade:            handleTrade,
-    activeCard:         gameState.activeCard,
-    onCardProceed:      handleCardProceed,
+    canTrade:     permissions.canTrade,
+    canEndTurn:   permissions.canEndTurn,
+    onRoll:       handleRoll,
+    onBuy:        handleBuy,
+    onManage:     handleManage,
+    onTrade:      handleTrade,
+    onEndTurn:    handleEndTurn,
+    onSendMessage: handleSendMessage,
+  };
+
+  const cardOverlayProps: CardOverlayProps = {
+    activeCard:    gameState.activeCard,
+    onCardProceed: handleCardProceed,
+  };
+
+  const deedOverlayProps: DeedOverlayProps = {
     activeDeed,
-    canBuyDeed:         permissions.canBuyProperty,
+    canBuyDeed:    permissions.canBuyProperty,
     canManageDeed,
-    onBuy:              handleBuy,
-    onAuction:          handleAuction,
-    onManageDeed:       handleManage,
+    onAuction:     handleAuction,
+    onManageDeed:  handleManage,
+  };
+
+  const jailOverlayProps: JailOverlayProps = {
     jailDecision,
-    jailAttempts:       viewer?.jailStatus?.attempts ?? 0,
-    canPayJailFine:     permissions.canPayJailFine,
-    canUseJailCard:     permissions.canUseJailCard,
-    canRollInJail:      permissions.canRollInJail && !isRolling,
-    jailDiceRoll:       jailDecision || isRolling ? gameState.turn.diceRoll : null,
-    jailIsRolling:      isRolling && jailDecision,
-    onPayJailFine:      handlePayJailFine,
-    onUseJailCard:      handleUseJailCard,
-    onRollInJail:       handleRollInJail,
+    jailAttempts:    viewer?.jailStatus?.attempts ?? 0,
+    canPayJailFine:  permissions.canPayJailFine,
+    canUseJailCard:  permissions.canUseJailCard,
+    canRollInJail:   permissions.canRollInJail && !isRolling,
+    jailDiceRoll:    jailDecision || isRolling ? gameState.turn.diceRoll : null,
+    jailIsRolling:   isRolling && jailDecision,
+    onPayJailFine:   handlePayJailFine,
+    onUseJailCard:   handleUseJailCard,
+    onRollInJail:    handleRollInJail,
+  };
+
+  const debtOverlayProps: DebtOverlayProps = {
     debtPending,
     debtAmount,
-    canPayDebt:         permissions.canPayDebt,
-    onPayDebt:          handlePayDebt,
-    onManageDebt:       handleManage,
+    canPayDebt:          permissions.canPayDebt,
+    onPayDebt:           handlePayDebt,
+    onManageDebt:        handleManage,
     onDeclareBankruptcy: handleDeclareBankruptcy,
-    auctionState:       gameState.auction,
+  };
+
+  const auctionPanelProps: AuctionPanelProps = {
+    auctionState:        gameState.auction,
     auctionPropertyName,
     auctionPlayers,
-    canBid:             permissions.canBidAuction,
-    onBid:              handleBid,
-    tradeState:         gameState.trade,
+    canBid:              permissions.canBidAuction,
+    onBid:               handleBid,
+  };
+
+  const tradeWindowProps: TradeWindowProps = {
+    tradeState:     gameState.trade,
     tradeProposer,
     tradeTarget,
-    viewerId:           gameState.viewerId,
-    onTradeAccept:      handleTradeAccept,
-    onTradeReject:      handleTradeReject,
-    onTradeCounter:     handleTradeCounter,
-    onTradeCancel:      handleTradeCancel,
-    manageOpen:         openedModal === 'manage',
+    viewerId:       gameState.viewerId,
+    onTradeAccept:  handleTradeAccept,
+    onTradeReject:  handleTradeReject,
+    onTradeCounter: handleTradeCounter,
+    onTradeCancel:  handleTradeCancel,
+  };
+
+  const manageOverlayProps: ManageOverlayProps = {
+    manageOpen:     openedModal === 'manage',
     manageProperties,
-    canBuildHouse:      permissions.canBuildHouse,
-    canBuildHotel:      permissions.canBuildHotel,
-    canMortgage:        permissions.canMortgage,
-    canUnmortgage:      permissions.canUnmortgage,
-    onBuildHouse:       handleBuildHouse,
-    onBuildHotel:       handleBuildHotel,
-    onSellHouse:        handleSellHouse,
-    onSellHotel:        handleSellHotel,
-    onMortgage:         handleMortgage,
-    onUnmortgage:       handleUnmortgage,
-    onCloseManage:      () => setOpenedModal(null),
-    tradeBuilderOpen:   openedModal === 'trade',
-    tradeMe:            { id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 },
+    canBuildHouse:  permissions.canBuildHouse,
+    canBuildHotel:  permissions.canBuildHotel,
+    canMortgage:    permissions.canMortgage,
+    canUnmortgage:  permissions.canUnmortgage,
+    onBuildHouse:   handleBuildHouse,
+    onBuildHotel:   handleBuildHotel,
+    onSellHouse:    handleSellHouse,
+    onSellHotel:    handleSellHotel,
+    onMortgage:     handleMortgage,
+    onUnmortgage:   handleUnmortgage,
+    onCloseManage:  () => setOpenedModal(null),
+  };
+
+  const tradeBuilderOverlayProps: TradeBuilderOverlayProps = {
+    tradeBuilderOpen:    openedModal === 'trade',
+    tradeMe:             { id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 },
     tradeOthers,
-    tradeMyProperties:  propertiesOf(gameState.viewerId),
-    tradeMyJailCards:   jailCardsOf(gameState.viewerId),
-    tradePropertiesOf:  propertiesOf,
-    tradeJailCardsOf:   jailCardsOf,
-    onTradePropose:     handleProposeTrade,
+    tradeMyProperties:   propertiesOf(gameState.viewerId),
+    tradeMyJailCards:    jailCardsOf(gameState.viewerId),
+    tradePropertiesOf:   propertiesOf,
+    tradeJailCardsOf:    jailCardsOf,
+    onTradePropose:      handleProposeTrade,
     onCloseTradeBuilder: () => setOpenedModal(null),
-  } as const;
+  };
+
+  const centerPanelProps = {
+    ...logAndActionsProps,
+    ...cardOverlayProps,
+    ...deedOverlayProps,
+    ...jailOverlayProps,
+    ...debtOverlayProps,
+    ...auctionPanelProps,
+    ...tradeWindowProps,
+    ...manageOverlayProps,
+    ...tradeBuilderOverlayProps,
+  };
 
   const sidebarPlayers = deriveSidebarPlayers(gameState);
   const boardPlayers   = deriveBoardPlayers(gameState);
