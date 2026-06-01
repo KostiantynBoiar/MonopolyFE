@@ -6,3 +6,8 @@ export enum ActionKey {
   ROLL = 'roll',
   END_TURN = 'end_turn',
 }
+
+export enum ChatWindowTab {
+  EVENTS = 'events',
+  CHAT = 'chat',
+}

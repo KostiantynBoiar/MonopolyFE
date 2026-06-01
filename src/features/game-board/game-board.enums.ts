@@ -47,6 +47,12 @@ export enum CornerVariant {
   GOTO_JAIL = 'gotojail',
 }
 
+export enum BoardTileFlavor {
+  PROPERTY = 'property',
+  CORNER = 'corner',
+  SPECIAL = 'special',
+}
+
 export enum TileEdge {
   BOTTOM = 'bottom',
   LEFT = 'left',

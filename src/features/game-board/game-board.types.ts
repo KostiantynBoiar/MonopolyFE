@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import type { PropertyState } from '@/shared/protocol/game-state';
-import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, PropertyColor } from './game-board.enums';
+import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, PropertyColor, TileEdge, BoardTileFlavor } from './game-board.enums';
 
 export interface WalkingPlayer {
   id: string;
@@ -66,6 +66,12 @@ export interface TileStyleConfig {
   top: TileTopStyle;
   symbol: TileSymbol;
   topText: TileTopText;
+}
+
+export interface BoardTileProps {
+  space: BoardSpace;
+  edge: TileEdge;
+  flavor: BoardTileFlavor;
 }
 
 export interface BoardPlayer {
