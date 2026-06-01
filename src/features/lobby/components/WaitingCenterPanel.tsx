@@ -29,7 +29,7 @@ function EventRow({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2 py-0.5">
       <div className="h-px flex-1 bg-line" />
-      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{text}</span>
+      <span className="shrink-0 font-sans text-[0.88em] italic text-muted">{text}</span>
       <div className="h-px flex-1 bg-line" />
     </div>
   );
@@ -45,22 +45,22 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
       ? <TgsPlayer src={url} size={72} />
       : <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'contain' }} />;
     return (
-      <div className="flex items-start gap-1.5">
-        <span className="mt-2 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-        <div>
-          <span className="block font-sans text-[0.82em] font-semibold leading-snug" style={{ color }}>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+          <span className="font-sans text-[1em] font-semibold leading-snug" style={{ color }}>
             {author}
           </span>
-          {media}
         </div>
+        {media}
       </div>
     );
   }
 
   return (
     <div className="flex items-start gap-1.5">
-      <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-      <p className="min-w-0 font-sans text-[0.82em] leading-snug text-ink">
+      <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+      <p className="min-w-0 font-sans text-[1em] leading-snug text-ink">
         <span className="mr-1 font-semibold" style={{ color }}>{author}</span>
         {text}
       </p>
@@ -144,7 +144,7 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <button onClick={copy} className="rounded border border-line-2 bg-paper px-1.5 py-0.5 font-mono text-[0.62em] text-muted transition-colors hover:border-ink hover:text-ink">
+    <button onClick={copy} className="rounded border border-line-2 bg-paper px-1.5 py-0.5 font-mono text-[0.78em] text-muted transition-colors hover:border-ink hover:text-ink">
       {copied ? '✓' : 'Copy'}
     </button>
   );
@@ -205,12 +205,12 @@ export function WaitingCenterPanel({
 
         {/* Chat log */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center gap-2 border-b border-line bg-line/30 px-3 py-1.5">
-            <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
+          <div className="flex shrink-0 items-center gap-2 border-b border-line bg-line/30 px-3 py-2">
+            <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
               Chat
             </span>
             {socketStatus && (
-              <span className={cn('ml-auto h-1.5 w-1.5 rounded-full', STATUS_DOT[socketStatus])} title={socketStatus} />
+              <span className={cn('ml-auto h-2 w-2 rounded-full', STATUS_DOT[socketStatus])} title={socketStatus} />
             )}
           </div>
           <div
@@ -229,24 +229,24 @@ export function WaitingCenterPanel({
 
         {/* Session controls */}
         <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
-          <div className="shrink-0 border-b border-line bg-line/30 px-3 py-1.5">
-            <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
+          <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
+            <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
               Room
             </span>
           </div>
           <div className="flex flex-1 flex-col gap-2 p-2">
             {/* Invite code */}
             <div className="rounded border border-line bg-surface px-2 py-1.5">
-              <p className="font-mono text-[0.58em] uppercase tracking-widest text-muted">Invite code</p>
+              <p className="font-mono text-[0.72em] uppercase tracking-widest text-muted">Invite code</p>
               <div className="mt-0.5 flex items-center justify-between gap-1">
-                <span className="font-mono text-[0.78em] font-bold tracking-widest text-ink">{session.invite_code}</span>
+                <span className="font-mono text-[0.95em] font-bold tracking-widest text-ink">{session.invite_code}</span>
                 <CopyButton text={session.invite_code} />
               </div>
             </div>
             {/* Player count */}
             <div className="flex items-center justify-between px-0.5">
-              <span className="font-mono text-[0.62em] text-muted">Players</span>
-              <span className="font-mono text-[0.68em] font-semibold text-ink">{session.member_count} / {session.max_players}</span>
+              <span className="font-mono text-[0.78em] text-muted">Players</span>
+              <span className="font-mono text-[0.85em] font-semibold text-ink">{session.member_count} / {session.max_players}</span>
             </div>
             {/* Action buttons */}
             <div className="flex flex-1 flex-col justify-end gap-1.5">
