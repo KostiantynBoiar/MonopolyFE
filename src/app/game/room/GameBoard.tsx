@@ -2,8 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BoardContainer } from '@/features/game-board';
-import { PlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
+import { FloatingPlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
 import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
+import type {
+  LogAndActionsProps,
+  CardOverlayProps,
+  DeedOverlayProps,
+  JailOverlayProps,
+  DebtOverlayProps,
+  AuctionPanelProps,
+  TradeWindowProps,
+  ManageOverlayProps,
+  TradeBuilderOverlayProps,
+} from '@/features/chat/chat.types';
 import type { Player } from '@/features/player-panel';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { GameState } from '@/shared/protocol/game-state.schema';
@@ -20,6 +31,15 @@ import { useGameStore, useUiStore, useSocketStore } from '@/stores';
 import { resolveCardGate } from '@/shared/socket/snapshot-animator';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
+import { AuctionPanel } from '@/features/auction';
+import { CardFlipOverlay } from '@/features/card';
+import { DeedCard } from '@/features/deed';
+import { JailModal } from '@/features/jail';
+import { DebtModal } from '@/features/bankruptcy';
+import { ManagePropertiesModal } from '@/features/manage';
+import { TradeBuilder, TradeWindow } from '@/features/trade';
+import { MobileGamePanel } from '@/features/chat/components/MobileGamePanel';
+import { BOARD_W, BOARD_PX } from '@/shared/config/constants';
 import { useGameDispatch } from './useGameDispatch';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { playSfx } from '@/shared/lib/sfx';
@@ -186,17 +206,12 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     dispatch({ type: CommandType.RejectTrade, tradeId });
   }, [dispatch]);
 
+  // Counter = open the trade builder so the target can compose their own terms.
+  // The CounterTrade command is reserved for when the UI supports editing pre-filled
+  // terms; for now, Reject + propose a new trade is the correct UX.
   const handleTradeCounter = useCallback(() => {
-    const trade = useGameStore.getState().snapshot.game.trade;
-    if (!trade) return;
-    // Mirror the deal back: give what was requested, request what was offered.
-    dispatch({
-      type: CommandType.CounterTrade,
-      tradeId: trade.id,
-      offer:   trade.targetRequest,
-      request: trade.proposerOffer,
-    });
-  }, [dispatch]);
+    setOpenedModal('trade');
+  }, [setOpenedModal]);
 
   // The backend has no "cancel my own offer" command; the offer simply expires.
   // The button closes the local view without mutating authoritative state.
@@ -217,7 +232,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     ? gameState.players.find((p) => p.id === walkState.playerId)?.token
     : undefined;
   const walkingBoardPlayers: WalkingPlayer[] = walkState && walkingToken
-    ? [{ id: walkState.playerId, currentPos: walkState.currentPos, tokenColor: TOKEN_COLORS[walkingToken] }]
+    ? [{ id: walkState.playerId, currentPos: walkState.currentPos, tokenColor: TOKEN_COLORS[walkingToken], fast: walkState.fast }]
     : [];
 
   const auctionPropertyName = gameState.auction
@@ -296,65 +311,237 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     .filter((p) => p.id !== gameState.viewerId && !p.isBankrupt)
     .map((p) => ({ id: p.id, name: p.displayName, balance: p.balance }));
 
+  // ── Derived values used by both layouts ───────────────────────────────────────
+
+  const canManageDeed = activeDeed !== null && manageProperties.some((p) => !p.isMortgaged);
+
+  const isAuctionActive = gameState.auction !== null;
+  const isTradeActive =
+    gameState.trade !== null &&
+    (gameState.trade.status === 'pending' || gameState.trade.status === 'countered') &&
+    tradeProposer != null &&
+    tradeTarget != null;
+
+  const logAndActionsProps: LogAndActionsProps = {
+    log:          combinedLog,
+    diceRoll:     gameState.turn.diceRoll,
+    isRolling,
+    canRoll:      permissions.canRoll && !isRolling,
+    canBuy:       permissions.canBuyProperty,
+    canManage,
+    canTrade:     permissions.canTrade,
+    canEndTurn:   permissions.canEndTurn,
+    onRoll:       handleRoll,
+    onBuy:        handleBuy,
+    onManage:     handleManage,
+    onTrade:      handleTrade,
+    onEndTurn:    handleEndTurn,
+    onSendMessage: handleSendMessage,
+  };
+
+  const cardOverlayProps: CardOverlayProps = {
+    activeCard:    gameState.activeCard,
+    onCardProceed: handleCardProceed,
+  };
+
+  const deedOverlayProps: DeedOverlayProps = {
+    activeDeed,
+    canBuyDeed:    permissions.canBuyProperty,
+    canManageDeed,
+    onAuction:     handleAuction,
+    onManageDeed:  handleManage,
+  };
+
+  const jailOverlayProps: JailOverlayProps = {
+    jailDecision,
+    jailAttempts:    viewer?.jailStatus?.attempts ?? 0,
+    canPayJailFine:  permissions.canPayJailFine,
+    canUseJailCard:  permissions.canUseJailCard,
+    canRollInJail:   permissions.canRollInJail && !isRolling,
+    jailDiceRoll:    jailDecision || isRolling ? gameState.turn.diceRoll : null,
+    jailIsRolling:   isRolling && jailDecision,
+    onPayJailFine:   handlePayJailFine,
+    onUseJailCard:   handleUseJailCard,
+    onRollInJail:    handleRollInJail,
+  };
+
+  const debtOverlayProps: DebtOverlayProps = {
+    debtPending,
+    debtAmount,
+    canPayDebt:          permissions.canPayDebt,
+    onPayDebt:           handlePayDebt,
+    onManageDebt:        handleManage,
+    onDeclareBankruptcy: handleDeclareBankruptcy,
+  };
+
+  const auctionPanelProps: AuctionPanelProps = {
+    auctionState:        gameState.auction,
+    auctionPropertyName,
+    auctionPlayers,
+    canBid:              permissions.canBidAuction,
+    onBid:               handleBid,
+  };
+
+  const tradeWindowProps: TradeWindowProps = {
+    tradeState:     gameState.trade,
+    tradeProposer,
+    tradeTarget,
+    viewerId:       gameState.viewerId,
+    onTradeAccept:  handleTradeAccept,
+    onTradeReject:  handleTradeReject,
+    onTradeCounter: handleTradeCounter,
+    onTradeCancel:  handleTradeCancel,
+  };
+
+  const manageOverlayProps: ManageOverlayProps = {
+    manageOpen:     openedModal === 'manage',
+    manageProperties,
+    canBuildHouse:  permissions.canBuildHouse,
+    canBuildHotel:  permissions.canBuildHotel,
+    canMortgage:    permissions.canMortgage,
+    canUnmortgage:  permissions.canUnmortgage,
+    onBuildHouse:   handleBuildHouse,
+    onBuildHotel:   handleBuildHotel,
+    onSellHouse:    handleSellHouse,
+    onSellHotel:    handleSellHotel,
+    onMortgage:     handleMortgage,
+    onUnmortgage:   handleUnmortgage,
+    onCloseManage:  () => setOpenedModal(null),
+  };
+
+  const tradeBuilderOverlayProps: TradeBuilderOverlayProps = {
+    tradeBuilderOpen:    openedModal === 'trade',
+    tradeMe:             { id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 },
+    tradeOthers,
+    tradeMyProperties:   propertiesOf(gameState.viewerId),
+    tradeMyJailCards:    jailCardsOf(gameState.viewerId),
+    tradePropertiesOf:   propertiesOf,
+    tradeJailCardsOf:    jailCardsOf,
+    onTradePropose:      handleProposeTrade,
+    onCloseTradeBuilder: () => setOpenedModal(null),
+  };
+
+  const centerPanelProps = {
+    ...logAndActionsProps,
+    ...cardOverlayProps,
+    ...deedOverlayProps,
+    ...jailOverlayProps,
+    ...debtOverlayProps,
+    ...auctionPanelProps,
+    ...tradeWindowProps,
+    ...manageOverlayProps,
+    ...tradeBuilderOverlayProps,
+  };
+
+  const sidebarPlayers = deriveSidebarPlayers(gameState);
+  const boardPlayers   = deriveBoardPlayers(gameState);
+
   return (
-    <div className="relative flex h-screen overflow-hidden bg-paper">
-      <WsErrorBanner error={wsError} onDismiss={onClearWsError} />
-      <div className="flex-1 overflow-hidden p-4">
-        <BoardContainer
-          spaces={gameState.spaces}
-          players={deriveBoardPlayers(gameState)}
-          walkingPlayers={walkingBoardPlayers}
-          centerContent={
-            <BoardCenterPanel
+    <>
+      {/* ── Mobile layout (< md) ──────────────────────────────────────────────── */}
+      <div className="flex h-[100dvh] flex-col overflow-hidden bg-paper md:hidden">
+        <WsErrorBanner error={wsError} onDismiss={onClearWsError} />
+
+        {/* Board — constrained to its natural aspect ratio so it doesn't eat the screen */}
+        <div className="w-full shrink-0 p-1.5">
+          <div style={{ aspectRatio: `${BOARD_W}/${BOARD_PX}` }} className="w-full">
+            <BoardContainer
+              spaces={gameState.spaces}
+              players={boardPlayers}
+              walkingPlayers={walkingBoardPlayers}
+              centerContent={<BoardCenterPanel {...centerPanelProps} compact />}
+            />
+          </div>
+        </div>
+
+        {/* Bottom panel: auction / trade / normal game controls */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line">
+          {isAuctionActive ? (
+            <AuctionPanel
+              auctionState={gameState.auction!}
+              propertyName={auctionPropertyName}
+              viewerId={gameState.viewerId}
+              players={auctionPlayers}
+              canBid={permissions.canBidAuction}
+              onBid={handleBid}
+            />
+          ) : isTradeActive ? (
+            <TradeWindow
+              trade={gameState.trade!}
+              proposer={tradeProposer!}
+              target={tradeTarget!}
+              viewerId={gameState.viewerId}
+              onAccept={handleTradeAccept}
+              onReject={handleTradeReject}
+              onCounter={handleTradeCounter}
+              onCancel={handleTradeCancel}
+            />
+          ) : (
+            <MobileGamePanel
               log={combinedLog}
               diceRoll={gameState.turn.diceRoll}
               isRolling={isRolling}
               canRoll={permissions.canRoll && !isRolling}
-              canBuy={permissions.canBuyProperty}
+              canEndTurn={permissions.canEndTurn}
               canManage={canManage}
               canTrade={permissions.canTrade}
-              canEndTurn={permissions.canEndTurn}
               onRoll={handleRoll}
               onEndTurn={handleEndTurn}
-              onSendMessage={handleSendMessage}
               onManage={handleManage}
               onTrade={handleTrade}
-              activeCard={gameState.activeCard}
-              onCardProceed={handleCardProceed}
-              activeDeed={activeDeed}
+              onSendMessage={handleSendMessage}
+            />
+          )}
+        </div>
+
+        {/* Full-screen overlays for deed / card / jail / debt / manage / trade-builder */}
+        {gameState.activeCard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
+            <CardFlipOverlay card={gameState.activeCard} onProceed={handleCardProceed} />
+          </div>
+        )}
+        {activeDeed && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
+            <DeedCard
+              deed={activeDeed}
+              canBuy={permissions.canBuyProperty}
+              canManage={canManageDeed}
               onBuy={handleBuy}
               onAuction={handleAuction}
-              jailDecision={jailDecision}
-              jailAttempts={viewer?.jailStatus?.attempts ?? 0}
-              canPayJailFine={permissions.canPayJailFine}
-              canUseJailCard={permissions.canUseJailCard}
-              canRollInJail={permissions.canRollInJail}
-              jailDiceRoll={jailDecision || isRolling ? gameState.turn.diceRoll : null}
-              jailIsRolling={isRolling && jailDecision}
-              onPayJailFine={handlePayJailFine}
-              onUseJailCard={handleUseJailCard}
-              onRollInJail={handleRollInJail}
-              debtPending={debtPending}
-              debtAmount={debtAmount}
-              canPayDebt={permissions.canPayDebt}
-              onPayDebt={handlePayDebt}
-              onManageDebt={handleManage}
-              onDeclareBankruptcy={handleDeclareBankruptcy}
-              auctionState={gameState.auction}
-              auctionPropertyName={auctionPropertyName}
-              auctionPlayers={auctionPlayers}
-              canBid={gameState.auction !== null && !(viewer?.isBankrupt ?? false)}
-              onBid={handleBid}
-              tradeState={gameState.trade}
-              tradeProposer={tradeProposer}
-              tradeTarget={tradeTarget}
-              viewerId={gameState.viewerId}
-              onTradeAccept={handleTradeAccept}
-              onTradeReject={handleTradeReject}
-              onTradeCounter={handleTradeCounter}
-              onTradeCancel={handleTradeCancel}
-              manageOpen={openedModal === 'manage'}
-              manageProperties={manageProperties}
+              onManage={handleManage}
+            />
+          </div>
+        )}
+        {jailDecision && !gameState.activeCard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
+            <JailModal
+              attempts={viewer?.jailStatus?.attempts ?? 0}
+              canPayFine={permissions.canPayJailFine}
+              canUseCard={permissions.canUseJailCard}
+              canRoll={permissions.canRollInJail}
+              diceRoll={jailDecision || isRolling ? gameState.turn.diceRoll : null}
+              isRolling={isRolling && jailDecision}
+              onPayFine={handlePayJailFine}
+              onUseCard={handleUseJailCard}
+              onRoll={handleRollInJail}
+            />
+          </div>
+        )}
+        {debtPending && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
+            <DebtModal
+              amount={debtAmount}
+              canPay={permissions.canPayDebt}
+              onPay={handlePayDebt}
+              onManage={handleManage}
+              onBankrupt={handleDeclareBankruptcy}
+            />
+          </div>
+        )}
+        {openedModal === 'manage' && (
+          <div className="fixed inset-0 z-50">
+            <ManagePropertiesModal
+              properties={manageProperties}
               canBuildHouse={permissions.canBuildHouse}
               canBuildHotel={permissions.canBuildHotel}
               canMortgage={permissions.canMortgage}
@@ -365,23 +552,42 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               onSellHotel={handleSellHotel}
               onMortgage={handleMortgage}
               onUnmortgage={handleUnmortgage}
-              onCloseManage={() => setOpenedModal(null)}
-              tradeBuilderOpen={openedModal === 'trade'}
-              tradeMe={{ id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 }}
-              tradeOthers={tradeOthers}
-              tradeMyProperties={propertiesOf(gameState.viewerId)}
-              tradeMyJailCards={jailCardsOf(gameState.viewerId)}
-              tradePropertiesOf={propertiesOf}
-              tradeJailCardsOf={jailCardsOf}
-              onTradePropose={handleProposeTrade}
-              onCloseTradeBuilder={() => setOpenedModal(null)}
+              onSellProperty={undefined}
+              onClose={() => setOpenedModal(null)}
             />
-          }
-        />
+          </div>
+        )}
+        {openedModal === 'trade' && tradeOthers.length > 0 && (
+          <div className="fixed inset-0 z-50">
+            <TradeBuilder
+              me={{ id: gameState.viewerId, name: viewer?.displayName ?? 'You', balance: viewer?.balance ?? 0 }}
+              others={tradeOthers}
+              myProperties={propertiesOf(gameState.viewerId)}
+              myJailCards={jailCardsOf(gameState.viewerId)}
+              propertiesOf={propertiesOf}
+              jailCardsOf={jailCardsOf}
+              onPropose={handleProposeTrade}
+              onClose={() => setOpenedModal(null)}
+            />
+          </div>
+        )}
+
+        <FloatingPlayerSidebar players={sidebarPlayers} />
       </div>
-      <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-        <PlayerSidebar players={deriveSidebarPlayers(gameState)} />
-      </aside>
-    </div>
+
+      {/* ── Desktop layout (≥ md) ────────────────────────────────────────────── */}
+      <div className="relative hidden h-screen overflow-hidden bg-paper md:flex">
+        <WsErrorBanner error={wsError} onDismiss={onClearWsError} />
+        <div className="flex-1 overflow-hidden p-4 pr-72">
+          <BoardContainer
+            spaces={gameState.spaces}
+            players={boardPlayers}
+            walkingPlayers={walkingBoardPlayers}
+            centerContent={<BoardCenterPanel {...centerPanelProps} />}
+          />
+        </div>
+        <FloatingPlayerSidebar players={sidebarPlayers} />
+      </div>
+    </>
   );
 }

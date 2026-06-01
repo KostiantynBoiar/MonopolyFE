@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import type { SessionSummary } from '../lobby.types';
 
@@ -39,13 +40,14 @@ function PlayerPips({ count, max }: { count: number; max: number }) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export type SessionCardProps = {
+export interface SessionCardProps {
   session: SessionSummary;
   onJoin: (id: string) => void;
   isJoining?: boolean;
-};
+}
 
 export function SessionCard({ session, onJoin, isJoining }: SessionCardProps) {
+  const t = useTranslations('Lobby');
   const isFull = session.member_count >= session.max_players;
 
   return (
@@ -87,7 +89,7 @@ export function SessionCard({ session, onJoin, isJoining }: SessionCardProps) {
           isJoining && 'opacity-60',
         )}
       >
-        {isFull ? 'Full' : isJoining ? 'Joining…' : 'Join →'}
+        {isFull ? t('full') : isJoining ? t('joining') : t('join')}
       </button>
     </div>
   );

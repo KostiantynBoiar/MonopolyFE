@@ -2,7 +2,7 @@ import { PropertyColor } from '@/features/game-board/game-board.enums';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
 export { PropertyColor };
 
-export type Player = {
+export interface Player {
   id: string;
   name: string;
   balance: number;
@@ -13,7 +13,7 @@ export type Player = {
   isBankrupt: boolean;
   inJail: boolean;
   jailTurns?: number;
-};
+}
 
 export const TOKEN_COLORS: Record<TokenColor, string> = {
   blue:   '#2B57C6',

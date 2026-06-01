@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import type { AuctionPanelProps } from '../auction.types';
 
@@ -10,6 +11,7 @@ function formatTime(ms: number): string {
 }
 
 export function AuctionPanel({ auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid }: AuctionPanelProps) {
+  const t = useTranslations('Auction');
   const [bidInput, setBidInput] = useState('');
   // Client-side countdown — re-syncs to server value on each new snapshot.
   const [displayMs, setDisplayMs] = useState(auctionState.timeRemainingMs);
@@ -18,11 +20,13 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
     setDisplayMs(auctionState.timeRemainingMs);
   }, [auctionState.timeRemainingMs]);
 
+  // Single stable interval — functional setState always sees the current value,
+  // so this doesn't need displayMs as a dep (which would restart the clock every tick).
   useEffect(() => {
-    if (displayMs <= 0) return;
     const iv = setInterval(() => setDisplayMs((ms) => Math.max(0, ms - 1000)), 1000);
     return () => clearInterval(iv);
-  }, [displayMs]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const highestBidder = players.find((p) => p.id === auctionState.highestBidderId);
   const minBid = auctionState.highestBid + 1;
@@ -46,7 +50,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
           className="font-mono font-bold uppercase tracking-widest text-white/60"
           style={{ fontSize: '0.6em' }}
         >
-          Auction
+          {t('header')}
         </div>
         <div className="font-display font-black uppercase text-white" style={{ fontSize: '0.85em' }}>
           {propertyName}
@@ -54,7 +58,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
       </div>
 
       {/* Timer + current bid */}
-      <div className="shrink-0 flex items-center justify-around border-b border-line bg-gray-200 px-3 py-2">
+      <div className="shrink-0 flex items-center justify-around border-b border-line bg-line/30 px-3 py-2">
         <div className="text-center">
           <div
             className={cn(
@@ -69,7 +73,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             className="font-sans uppercase tracking-wide text-muted"
             style={{ fontSize: '0.55em' }}
           >
-            Time left
+            {t('timeLeft')}
           </div>
         </div>
 
@@ -83,7 +87,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             className="font-sans uppercase tracking-wide text-muted"
             style={{ fontSize: '0.55em' }}
           >
-            {highestBidder?.name ?? 'No bids'}
+            {highestBidder?.name ?? t('noBids')}
           </div>
         </div>
       </div>
@@ -96,7 +100,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
         {auctionState.bids.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
             <span className="font-sans italic text-muted" style={{ fontSize: '0.68em' }}>
-              No bids yet
+              {t('noBidsYet')}
             </span>
           </div>
         ) : (
@@ -106,7 +110,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             return (
               <div
                 key={i}
-                className="flex items-center justify-between rounded px-2 py-0.5 hover:bg-gray-200"
+                className="flex items-center justify-between rounded px-2 py-0.5 hover:bg-line/30"
               >
                 <span
                   className={cn(
@@ -127,7 +131,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
       </div>
 
       {/* Bid input */}
-      <div className="shrink-0 border-t border-line bg-gray-200 p-2">
+      <div className="shrink-0 border-t border-line bg-line/30 p-2">
         <div className="flex gap-1.5">
           <div className="relative flex-1">
             <span
@@ -153,11 +157,11 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             className="rounded border border-blue bg-blue px-3 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
             style={{ fontSize: '0.62em' }}
           >
-            Bid
+            {t('bid')}
           </button>
         </div>
         <p className="mt-0.5 font-sans text-muted" style={{ fontSize: '0.55em' }}>
-          Minimum bid: M{minBid}
+          {t('minimumBid', { min: minBid })}
         </p>
       </div>
     </div>

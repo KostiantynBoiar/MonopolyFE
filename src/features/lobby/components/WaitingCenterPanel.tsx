@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { TOKEN_COLORS } from '@/features/player-panel';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
@@ -29,7 +30,7 @@ function EventRow({ text }: { text: string }) {
   return (
     <div className="flex items-center gap-2 py-0.5">
       <div className="h-px flex-1 bg-line" />
-      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{text}</span>
+      <span className="shrink-0 font-sans text-[0.88em] italic text-muted">{text}</span>
       <div className="h-px flex-1 bg-line" />
     </div>
   );
@@ -45,22 +46,22 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
       ? <TgsPlayer src={url} size={72} />
       : <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'contain' }} />;
     return (
-      <div className="flex items-start gap-1.5">
-        <span className="mt-2 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-        <div>
-          <span className="block font-sans text-[0.82em] font-semibold leading-snug" style={{ color }}>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+          <span className="font-sans text-[1em] font-semibold leading-snug" style={{ color }}>
             {author}
           </span>
-          {media}
         </div>
+        {media}
       </div>
     );
   }
 
   return (
     <div className="flex items-start gap-1.5">
-      <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-      <p className="min-w-0 font-sans text-[0.82em] leading-snug text-ink">
+      <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+      <p className="min-w-0 font-sans text-[1em] leading-snug text-ink">
         <span className="mr-1 font-semibold" style={{ color }}>{author}</span>
         {text}
       </p>
@@ -79,7 +80,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
     return () => clearTimeout(t);
   }, [isTgs, index]);
   return (
-    <button className="flex items-center justify-center rounded p-0.5 hover:bg-gray-300 active:scale-95" onClick={onSelect} title={file}>
+    <button className="flex items-center justify-center rounded p-0.5 hover:bg-line active:scale-95" onClick={onSelect} title={file}>
       {isTgs
         ? (mounted ? <TgsPlayer src={url} size={48} loop={false} /> : <div style={{ width: 48, height: 48 }} />)
         : <img src={url} alt={file} className="h-12 w-12 object-contain" />}
@@ -90,7 +91,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
 function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
   const [packIdx, setPackIdx] = useState(0);
   const packs = useStickerPacks();
-  if (packs.length === 0) return <p className="p-4 text-center font-sans text-[0.75em] text-muted">No sticker packs yet.</p>;
+  if (packs.length === 0) return null;
   const pack = packs[packIdx];
   return (
     <div className="flex flex-col">
@@ -121,13 +122,13 @@ function ActionBtn({ label, primary, enabled, handler }: { label: string; primar
       onClick={handler}
       disabled={!enabled}
       className={cn(
-        'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors text-[0.62em]',
+        'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors text-[1em]',
         primary && enabled  ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
         : primary           ? 'cursor-not-allowed border-line bg-paper text-muted'
         : enabled           ? 'border-line-2 bg-surface text-ink hover:bg-paper'
                             : 'cursor-not-allowed border-line bg-paper text-muted',
       )}
-      style={{ padding: '0.55em 0.4em' }}
+      style={{ padding: '0.65em 0.6em' }}
     >
       {label}
     </button>
@@ -144,7 +145,7 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <button onClick={copy} className="rounded border border-line-2 bg-paper px-1.5 py-0.5 font-mono text-[0.62em] text-muted transition-colors hover:border-ink hover:text-ink">
+    <button onClick={copy} className="rounded border border-line-2 bg-paper px-1.5 py-0.5 font-mono text-[0.78em] text-muted transition-colors hover:border-ink hover:text-ink">
       {copied ? '✓' : 'Copy'}
     </button>
   );
@@ -163,15 +164,28 @@ export function WaitingCenterPanel({
   socketStatus,
 }: WaitingCenterPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const t = useTranslations('Lobby');
   const isHost  = session.your_role === MemberRole.HOST;
   const canStart = isHost && session.member_count >= SESSION_MIN_PLAYERS_TO_START;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPicker]);
 
   function sendText() {
     const t = draft.trim();
@@ -186,26 +200,26 @@ export function WaitingCenterPanel({
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100" style={{ fontSize: '0.72em' }}>
+    <div className="flex h-full w-full flex-col overflow-hidden bg-paper" style={{ fontSize: '0.72em' }}>
 
       {/* ── Log + Controls row ── */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
 
         {/* Chat log */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="flex shrink-0 items-center gap-2 border-b border-line bg-gray-200 px-3 py-1.5">
-            <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
-              Chat
+          <div className="flex shrink-0 items-center gap-2 border-b border-line bg-line/30 px-3 py-2">
+            <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
+              {t('chat')}
             </span>
             {socketStatus && (
-              <span className={cn('ml-auto h-1.5 w-1.5 rounded-full', STATUS_DOT[socketStatus])} title={socketStatus} />
+              <span className={cn('ml-auto h-2 w-2 rounded-full', STATUS_DOT[socketStatus])} title={socketStatus} />
             )}
           </div>
           <div
             className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
             style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
           >
-            {messages.length === 0 && <EventRow text="Waiting for players…" />}
+            {messages.length === 0 && <EventRow text={t('waitingForPlayers')} />}
             {messages.map((msg) =>
               msg.kind === 'event'
                 ? <EventRow key={msg.id} text={msg.text} />
@@ -216,48 +230,48 @@ export function WaitingCenterPanel({
         </div>
 
         {/* Session controls */}
-        <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
-          <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
-            <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
-              Room
+        <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
+          <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
+            <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
+              {t('room')}
             </span>
           </div>
           <div className="flex flex-1 flex-col gap-2 p-2">
             {/* Invite code */}
             <div className="rounded border border-line bg-surface px-2 py-1.5">
-              <p className="font-mono text-[0.58em] uppercase tracking-widest text-muted">Invite code</p>
+              <p className="font-mono text-[0.72em] uppercase tracking-widest text-muted">{t('inviteCode')}</p>
               <div className="mt-0.5 flex items-center justify-between gap-1">
-                <span className="font-mono text-[0.78em] font-bold tracking-widest text-ink">{session.invite_code}</span>
+                <span className="font-mono text-[0.95em] font-bold tracking-widest text-ink">{session.invite_code}</span>
                 <CopyButton text={session.invite_code} />
               </div>
             </div>
             {/* Player count */}
             <div className="flex items-center justify-between px-0.5">
-              <span className="font-mono text-[0.62em] text-muted">Players</span>
-              <span className="font-mono text-[0.68em] font-semibold text-ink">{session.member_count} / {session.max_players}</span>
+              <span className="font-mono text-[0.78em] text-muted">{t('players')}</span>
+              <span className="font-mono text-[0.85em] font-semibold text-ink">{session.member_count} / {session.max_players}</span>
             </div>
             {/* Action buttons */}
             <div className="flex flex-1 flex-col justify-end gap-1.5">
               {isHost && (
                 <ActionBtn
-                  label={isStarting ? 'Starting…' : canStart ? 'Start Game' : `Need ${SESSION_MIN_PLAYERS_TO_START}+`}
+                  label={isStarting ? t('starting') : canStart ? t('startGame') : t('needMore', { min: SESSION_MIN_PLAYERS_TO_START })}
                   primary
                   enabled={canStart && !isStarting}
                   handler={onStart}
                 />
               )}
-              <ActionBtn label={isLeaving ? 'Leaving…' : 'Leave Room'} enabled={!isLeaving} handler={onLeave} />
+              <ActionBtn label={isLeaving ? t('leaving') : t('leaveRoom')} enabled={!isLeaving} handler={onLeave} />
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Input bar ── */}
-      <div className="relative shrink-0 border-t border-line bg-gray-200 px-2 py-2">
+      <div className="relative shrink-0 border-t border-line bg-line/30 px-2 py-2">
         <div className="flex items-center gap-1.5">
           <input
             className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-            placeholder="Message…"
+            placeholder={t('messagePlaceholder')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendText()}
@@ -269,7 +283,7 @@ export function WaitingCenterPanel({
               'flex h-8 w-8 shrink-0 items-center justify-center rounded border transition-colors',
               showPicker ? 'border-ink bg-ink text-white' : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
             )}
-            title="Stickers"
+            title={t('stickers')}
           >
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
@@ -290,7 +304,7 @@ export function WaitingCenterPanel({
           </button>
         </div>
         {showPicker && (
-          <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
+          <div ref={pickerRef} className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
             <StickerPicker onSticker={sendSticker} />
           </div>
         )}

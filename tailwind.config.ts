@@ -2,33 +2,34 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        ink: '#10182E',
+        ink: 'rgb(var(--ink) / <alpha-value>)',
         navy: {
-          DEFAULT: '#0C1730',
-          700: '#15244A',
+          DEFAULT: 'rgb(var(--navy) / <alpha-value>)',
+          700: 'rgb(var(--navy-700) / <alpha-value>)',
         },
         blue: {
-          DEFAULT: '#1E47B0',
-          600: '#2B57C6',
-          50: '#EEF2FB',
+          DEFAULT: 'rgb(var(--blue) / <alpha-value>)',
+          600: 'rgb(var(--blue-600) / <alpha-value>)',
+          50: 'rgb(var(--blue-50) / <alpha-value>)',
         },
         gold: {
-          DEFAULT: '#C6951C',
-          600: '#B0820F',
-          50: '#F6EECF',
+          DEFAULT: 'rgb(var(--gold) / <alpha-value>)',
+          600: 'rgb(var(--gold-600) / <alpha-value>)',
+          50: 'rgb(var(--gold-50) / <alpha-value>)',
         },
-        paper: '#FAF9F6',
-        surface: '#FFFFFF',
+        paper: 'rgb(var(--paper) / <alpha-value>)',
+        surface: 'rgb(var(--surface) / <alpha-value>)',
         line: {
-          DEFAULT: '#E6E3DB',
-          2: '#D4D0C4',
+          DEFAULT: 'rgb(var(--line) / <alpha-value>)',
+          2: 'rgb(var(--line-2) / <alpha-value>)',
         },
-        muted: '#5C6378',
-        green: '#1E7A52',
-        red: '#BD423A',
+        muted: 'rgb(var(--muted) / <alpha-value>)',
+        green: 'rgb(var(--green) / <alpha-value>)',
+        red: 'rgb(var(--red) / <alpha-value>)',
         band: {
           brown: '#6B4A2E',
           cyan: '#8FC9DC',

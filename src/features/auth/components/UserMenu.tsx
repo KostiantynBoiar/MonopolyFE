@@ -3,10 +3,12 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Avatar, Button } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function UserMenu() {
+  const t = useTranslations('Auth');
   const { user, token, logout, fetchMe } = useAuthStore();
   const router = useRouter();
 
@@ -32,7 +34,7 @@ export function UserMenu() {
             router.push('/home');
           }}
         >
-          Sign out
+          {t('signOut')}
         </Button>
       </div>
     );
@@ -41,10 +43,10 @@ export function UserMenu() {
   return (
     <div className="flex items-center gap-2">
       <Button as="a" href="/login" variant="ghost" size="sm">
-        Log in
+        {t('logIn')}
       </Button>
       <Button as="a" href="/register" variant="dark" size="sm">
-        Sign up
+        {t('signUp')}
       </Button>
     </div>
   );

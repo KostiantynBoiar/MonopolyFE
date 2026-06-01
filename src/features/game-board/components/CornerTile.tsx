@@ -1,41 +1,35 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import type { CornerVariant } from '../game-board.enums';
+import { CornerVariant } from '../game-board.enums';
 import type { CornerTileProps } from '../game-board.types';
 
-const configs: Record<CornerVariant, { bg: string; label: string; sub?: string; accent: string }> = {
-  go: {
-    bg: 'bg-paper',
-    label: 'GO',
-    sub: 'Collect M200 salary as you pass',
-    accent: 'text-red',
-  },
-  jail: {
-    bg: 'bg-paper',
-    label: 'Just Visiting',
-    sub: 'In Jail',
-    accent: 'text-ink',
-  },
-  parking: {
-    bg: 'bg-paper',
-    label: 'Free Parking',
-    accent: 'text-ink',
-  },
-  gotojail: {
-    bg: 'bg-paper',
-    label: 'Go to Jail',
-    sub: 'Go directly to jail',
-    accent: 'text-ink',
-  },
+const CORNER_ACCENT: Record<CornerVariant, string> = {
+  [CornerVariant.GO]:        'text-red',
+  [CornerVariant.JAIL]:      'text-ink',
+  [CornerVariant.PARKING]:   'text-ink',
+  [CornerVariant.GOTO_JAIL]: 'text-ink',
+};
+
+const HAS_SUB: Record<CornerVariant, boolean> = {
+  [CornerVariant.GO]:        true,
+  [CornerVariant.JAIL]:      true,
+  [CornerVariant.PARKING]:   false,
+  [CornerVariant.GOTO_JAIL]: true,
 };
 
 export function CornerTile({ variant, className }: CornerTileProps) {
-  const { bg, label, sub, accent } = configs[variant];
+  const t = useTranslations('Corner');
+
+  const label  = t(`${variant}.label`);
+  const sub    = HAS_SUB[variant] ? t(`${variant}.sub`) : undefined;
+  const accent = CORNER_ACCENT[variant];
 
   return (
     <div
       className={cn(
-        'flex h-full w-full flex-col items-center justify-center border-[1.5px] border-ink p-1',
-        bg,
+        'flex h-full w-full flex-col items-center justify-center border-[1.5px] border-ink bg-paper p-1',
         className,
       )}
     >

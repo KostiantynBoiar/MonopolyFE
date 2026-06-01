@@ -1,23 +1,23 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { bandColors } from '@/shared/config/constants';
 import type { PropertyColor } from '@/features/game-board';
+import { DeedCard, getDeedInfo } from '@/features/deed';
 
-export type ManageProperty = {
+export interface ManageProperty {
   position:    number;
   name:        string;
   color?:      PropertyColor;
   houses:      0 | 1 | 2 | 3 | 4;
   hotel:       boolean;
   isMortgaged: boolean;
-  inMonopoly:  boolean;       // viewer owns the whole colour group → may build
-  rent:        number;        // current rent at this build level (from getPropertyRent)
-};
+  inMonopoly:  boolean;
+  rent:        number;
+}
 
-export type ManagePropertiesModalProps = {
+export interface ManagePropertiesModalProps {
   properties:     ManageProperty[];
-  // Global permission gates (server-computed); per-property legality refines them.
   canBuildHouse:  boolean;
   canBuildHotel:  boolean;
   canMortgage:    boolean;
@@ -28,17 +28,30 @@ export type ManagePropertiesModalProps = {
   onSellHotel:    (position: number) => void;
   onMortgage:     (position: number) => void;
   onUnmortgage:   (position: number) => void;
-  onSellProperty?: (position: number) => void;   // wired in Phase 16
+  onSellProperty?: (position: number) => void;
   onClose:        () => void;
-};
+}
 
-function MiniBtn({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+interface ActionBtnProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  primary?: boolean;
+}
+
+function ActionBtn({ label, onClick, disabled, primary }: ActionBtnProps) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className="rounded border border-ink/40 bg-surface px-1.5 py-0.5 font-display font-bold uppercase tracking-wide text-ink transition-colors hover:bg-paper active:scale-95 disabled:cursor-not-allowed disabled:border-line disabled:text-muted/50"
-      style={{ fontSize: '0.55em' }}
+      className={cn(
+        'w-full rounded border font-display font-bold uppercase tracking-wide transition-colors active:scale-95',
+        'disabled:cursor-not-allowed disabled:border-line disabled:bg-paper disabled:text-muted/50',
+        primary && !disabled
+          ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
+          : 'border-ink/40 bg-surface text-ink hover:bg-paper',
+      )}
+      style={{ fontSize: '1em', padding: '0.5em 0.75em' }}
     >
       {label}
     </button>
@@ -51,79 +64,109 @@ export function ManagePropertiesModal({
   onBuildHouse, onBuildHotel, onSellHouse, onSellHotel,
   onMortgage, onUnmortgage, onSellProperty, onClose,
 }: ManagePropertiesModalProps) {
+  const t = useTranslations('Manage');
+
   return (
-    <div className="flex max-h-[80%] w-[22em] flex-col overflow-hidden rounded-xl border-2 border-ink bg-white shadow-2xl">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
-        <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>
-          Manage Properties
+    <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100">
+      {/* Header — matches TradeWindow */}
+      <div className="flex shrink-0 items-center gap-3 border-b-2 border-ink/20 bg-ink px-4 py-2.5">
+        <span className="font-mono text-[0.72em] font-bold uppercase tracking-widest text-white/70">
+          {t('title')}
         </span>
         <button
           onClick={onClose}
-          className="font-mono text-white/70 transition-colors hover:text-white"
-          style={{ fontSize: '0.8em' }}
-          aria-label="Close"
+          aria-label={t('close')}
+          className="ml-auto font-mono text-[1.4em] leading-none text-white/50 transition-colors hover:text-white"
         >
           ✕
         </button>
       </div>
 
-      {/* List */}
-      <div className="flex flex-col divide-y divide-line overflow-y-auto">
-        {properties.length === 0 && (
-          <div className="px-3 py-6 text-center font-sans italic text-muted" style={{ fontSize: '0.7em' }}>
-            You don't own any properties yet.
+      {/* Properties — horizontal scroll of deed cards */}
+      <div className="flex min-h-0 flex-1 overflow-x-auto p-4" style={{ fontSize: '1.2em' }}>
+        {properties.length === 0 ? (
+          <div className="flex flex-1 items-center justify-center px-8 py-6">
+            <span className="font-sans text-[0.78em] italic text-muted">
+              {t('empty')}
+            </span>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            {properties.map((p) => {
+              const deed = getDeedInfo(p.position);
+              return (
+                <div key={p.position} className="flex shrink-0 flex-col gap-2">
+                  {deed ? (
+                    <DeedCard
+                      deed={deed}
+                      canBuy={false}
+                      canManage={false}
+                      onBuy={() => {}}
+                      onAuction={() => {}}
+                      onManage={() => {}}
+                      viewOnly
+                    />
+                  ) : (
+                    <div className="flex w-[12em] items-center justify-center rounded-xl border-2 border-ink bg-white px-3 py-6">
+                      <span className="text-center font-display text-[0.8em] font-bold text-ink">{p.name}</span>
+                    </div>
+                  )}
+
+                  {/* Status badge */}
+                  <div className="flex items-center justify-center gap-1 font-mono text-[0.58em] text-muted">
+                    {p.isMortgaged
+                      ? <span className="text-red">{t('mortgaged')}</span>
+                      : p.hotel
+                      ? <span>🏨 Hotel</span>
+                      : p.houses > 0
+                      ? <span>{'🏠'.repeat(p.houses)}</span>
+                      : <span>{t('noBuildings')}</span>}
+                    <span className="ml-auto font-bold text-ink">M{p.rent}</span>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-1">
+                    {p.isMortgaged ? (
+                      <ActionBtn label={t('unmortgage')} onClick={() => onUnmortgage(p.position)} disabled={!canUnmortgage} primary />
+                    ) : (
+                      <>
+                        {p.inMonopoly && !p.hotel && p.houses < 4 && (
+                          <ActionBtn label={t('buildHouse')} onClick={() => onBuildHouse(p.position)} disabled={!canBuildHouse} primary />
+                        )}
+                        {p.inMonopoly && p.houses === 4 && (
+                          <ActionBtn label={t('buildHotel')} onClick={() => onBuildHotel(p.position)} disabled={!canBuildHotel} primary />
+                        )}
+                        {p.color && p.houses > 0 && (
+                          <ActionBtn label={t('sellHouse')} onClick={() => onSellHouse(p.position)} />
+                        )}
+                        {p.hotel && (
+                          <ActionBtn label={t('sellHotel')} onClick={() => onSellHotel(p.position)} />
+                        )}
+                        {!p.hotel && p.houses === 0 && (
+                          <ActionBtn label={t('mortgage')} onClick={() => onMortgage(p.position)} disabled={!canMortgage} />
+                        )}
+                        {onSellProperty && !p.hotel && p.houses === 0 && (
+                          <ActionBtn label={t('sellToBank')} onClick={() => onSellProperty(p.position)} />
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
-        {properties.map((p) => {
-          const buildings = p.hotel ? 'Hotel' : p.houses > 0 ? `${p.houses} 🏠` : '—';
-          return (
-            <div key={p.position} className="flex flex-col gap-1 px-3 py-2">
-              <div className="flex items-center gap-2">
-                {p.color && (
-                  <span className={cn('h-3 w-3 shrink-0 rounded-sm border border-ink/30', bandColors[p.color])} />
-                )}
-                <span
-                  className={cn('flex-1 truncate font-sans font-semibold text-ink', p.isMortgaged && 'italic line-through opacity-60')}
-                  style={{ fontSize: '0.72em' }}
-                >
-                  {p.name}
-                </span>
-                <span className="font-mono text-muted" style={{ fontSize: '0.6em' }}>{buildings}</span>
-                <span className="font-mono font-bold text-ink" style={{ fontSize: '0.62em' }}>M{p.rent}</span>
-              </div>
+      </div>
 
-              {p.isMortgaged ? (
-                <div className="flex gap-1">
-                  <MiniBtn label="Unmortgage" onClick={() => onUnmortgage(p.position)} disabled={!canUnmortgage} />
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-1">
-                  {p.inMonopoly && !p.hotel && p.houses < 4 && (
-                    <MiniBtn label="Build House" onClick={() => onBuildHouse(p.position)} disabled={!canBuildHouse} />
-                  )}
-                  {p.inMonopoly && p.houses === 4 && (
-                    <MiniBtn label="Build Hotel" onClick={() => onBuildHotel(p.position)} disabled={!canBuildHotel} />
-                  )}
-                  {p.color && p.houses > 0 && (
-                    <MiniBtn label="Sell House" onClick={() => onSellHouse(p.position)} />
-                  )}
-                  {p.hotel && (
-                    <MiniBtn label="Sell Hotel" onClick={() => onSellHotel(p.position)} />
-                  )}
-                  {!p.hotel && p.houses === 0 && (
-                    <>
-                      <MiniBtn label="Mortgage" onClick={() => onMortgage(p.position)} disabled={!canMortgage} />
-                      {onSellProperty && (
-                        <MiniBtn label="Sell to Bank" onClick={() => onSellProperty(p.position)} />
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* Footer */}
+      <div className="flex shrink-0 items-center justify-end border-t-2 border-ink/20 bg-gray-200 px-4 py-2.5">
+        <button
+          onClick={onClose}
+          className="rounded border border-line-2 bg-surface font-display text-[1em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
+          style={{ padding: '0.55em 1em' }}
+        >
+          {t('close')}
+        </button>
       </div>
     </div>
   );

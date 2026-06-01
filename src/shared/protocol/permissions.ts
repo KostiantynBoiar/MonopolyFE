@@ -5,30 +5,30 @@ import type { GameState } from './game-state';
 // Server-computed per viewer. The UI reflects this; it never recomputes it.
 // ======================================================
 
-export type PlayerPermissions = {
-  canRoll:        boolean;
-  canEndTurn:     boolean;
+export interface PlayerPermissions {
+  readonly canRoll:        boolean;
+  readonly canEndTurn:     boolean;
 
-  canBuyProperty: boolean;
+  readonly canBuyProperty: boolean;
 
-  canBuildHouse:  boolean;
-  canBuildHotel:  boolean;
+  readonly canBuildHouse:  boolean;
+  readonly canBuildHotel:  boolean;
 
-  canMortgage:    boolean;
-  canUnmortgage:  boolean;
-  canSellProperty: boolean;
+  readonly canMortgage:    boolean;
+  readonly canUnmortgage:  boolean;
+  readonly canSellProperty: boolean;
 
-  canTrade:       boolean;
+  readonly canTrade:       boolean;
 
-  canBidAuction:  boolean;
+  readonly canBidAuction:  boolean;
 
-  canPayJailFine: boolean;
-  canUseJailCard: boolean;
-  canRollInJail:  boolean;
+  readonly canPayJailFine: boolean;
+  readonly canUseJailCard: boolean;
+  readonly canRollInJail:  boolean;
 
-  canPayDebt:           boolean;
-  canDeclareBankruptcy: boolean;
-};
+  readonly canPayDebt:           boolean;
+  readonly canDeclareBankruptcy: boolean;
+}
 
 export const EMPTY_PERMISSIONS: PlayerPermissions = {
   canRoll:        false,
@@ -53,8 +53,8 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
 // The unit the frontend stores and the mock server emits.
 // ======================================================
 
-export type GameSnapshot = {
+export interface GameSnapshot {
   game:        GameState;
   permissions: PlayerPermissions;
   // TODO:  animationTimeline: AnimationInstruction[]
-};
+}

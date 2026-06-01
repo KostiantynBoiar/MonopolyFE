@@ -32,6 +32,7 @@ export async function authFetch<T>(path: string, init: RequestInit = {}): Promis
       res = await fetch(url, withAuth(useAuthStore.getState().token));
     } else {
       useAuthStore.getState().logout();
+      throw new Error('Your session has expired. Please sign in again.');
     }
   }
 

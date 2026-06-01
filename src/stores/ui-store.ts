@@ -3,7 +3,7 @@ import type { DeedInfo } from '@/features/deed';
 
 // ── WalkState lives here so the game-dispatch hook and board consumers share
 //    one definition without a cross-feature import.
-export type WalkState = { playerId: string; currentPos: number };
+export interface WalkState { playerId: string; currentPos: number; fast?: boolean }
 
 // ── Modals the UI can open
 export type ModalKind = 'trade' | 'manage' | null;

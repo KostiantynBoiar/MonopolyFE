@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BoardContainer } from '@/features/game-board';
-import { PlayerSidebar } from '@/features/player-panel';
+import { FloatingPlayerSidebar } from '@/features/player-panel';
 import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
 import { joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import type { SessionMember } from '@/features/lobby';
@@ -38,7 +38,7 @@ function sessionMembersToPlayers(members: SessionMember[]): Player[] {
 export default function GameRoomPage() {
   const router = useRouter();
   const { ready, token, user } = useRequireAuth();
-  const { currentSession, clearSession, setSession } = useSessionStore();
+  const { currentSession, clearSession, setSession, _hasHydrated: sessionHydrated } = useSessionStore();
   const [resolvingCode, setResolvingCode] = useState(false);
 
   const {
@@ -60,11 +60,11 @@ export default function GameRoomPage() {
   }, [wasKicked, clearSession, router]);
 
   useEffect(() => {
-    if (!ready || resolvingCode || currentSession) return;
+    if (!ready || !sessionHydrated || resolvingCode || currentSession) return;
     const code = new URLSearchParams(window.location.search).get('code');
     if (code) return;
     router.replace('/lobby');
-  }, [ready, resolvingCode, currentSession, router]);
+  }, [ready, sessionHydrated, resolvingCode, currentSession, router]);
 
   useEffect(() => {
     if (!ready || !token || currentSession) return;
@@ -131,7 +131,7 @@ export default function GameRoomPage() {
     return (
       <div className="relative flex h-screen overflow-hidden bg-paper">
         <WsErrorBanner error={wsError} onDismiss={clearWsError} />
-        <div className="flex-1 overflow-hidden p-4">
+        <div className="flex-1 overflow-hidden p-4 md:pr-72">
           <BoardContainer
             centerContent={
               <WaitingCenterPanel
@@ -147,9 +147,7 @@ export default function GameRoomPage() {
             }
           />
         </div>
-        <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-          <PlayerSidebar players={sessionMembersToPlayers(currentSession.members)} />
-        </aside>
+        <FloatingPlayerSidebar players={sessionMembersToPlayers(currentSession.members)} />
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
-import type { LogEntry, TradeOffer } from '@/shared/protocol/game-state';
+import type { DiceRoll, LogEntry, TradeOffer } from '@/shared/protocol/game-state';
 import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state.schema';
 import type { TradeParticipant, TradePlayer, TradeAsset } from '@/features/trade';
 import type { DeedInfo } from '@/features/deed';
@@ -11,42 +11,36 @@ import { ActionKey } from './chat.enums';
  * ChatMessage is kept for lobby use (pre-game WS chat from socket-store).
  * For in-game activity, pass LogEntry[] directly — no conversion needed.
  */
-export type ChatMessage = {
+export interface ChatMessage {
   id: string;
   kind: 'chat' | 'event';
   author?: string;
   token?: TokenColor;
   text: string;
   ts: number;
-};
+}
 
 /** Lobby chat log — still uses ChatMessage (from WS, not GameState). */
-export type ChatLogProps = {
+export interface ChatLogProps {
   log: LogEntry[];
-};
+}
 
-export type DiceRoll = {
-  die1: number;
-  die2: number;
-  isDoubles: boolean;
-};
-
-export type StickerPack = {
+export interface StickerPack {
   id: string;
   name: string;
   stickers: string[];
-};
+}
 
-export type Action = {
+export interface Action {
   key: ActionKey;
   label: string;
   primary?: boolean;
   enabled: boolean;
   handler?: () => void;
-};
+}
 
 /** Core game log and turn actions */
-export type LogAndActionsProps = {
+export interface LogAndActionsProps {
   log: LogEntry[];
   diceRoll?: DiceRoll | null;
   isRolling?: boolean;
@@ -61,22 +55,25 @@ export type LogAndActionsProps = {
   onTrade?: () => void;
   onEndTurn?: () => void;
   onSendMessage?: (text: string) => void;
-};
+}
 
 /** Card flip overlay props */
-export type CardOverlayProps = {
+export interface CardOverlayProps {
   activeCard?: ActiveCard | null;
   onCardProceed?: () => void;
-};
+}
 
 /** Deed (buy/auction) overlay props */
-export type DeedOverlayProps = {
+export interface DeedOverlayProps {
   activeDeed?: DeedInfo | null;
+  canBuyDeed?: boolean;
+  canManageDeed?: boolean;
   onAuction?: () => void;
-};
+  onManageDeed?: () => void;
+}
 
 /** Jail decision overlay props */
-export type JailOverlayProps = {
+export interface JailOverlayProps {
   jailDecision?: boolean;
   jailAttempts?: number;
   canPayJailFine?: boolean;
@@ -87,29 +84,29 @@ export type JailOverlayProps = {
   onPayJailFine?: () => void;
   onUseJailCard?: () => void;
   onRollInJail?: () => void;
-};
+}
 
 /** Debt and bankruptcy overlay props */
-export type DebtOverlayProps = {
+export interface DebtOverlayProps {
   debtPending?: boolean;
   debtAmount?: number;
   canPayDebt?: boolean;
   onPayDebt?: () => void;
   onManageDebt?: () => void;
   onDeclareBankruptcy?: () => void;
-};
+}
 
 /** Auction panel props (swaps the chat container when active) */
-export type AuctionPanelProps = {
+export interface AuctionPanelProps {
   auctionState?: AuctionState | null;
   auctionPropertyName?: string;
   auctionPlayers?: AuctionPlayer[];
   canBid?: boolean;
   onBid?: (amount: number) => void;
-};
+}
 
 /** Trade window props (swaps the chat container when active) */
-export type TradeWindowProps = {
+export interface TradeWindowProps {
   tradeState?: TradeState | null;
   tradeProposer?: TradeParticipant;
   tradeTarget?: TradeParticipant;
@@ -118,10 +115,10 @@ export type TradeWindowProps = {
   onTradeReject?: () => void;
   onTradeCounter?: () => void;
   onTradeCancel?: () => void;
-};
+}
 
 /** Manage properties modal overlay props */
-export type ManageOverlayProps = {
+export interface ManageOverlayProps {
   manageOpen?: boolean;
   manageProperties?: ManageProperty[];
   canBuildHouse?: boolean;
@@ -135,10 +132,10 @@ export type ManageOverlayProps = {
   onMortgage?: (position: number) => void;
   onUnmortgage?: (position: number) => void;
   onCloseManage?: () => void;
-};
+}
 
 /** Trade builder modal overlay props */
-export type TradeBuilderOverlayProps = {
+export interface TradeBuilderOverlayProps {
   tradeBuilderOpen?: boolean;
   tradeMe?: TradePlayer;
   tradeOthers?: TradePlayer[];
@@ -148,7 +145,7 @@ export type TradeBuilderOverlayProps = {
   tradeJailCardsOf?: (playerId: string) => number;
   onTradePropose?: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
   onCloseTradeBuilder?: () => void;
-};
+}
 
 /** Combined props for the BoardCenterPanel component */
 export type BoardCenterPanelProps = LogAndActionsProps &

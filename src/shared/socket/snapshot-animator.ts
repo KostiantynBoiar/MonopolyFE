@@ -18,15 +18,12 @@
 import type { GameSnapshot } from '@/shared/protocol/permissions';
 import { getWalkSteps } from '@/shared/config/board-layout';
 import { getDeedInfo } from '@/features/deed';
-import { WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 
 const BOARD_SIZE = 40;
 const DICE_SPIN_MS = 1000;
-// Card-driven moves use a faster per-step rate so a long advance (e.g. 20 tiles)
-// finishes in ≈1.2 s rather than ≈3.6 s.
-const CARD_WALK_STEP_MS = 60;
 // Forward path length above which we treat a move as backward (snap, no walk).
 const MAX_FORWARD_STEPS = 20;
 // Safety auto-release for the card gate if the player never clicks Proceed.
@@ -36,6 +33,8 @@ const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 let queue: GameSnapshot[] = [];
 let running = false;
+// Incremented on reset; each drain() captures its own value and bails if it goes stale.
+let generation = 0;
 
 // Whether the last *committed* snapshot contained an activeCard. Tracked separately
 // from the store so updateGame({ activeCard: null }) from the Proceed handler doesn't
@@ -71,6 +70,7 @@ export function enqueueSnapshot(snapshot: GameSnapshot): void {
 
 /** Drop any pending frames (e.g. on unmount / disconnect). */
 export function resetSnapshotPipeline(): void {
+  generation++;       // invalidates any in-flight drain() coroutine
   queue = [];
   running = false;
   prevCommittedHadCard = false;
@@ -78,15 +78,16 @@ export function resetSnapshotPipeline(): void {
 }
 
 async function drain(): Promise<void> {
+  const myGeneration = generation;
   running = true;
-  while (queue.length > 0) {
+  while (queue.length > 0 && generation === myGeneration) {
     const next = queue.shift()!;
-    await applyFrame(next);
+    await applyFrame(next, myGeneration);
   }
-  running = false;
+  if (generation === myGeneration) running = false;
 }
 
-async function applyFrame(next: GameSnapshot): Promise<void> {
+async function applyFrame(next: GameSnapshot, myGeneration: number): Promise<void> {
   const prev = useGameStore.getState().snapshot;
   const ui = useUiStore.getState();
 
@@ -145,10 +146,11 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
 
   // ── Fast path: nothing to animate ────────────────────────────────────────────
   if (!diceChanged && !walked && !cardMoved && directCardSquare === null) {
+    if (generation !== myGeneration) return;
     commit(next);
-    // Still check for a pending buy — the backend may set can_buy in a separate
-    // frame from the movement frame (e.g. on a doubles roll).
-    maybeSurfaceDeed(next, newPos);
+    // Still check for a pending buy — the backend may set pending_buy_position in a
+    // separate frame from the movement frame (e.g. on a doubles roll).
+    maybeSurfaceDeed(next);
     return;
   }
 
@@ -163,8 +165,11 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
   if (walked && oldPos !== null && newPos !== null) {
     const steps = getWalkSteps(oldPos, newPos);
     ui.setWalkState({ playerId: moverId, currentPos: oldPos });
-    await walkSteps(moverId, steps, WALK_STEP_DURATION_MS);
+    await walkSteps(moverId, steps, WALK_STEP_DURATION_MS, false);
     ui.setWalkState(null);
+    // Clear rolling lock in case diceChanged was false (same dice result) and
+    // Phase 1 was skipped, leaving the optimistic isRolling=true from dispatch.
+    ui.setIsRolling(false);
   }
 
   // ── Phase 2b: Direct card move ────────────────────────────────────────────────
@@ -173,7 +178,7 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
     // Step 1: walk to the card square the dice pointed at.
     const toCardSteps = getWalkSteps(oldPos, directCardSquare);
     ui.setWalkState({ playerId: moverId, currentPos: oldPos });
-    await walkSteps(moverId, toCardSteps, WALK_STEP_DURATION_MS);
+    await walkSteps(moverId, toCardSteps, WALK_STEP_DURATION_MS, false);
     ui.setWalkState(null);
 
     // Step 2: commit a patched snapshot showing the player standing on the card
@@ -189,27 +194,29 @@ async function applyFrame(next: GameSnapshot): Promise<void> {
     // Step 4: walk from the card square to the final destination.
     const toDestSteps = getWalkSteps(directCardSquare, newPos);
     ui.setWalkState({ playerId: moverId, currentPos: directCardSquare });
-    await walkSteps(moverId, toDestSteps, CARD_WALK_STEP_MS);
+    await walkSteps(moverId, toDestSteps, CARD_WALK_STEP_DURATION_MS, true);
     ui.setWalkState(null);
 
     // Step 5: commit the authoritative snapshot with the card cleared.
+    if (generation !== myGeneration) return;
     prevCommittedHadCard = false;
     useGameStore.getState().setSnapshot({ ...next, game: { ...next.game, activeCard: null } });
 
-    maybeSurfaceDeed(next, newPos);
+    maybeSurfaceDeed(next);
     return;
   }
 
   // ── Phase 3: Card-driven walk (two-frame flow) ────────────────────────────────
   if (cardMoved && cardSteps && oldPos !== null) {
     ui.setWalkState({ playerId: moverId, currentPos: oldPos });
-    await walkSteps(moverId, cardSteps, CARD_WALK_STEP_MS);
+    await walkSteps(moverId, cardSteps, CARD_WALK_STEP_DURATION_MS, true);
     ui.setWalkState(null);
   }
 
   // ── Phase 4: Commit ───────────────────────────────────────────────────────────
+  if (generation !== myGeneration) return;
   commit(next);
-  maybeSurfaceDeed(next, newPos);
+  maybeSurfaceDeed(next);
 
   // ── Phase 5: Card gate (two-frame flow — pause until Proceed) ────────────────
   if (next.game.activeCard !== null) {
@@ -235,23 +242,23 @@ function patchMoverPosition(
   };
 }
 
-function maybeSurfaceDeed(snapshot: GameSnapshot, pos: number | null): void {
-  if (
-    pos !== null &&
-    snapshot.permissions.canBuyProperty &&
-    snapshot.game.turn.currentPlayerId === snapshot.game.viewerId
-  ) {
-    const deed = getDeedInfo(pos);
+function maybeSurfaceDeed(snapshot: GameSnapshot): void {
+  const pendingPos = snapshot.game.turn.pendingBuyPosition;
+  const viewerId = snapshot.game.viewerId;
+  // Treat absent/empty viewerId as "is the current player" — mirrors derivePermissions.
+  const isViewer = !viewerId || viewerId === snapshot.game.turn.currentPlayerId;
+  if (pendingPos !== null && isViewer) {
+    const deed = getDeedInfo(pendingPos);
     if (deed) useUiStore.getState().setActiveDeed(deed);
   }
 }
 
-function walkSteps(playerId: string, steps: number[], stepMs: number): Promise<void> {
+function walkSteps(playerId: string, steps: number[], stepMs: number, fast = false): Promise<void> {
   return new Promise((resolve) => {
     let i = 0;
     const step = () => {
       if (i >= steps.length) return resolve();
-      useUiStore.getState().setWalkState({ playerId, currentPos: steps[i++] });
+      useUiStore.getState().setWalkState({ playerId, currentPos: steps[i++], fast });
       setTimeout(step, stepMs);
     };
     setTimeout(step, 80);

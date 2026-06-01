@@ -224,6 +224,7 @@ function mapTurn(t: BeTurn): TurnState {
     doublesStreak: t.doubles_streak ?? 0,
     // The backend re-rolls on doubles implicitly; surface it for UI affordances.
     extraTurn: (t.doubles_streak ?? 0) > 0,
+    pendingBuyPosition: t.pending_buy_position ?? null,
   };
 }
 
@@ -311,6 +312,8 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
   const a = isCurrentPlayer ? (state.turn.actions_available ?? {}) : {};
   const rawA = state.turn.actions_available ?? {};
   const inJail = state.turn.phase === TurnPhase.JAIL_DECISION;
+  const viewerPlayer = state.players.find((p) => p.id === state.viewer_id);
+  const isViewerBankrupt = viewerPlayer?.is_bankrupt ?? false;
   return {
     canRoll: !!a.can_roll && !inJail,
     canEndTurn: !!a.can_end_turn,
@@ -324,17 +327,19 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
     // No backend "sell property to bank" command exists.
     canSellProperty: false,
     canTrade: !!a.can_trade,
-    // Bidding is open to every viewer while an auction is running.
+    // Bidding is open to every solvent viewer while an auction is running.
     // `rawA.can_bid` reads from the unfiltered broadcast action set (same frame for
     // all viewers); `state.auction != null` is the fallback for BEs that omit can_bid.
     // Never use `a.can_bid` here — `a` is `{}` for non-current-turn players.
-    canBidAuction: !!rawA.can_bid || state.auction != null,
+    // Bankrupt players cannot bid even when the auction is live.
+    canBidAuction: (!!rawA.can_bid || state.auction != null) && !isViewerBankrupt,
     canPayJailFine: !!a.can_pay_jail_fine,
     canUseJailCard: !!a.can_use_jail_card,
     // In jail, rolling for doubles is the normal roll action.
     canRollInJail: !!a.can_roll && inJail,
-    // No explicit pay-debt command; rent is auto-deducted, the player just ends turn.
-    canPayDebt: false,
+    // When in MUST_PAY_RENT, can_end_turn means the player has raised enough cash
+    // and the backend will auto-deduct on EndTurn — that IS the "pay debt" action.
+    canPayDebt: !!a.can_end_turn && state.turn.phase === TurnPhase.MUST_PAY_RENT,
     canDeclareBankruptcy: !!a.can_declare_bankruptcy,
   };
 }
@@ -393,6 +398,7 @@ export function emptySnapshot(): GameSnapshot {
       diceRoll: null,
       doublesStreak: 0,
       extraTurn: false,
+      pendingBuyPosition: null,
     },
     bank: { availableHouses: 0, availableHotels: 0 },
     spaces: [],

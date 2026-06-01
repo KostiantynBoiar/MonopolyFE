@@ -12,6 +12,7 @@ import { JailModal } from '@/features/jail';
 import { DebtModal } from '@/features/bankruptcy';
 import { AuctionPanel } from '@/features/auction';
 import { ManagePropertiesModal } from '@/features/manage';
+import { useTranslations } from 'next-intl';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
 import { LogKind } from '@/shared/protocol/game-state.enums';
@@ -38,7 +39,7 @@ function EventRow({ text, playerName }: { text: string; playerName?: string }) {
   return (
     <div className="flex items-center gap-2 py-0.5">
       <div className="h-px flex-1 bg-line" />
-      <span className="shrink-0 font-sans text-[0.75em] italic text-muted">{displayText}</span>
+      <span className="shrink-0 font-sans text-[0.88em] italic text-muted">{displayText}</span>
       <div className="h-px flex-1 bg-line" />
     </div>
   );
@@ -54,22 +55,22 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
       ? <TgsPlayer src={url} size={72} />
       : <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'contain' }} />;
     return (
-      <div className="flex items-start gap-1.5">
-        <span className="mt-2 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-        <div>
-          <span className="block font-sans text-[0.82em] font-semibold leading-snug" style={{ color }}>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+          <span className="font-sans text-[1em] font-semibold leading-snug" style={{ color }}>
             {author}
           </span>
-          {media}
         </div>
+        {media}
       </div>
     );
   }
 
   return (
     <div className="flex items-start gap-1.5">
-      <span className="mt-1 h-2 w-2 shrink-0 rounded-full" style={{ background: color }} />
-      <p className="min-w-0 font-sans text-[0.82em] leading-snug text-ink">
+      <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
+      <p className="min-w-0 font-sans text-[1em] leading-snug text-ink">
         <span className="mr-1 font-semibold" style={{ color }}>{author}</span>
         {text}
       </p>
@@ -94,13 +95,13 @@ function ActionBtn({
       disabled={!enabled}
       className={cn(
         'w-full rounded border font-display font-semibold uppercase tracking-wide transition-colors',
-        'text-[0.62em]',
+        'text-[1em]',
         primary && enabled  ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
         : primary           ? 'cursor-not-allowed border-line bg-paper text-muted'
         : enabled           ? 'border-line-2 bg-surface text-ink hover:bg-paper'
                             : 'cursor-not-allowed border-line bg-paper text-muted',
       )}
-      style={{ padding: '0.55em 0.4em' }}
+      style={{ padding: '0.65em 0.6em' }}
     >
       {label}
     </button>
@@ -149,7 +150,7 @@ function StickerCell({
 
   return (
     <button
-      className="flex items-center justify-center rounded p-0.5 hover:bg-gray-300 active:scale-95"
+      className="flex items-center justify-center rounded p-0.5 hover:bg-line active:scale-95"
       onClick={onSelect}
       title={file}
     >
@@ -229,7 +230,10 @@ export function BoardCenterPanel({
   activeCard = null,
   onCardProceed,
   activeDeed = null,
+  canBuyDeed = true,
+  canManageDeed = false,
   onAuction,
+  onManageDeed,
   jailDecision = false,
   jailAttempts = 0,
   canPayJailFine = false,
@@ -281,8 +285,12 @@ export function BoardCenterPanel({
   tradeJailCardsOf,
   onTradePropose,
   onCloseTradeBuilder,
-}: BoardCenterPanelProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  compact = false,
+}: BoardCenterPanelProps & { compact?: boolean }) {
+  // Hooks must come before any early return (React rules of hooks).
+  const t = useTranslations('Game');
+  const bottomRef  = useRef<HTMLDivElement>(null);
+  const pickerRef  = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
@@ -295,6 +303,23 @@ export function BoardCenterPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [log]);
+
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPicker]);
+
+  // On mobile the center panel is hidden — all actions/overlays are rendered
+  // at full viewport size outside the scaled board transform.
+  if (compact) {
+    return <div className="h-full w-full" />;
+  }
 
   function sendText() {
     const t = draft.trim();
@@ -309,19 +334,19 @@ export function BoardCenterPanel({
   }
 
   const actions: Action[] = [
-    canManage && { key: ActionKey.MANAGE, label: 'Manage',       enabled: true, handler: onManage },
-    canBuy    && { key: ActionKey.BUY,    label: 'Buy Property', enabled: true, handler: onBuy },
-    canTrade  && { key: ActionKey.TRADE,  label: 'Trade',        enabled: true, handler: onTrade },
+    canManage && { key: ActionKey.MANAGE, label: t('manage'),       enabled: true, handler: onManage },
+    canBuy    && { key: ActionKey.BUY,    label: t('buyProperty'),  enabled: true, handler: onBuy },
+    canTrade  && { key: ActionKey.TRADE,  label: t('trade'),        enabled: true, handler: onTrade },
     canRoll && {
       key: ActionKey.ROLL,
-      label: isRolling ? 'Rolling…' : 'Roll Dice',
+      label: isRolling ? t('rolling') : t('rollDice'),
       primary: true,
       enabled: canRoll && !isRolling,
       handler: onRoll,
     },
     canEndTurn && {
       key: ActionKey.END_TURN,
-      label: 'End Turn',
+      label: t('endTurn'),
       primary: true,
       enabled: true,
       handler: onEndTurn,
@@ -330,7 +355,7 @@ export function BoardCenterPanel({
 
   return (
     <div
-      className="relative flex h-full w-full flex-col overflow-hidden bg-gray-100"
+      className="relative flex h-full w-full flex-col overflow-hidden bg-paper"
       style={{ fontSize: '0.72em' }}
     >
       {/* ── Auction panel (swaps whole area when auction is active) ── */}
@@ -365,9 +390,9 @@ export function BoardCenterPanel({
           >
             {/* Game log */}
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
-                <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
-                  Game Log
+              <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
+                <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
+                  {t('gameLog')}
                 </span>
               </div>
               <div
@@ -391,10 +416,10 @@ export function BoardCenterPanel({
             </div>
 
             {/* Actions */}
-            <div className="flex w-[27%] shrink-0 flex-col border-l border-line">
-              <div className="shrink-0 border-b border-line bg-gray-200 px-3 py-1.5">
-                <span className="font-mono text-[0.68em] font-semibold uppercase tracking-widest text-muted">
-                  Actions
+            <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
+              <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
+                <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
+                  {t('gameLog')}
                 </span>
               </div>
               <div className="flex flex-1 flex-col justify-end gap-1.5 p-2">
@@ -421,14 +446,14 @@ export function BoardCenterPanel({
           {/* ── Input bar ── */}
           <div
             className={cn(
-              'relative shrink-0 border-t border-line bg-gray-200 px-2 py-2 transition-opacity duration-300',
+              'relative shrink-0 border-t border-line bg-line/30 px-2 py-2 transition-opacity duration-300',
               activeCard || activeDeed || jailDecision || debtPending ? 'opacity-[0.12] pointer-events-none' : 'opacity-100',
             )}
           >
             <div className="flex items-center gap-1.5">
               <input
                 className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-                placeholder="Message…"
+                placeholder={t('messagePlaceholder')}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendText()}
@@ -441,7 +466,7 @@ export function BoardCenterPanel({
                     ? 'border-ink bg-ink text-white'
                     : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
                 )}
-                title="Stickers"
+                title={t('messagePlaceholder')}
               >
                 <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
                   <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />
@@ -461,7 +486,7 @@ export function BoardCenterPanel({
               </button>
             </div>
             {showPicker && (
-              <div className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
+              <div ref={pickerRef} className="absolute bottom-full right-0 z-10 mb-1 w-56 overflow-hidden rounded border border-line bg-surface shadow-md">
                 <StickerPicker onSticker={sendSticker} />
               </div>
             )}
@@ -479,11 +504,16 @@ export function BoardCenterPanel({
       {/* ── Deed card overlay (unowned purchasable property) ── */}
       {activeDeed && (
         <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div style={{ fontSize: '3em' }}>
           <DeedCard
             deed={activeDeed}
+            canBuy={canBuyDeed}
+            canManage={canManageDeed}
             onBuy={onBuy ?? (() => {})}
             onAuction={onAuction ?? (() => {})}
+            onManage={onManageDeed ?? (() => {})}
           />
+          </div>
         </div>
       )}
 
@@ -519,48 +549,38 @@ export function BoardCenterPanel({
 
       {/* ── Manage properties overlay ── */}
       {manageOpen && (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
-          onClick={onCloseManage}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <ManagePropertiesModal
-              properties={manageProperties}
-              canBuildHouse={canBuildHouse}
-              canBuildHotel={canBuildHotel}
-              canMortgage={canMortgage}
-              canUnmortgage={canUnmortgage}
-              onBuildHouse={onBuildHouse ?? (() => {})}
-              onBuildHotel={onBuildHotel ?? (() => {})}
-              onSellHouse={onSellHouse ?? (() => {})}
-              onSellHotel={onSellHotel ?? (() => {})}
-              onMortgage={onMortgage ?? (() => {})}
-              onUnmortgage={onUnmortgage ?? (() => {})}
-              onSellProperty={undefined}
-              onClose={onCloseManage ?? (() => {})}
-            />
-          </div>
+        <div className="absolute inset-0 z-40">
+          <ManagePropertiesModal
+            properties={manageProperties}
+            canBuildHouse={canBuildHouse}
+            canBuildHotel={canBuildHotel}
+            canMortgage={canMortgage}
+            canUnmortgage={canUnmortgage}
+            onBuildHouse={onBuildHouse ?? (() => {})}
+            onBuildHotel={onBuildHotel ?? (() => {})}
+            onSellHouse={onSellHouse ?? (() => {})}
+            onSellHotel={onSellHotel ?? (() => {})}
+            onMortgage={onMortgage ?? (() => {})}
+            onUnmortgage={onUnmortgage ?? (() => {})}
+            onSellProperty={undefined}
+            onClose={onCloseManage ?? (() => {})}
+          />
         </div>
       )}
 
       {/* ── Trade builder overlay ── */}
       {tradeBuilderOpen && tradeMe && tradeOthers.length > 0 && (
-        <div
-          className="absolute inset-0 z-40 flex items-center justify-center bg-ink/40"
-          onClick={onCloseTradeBuilder}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <TradeBuilder
-              me={tradeMe}
-              others={tradeOthers}
-              myProperties={tradeMyProperties}
-              myJailCards={tradeMyJailCards}
-              propertiesOf={tradePropertiesOf ?? (() => [])}
-              jailCardsOf={tradeJailCardsOf ?? (() => 0)}
-              onPropose={onTradePropose ?? (() => {})}
-              onClose={onCloseTradeBuilder ?? (() => {})}
-            />
-          </div>
+        <div className="absolute inset-0 z-40" style={{ fontSize: '1.25em' }}>
+          <TradeBuilder
+            me={tradeMe}
+            others={tradeOthers}
+            myProperties={tradeMyProperties}
+            myJailCards={tradeMyJailCards}
+            propertiesOf={tradePropertiesOf ?? (() => [])}
+            jailCardsOf={tradeJailCardsOf ?? (() => 0)}
+            onPropose={onTradePropose ?? (() => {})}
+            onClose={onCloseTradeBuilder ?? (() => {})}
+          />
         </div>
       )}
     </div>

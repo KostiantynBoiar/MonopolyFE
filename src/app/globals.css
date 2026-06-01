@@ -4,30 +4,53 @@
 
 @layer base {
   :root {
-    --ink: #10182e;
-    --navy: #0c1730;
-    --navy-700: #15244a;
-    --blue: #1e47b0;
-    --blue-600: #2b57c6;
-    --blue-50: #eef2fb;
-    --gold: #c6951c;
-    --gold-600: #b0820f;
-    --gold-50: #f6eecf;
-    --paper: #faf9f6;
-    --surface: #ffffff;
-    --line: #e6e3db;
-    --line-2: #d4d0c4;
-    --muted: #5c6378;
-    --green: #1e7a52;
-    --red: #bd423a;
+    --ink: 16 24 46;
+    --navy: 12 23 48;
+    --navy-700: 21 36 74;
+    --blue: 30 71 176;
+    --blue-600: 43 87 198;
+    --blue-50: 238 242 251;
+    --gold: 198 149 28;
+    --gold-600: 176 130 15;
+    --gold-50: 246 238 207;
+    --paper: 250 249 246;
+    --surface: 255 255 255;
+    --line: 230 227 219;
+    --line-2: 212 208 196;
+    --muted: 92 99 120;
+    --green: 30 122 82;
+    --red: 189 66 58;
     --r-sm: 6px;
     --r: 10px;
     --r-lg: 14px;
   }
 
+  .dark {
+    --ink: 226 232 246;
+    --navy: 8 12 24;
+    --navy-700: 15 22 40;
+    --blue: 90 128 212;
+    --blue-600: 106 144 228;
+    --blue-50: 20 32 64;
+    --gold: 212 168 48;
+    --gold-600: 196 152 32;
+    --gold-50: 40 30 8;
+    --paper: 12 16 30;
+    --surface: 18 25 45;
+    --line: 35 44 70;
+    --line-2: 48 58 88;
+    --muted: 139 148 178;
+    --green: 38 160 108;
+    --red: 212 88 80;
+  }
+
   body {
     @apply bg-paper font-sans text-ink antialiased;
   }
+
+  .dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,.25), 0 1px 3px rgba(0,0,0,.3); }
+  .dark .shadow-md { box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+  .dark .shadow-lg { box-shadow: 0 22px 48px rgba(0,0,0,.5); }
 }
 
 @layer components {

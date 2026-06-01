@@ -29,8 +29,8 @@ function MoneyInput({ value, max, onChange }: { value: number; max: number; onCh
       value={value || ''}
       placeholder="0"
       onChange={(e) => onChange(Math.max(0, Math.min(max, Math.floor(Number(e.target.value) || 0))))}
-      className="h-6 w-20 rounded border border-line-2 bg-surface px-1.5 font-mono text-ink focus:border-blue focus:outline-none"
-      style={{ fontSize: '0.7em' }}
+      className="h-8 w-24 rounded border border-line-2 bg-surface px-1.5 font-mono text-ink focus:border-blue focus:outline-none"
+      style={{ fontSize: '1em' }}
     />
   );
 }
@@ -43,9 +43,9 @@ function AssetChip({ asset, selected, onToggle }: { asset: TradeAsset; selected:
         'flex items-center gap-1 rounded border px-1.5 py-0.5 transition-colors',
         selected ? 'border-ink bg-paper' : 'border-line bg-surface hover:bg-paper',
       )}
-      style={{ fontSize: '0.6em' }}
+      style={{ fontSize: '1em' }}
     >
-      {asset.color && <span className={cn('h-2 w-2 rounded-sm', bandColors[asset.color])} />}
+      {asset.color && <span className={cn('h-3 w-3 rounded-sm', bandColors[asset.color])} />}
       <span className={cn('font-sans text-ink', selected && 'font-semibold')}>{asset.name}</span>
       {selected && <span className="text-green">✓</span>}
     </button>
@@ -55,11 +55,11 @@ function AssetChip({ asset, selected, onToggle }: { asset: TradeAsset; selected:
 function Stepper({ label, value, max, onChange }: { label: string; value: number; max: number; onChange: (n: number) => void }) {
   if (max === 0) return null;
   return (
-    <div className="flex items-center gap-1" style={{ fontSize: '0.62em' }}>
+    <div className="flex items-center gap-1.5" style={{ fontSize: '1em' }}>
       <span className="text-muted">{label}</span>
-      <button className="rounded border border-line px-1 text-ink" onClick={() => onChange(Math.max(0, value - 1))}>−</button>
-      <span className="w-3 text-center font-mono text-ink">{value}</span>
-      <button className="rounded border border-line px-1 text-ink" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
+      <button className="rounded border border-line px-1.5 text-ink" onClick={() => onChange(Math.max(0, value - 1))}>−</button>
+      <span className="w-4 text-center font-mono text-ink">{value}</span>
+      <button className="rounded border border-line px-1.5 text-ink" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
     </div>
   );
 }
@@ -96,7 +96,7 @@ export function TradeBuilder({
   }
 
   return (
-    <div className="flex max-h-[85%] w-[26em] flex-col overflow-hidden rounded-xl border-2 border-ink bg-white shadow-2xl">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
         <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>
@@ -121,10 +121,10 @@ export function TradeBuilder({
       <div className="flex min-h-0 flex-1 overflow-y-auto">
         {/* You give */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 border-r border-line p-2.5">
-          <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '0.58em' }}>
+          <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '1em' }}>
             You give
           </span>
-          <div className="flex items-center gap-1" style={{ fontSize: '0.62em' }}>
+          <div className="flex items-center gap-1" style={{ fontSize: '1em' }}>
             <span className="text-muted">M</span>
             <MoneyInput value={giveMoney} max={me.balance} onChange={setGiveMoney} />
           </div>
@@ -132,17 +132,17 @@ export function TradeBuilder({
             {myProperties.map((a) => (
               <AssetChip key={a.position} asset={a} selected={givePos.has(a.position)} onToggle={() => toggle(givePos, setGivePos, a.position)} />
             ))}
-            {myProperties.length === 0 && <span className="italic text-muted" style={{ fontSize: '0.6em' }}>no properties</span>}
+            {myProperties.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>no properties</span>}
           </div>
           <Stepper label="Jail cards" value={giveCards} max={myJailCards} onChange={setGiveCards} />
         </div>
 
         {/* You get */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
-          <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '0.58em' }}>
+          <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '1em' }}>
             You get
           </span>
-          <div className="flex items-center gap-1" style={{ fontSize: '0.62em' }}>
+          <div className="flex items-center gap-1" style={{ fontSize: '1em' }}>
             <span className="text-muted">M</span>
             <MoneyInput value={getMoney} max={target?.balance ?? 0} onChange={setGetMoney} />
           </div>
@@ -150,7 +150,7 @@ export function TradeBuilder({
             {targetProps.map((a) => (
               <AssetChip key={a.position} asset={a} selected={getPos.has(a.position)} onToggle={() => toggle(getPos, setGetPos, a.position)} />
             ))}
-            {targetProps.length === 0 && <span className="italic text-muted" style={{ fontSize: '0.6em' }}>no properties</span>}
+            {targetProps.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>no properties</span>}
           </div>
           <Stepper label="Jail cards" value={getCards} max={targetCards} onChange={setGetCards} />
         </div>

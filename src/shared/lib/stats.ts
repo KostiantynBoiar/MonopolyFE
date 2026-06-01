@@ -1,7 +1,5 @@
-import { MOCK_ONLINE_PLAYER_COUNT } from '@/shared/mocks/landing.mock';
-
 export async function getOnlinePlayerCount(): Promise<number | undefined> {
-  // TODO(backend): replace mock with fetch to `${API_URL}/stats/online`
-  // when backend is ready. Keep return type + undefined-on-error contract.
-  return MOCK_ONLINE_PLAYER_COUNT;
+  // TODO(backend): fetch from /stats/online when the endpoint is ready.
+  // Return undefined so the landing page omits the stat rather than showing a fake count.
+  return undefined;
 }

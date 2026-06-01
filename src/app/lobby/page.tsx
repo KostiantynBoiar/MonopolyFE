@@ -1,20 +1,31 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useLobby, SessionCard, JoinByCodeForm } from '@/features/lobby';
 import { useSessionStore } from '@/stores/session-store';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/shared/ui/Button';
+import { useState } from 'react';
+import { cn } from '@/shared/lib/cn';
+import { SessionStatus } from '@/features/lobby/lobby.enums';
+
+type StatusFilter = 'all' | SessionStatus.WAITING | SessionStatus.IN_PROGRESS;
 
 export default function LobbyPage() {
+  const t = useTranslations('Lobby');
   const router = useRouter();
   const searchParams = useSearchParams();
   const wasKicked = searchParams.get('kicked') === '1';
 
   const { ready } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
+
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [hideFullRooms, setHideFullRooms] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const {
     sessions, loading, error, joiningId,
@@ -23,12 +34,13 @@ export default function LobbyPage() {
   } = useLobby();
 
   async function handleJoin(sessionId: string) {
+    setJoinError(null);
     try {
       const session = await join(sessionId);
       setSession(session);
       router.push('/game/room');
     } catch (err) {
-      alert((err as Error).message);
+      setJoinError((err as Error).message);
     }
   }
 
@@ -41,75 +53,130 @@ export default function LobbyPage() {
   if (!ready) return <FullScreenSpinner />;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
+    <div className="mx-auto max-w-2xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6 lg:py-12">
       {/* Kicked notice */}
       {wasKicked && (
-        <div className="mb-6 flex items-center gap-3 rounded-sm border border-red/30 bg-red/5 px-4 py-3">
-          <span className="text-sm text-red">You were removed from the game by the host.</span>
+        <div className="mb-4 flex items-center gap-2 rounded-sm border border-red/30 bg-red/5 px-3 py-2 sm:mb-5 sm:gap-3 sm:px-4 sm:py-3 lg:mb-6">
+          <span className="text-xs text-red sm:text-sm">{t('kickedNotice')}</span>
           <Button as="a" href="/lobby" variant="ghost" size="sm" className="ml-auto shrink-0">
-            Dismiss
+            {t('dismiss')}
           </Button>
         </div>
       )}
 
+      {/* Join error */}
+      {joinError && (
+        <div className="mb-4 flex items-center gap-2 rounded-sm border border-red/30 bg-red/5 px-3 py-2 sm:mb-5 sm:gap-3 sm:px-4 sm:py-3">
+          <span className="min-w-0 flex-1 text-xs text-red sm:text-sm">{joinError}</span>
+          <button onClick={() => setJoinError(null)} className="shrink-0 text-xs text-red/60 hover:text-red">✕</button>
+        </div>
+      )}
+
       {/* Page header */}
-      <div className="mb-8 flex items-start justify-between gap-4">
+      <div className="mb-5 flex items-start justify-between gap-3 sm:mb-7 sm:gap-4 lg:mb-10">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ink">Public Games</h1>
-          <p className="mt-1 text-sm text-muted">Join an open room or create your own.</p>
+          <h1 className="font-display text-xl font-bold text-ink sm:text-2xl lg:text-3xl">{t('publicGames')}</h1>
+          <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm lg:text-base">{t('joinOrCreate')}</p>
         </div>
         <Button as="a" href="/lobby/new" variant="gold" size="md">
-          + New Game
+          {t('newGame')}
         </Button>
       </div>
 
       {/* Join by invite code */}
-      <div className="mb-8 rounded-sm border border-line bg-surface px-4 py-4">
-        <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-muted">
-          Join with invite code
+      <div className="mb-5 rounded-sm border border-line bg-surface px-3 py-3 sm:mb-7 sm:px-4 sm:py-4 lg:mb-10 lg:px-5 lg:py-5">
+        <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:mb-2 sm:text-xs lg:text-sm">
+          {t('joinWithInviteCode')}
         </p>
         <JoinByCodeForm onSubmit={handleJoinByCode} />
       </div>
 
       {/* Session list */}
       <div>
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted">
-            Open rooms
+        <div className="mb-2 flex flex-wrap items-center gap-2 sm:mb-3 sm:gap-3">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:text-xs lg:text-sm">
+            {t('openRooms')}
           </p>
+
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {([
+              { value: 'all',                        label: t('all') },
+              { value: SessionStatus.WAITING,        label: t('waiting') },
+              { value: SessionStatus.IN_PROGRESS,    label: t('inProgress') },
+            ] as { value: StatusFilter; label: string }[]).map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setStatusFilter(value)}
+                className={cn(
+                  'rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:text-xs lg:text-sm',
+                  statusFilter === value
+                    ? 'border-ink bg-ink text-paper'
+                    : 'border-line bg-surface text-muted hover:border-ink/40 hover:text-ink',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Hide full toggle */}
+          <button
+            onClick={() => setHideFullRooms((v) => !v)}
+            className={cn(
+              'rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:text-xs lg:text-sm',
+              hideFullRooms
+                ? 'border-ink bg-ink text-paper'
+                : 'border-line bg-surface text-muted hover:border-ink/40 hover:text-ink',
+            )}
+          >
+            {t('hideFull')}
+          </button>
+
           <button
             onClick={refresh}
             disabled={loading}
-            className="font-sans text-xs text-muted underline-offset-2 hover:text-ink hover:underline"
+            className="ml-auto font-sans text-[10px] text-muted underline-offset-2 hover:text-ink hover:underline sm:text-xs lg:text-sm"
           >
-            Refresh
+            {t('refresh')}
           </button>
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-16 text-sm text-muted">
-            Loading rooms…
+          <div className="flex items-center justify-center py-10 text-xs text-muted sm:py-14 sm:text-sm lg:py-20 lg:text-base">
+            {t('loadingRooms')}
           </div>
         )}
 
         {!loading && error && (
-          <div className="rounded-sm border border-red/30 bg-red/5 px-4 py-3 text-sm text-red">
+          <div className="rounded-sm border border-red/30 bg-red/5 px-3 py-2 text-xs text-red sm:px-4 sm:py-3 sm:text-sm">
             {error}
           </div>
         )}
 
         {!loading && !error && sessions.length === 0 && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="text-sm text-muted">No open rooms right now.</p>
+          <div className="flex flex-col items-center gap-2 py-10 text-center sm:gap-3 sm:py-14 lg:py-20">
+            <p className="text-xs text-muted sm:text-sm lg:text-base">{t('noOpenRooms')}</p>
             <Button as="a" href="/lobby/new" variant="blue" size="sm">
-              Create one
+              {t('createOne')}
             </Button>
           </div>
         )}
 
-        {!loading && !error && sessions.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {sessions.map((s) => (
+        {!loading && !error && sessions.length > 0 && (() => {
+          const filtered = sessions.filter((s) => {
+            if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+            if (hideFullRooms && s.member_count >= s.max_players) return false;
+            return true;
+          });
+
+          return (
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            {filtered.length === 0 ? (
+              <p className="py-10 text-center text-xs text-muted sm:py-14 sm:text-sm lg:py-20 lg:text-base">
+                {t('noMatchingRooms')}
+              </p>
+            ) : filtered.map((s) => (
               <SessionCard
                 key={s.id}
                 session={s}
@@ -122,13 +189,14 @@ export default function LobbyPage() {
               <button
                 onClick={loadMore}
                 disabled={isLoadingMore}
-                className="mt-1 w-full rounded-sm border border-line-2 bg-surface py-2 text-sm font-semibold text-muted transition-colors hover:bg-paper hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-1 w-full rounded-sm border border-line-2 bg-surface py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-paper hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 sm:py-2 sm:text-sm lg:py-2.5 lg:text-base"
               >
-                {isLoadingMore ? 'Loading…' : 'Load more'}
+                {isLoadingMore ? t('loading') : t('loadMore')}
               </button>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

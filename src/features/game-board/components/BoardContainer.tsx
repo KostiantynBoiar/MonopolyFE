@@ -7,7 +7,7 @@ import { BOARD_W, BOARD_PX } from '@/shared/config/constants';
 
 export function BoardContainer({ centerContent, spaces, players, walkingPlayers }: BoardContainerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0);
 
   useEffect(() => {
     const el = ref.current;
@@ -24,9 +24,13 @@ export function BoardContainer({ centerContent, spaces, players, walkingPlayers 
   }, []);
 
   return (
-    <div ref={ref} className="flex h-full w-full items-center justify-center overflow-hidden">
+    <div
+      ref={ref}
+      className="flex h-full w-full items-center justify-center overflow-hidden"
+      style={{ visibility: scale === 0 ? 'hidden' : 'visible' }}
+    >
       <MonopolyBoard
-        scale={scale}
+        scale={scale || 1}
         centerContent={centerContent}
         spaces={spaces}
         players={players}

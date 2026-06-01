@@ -1,22 +1,22 @@
 'use client';
 
 import { BOARD, getGridPos, getTileEdge, getTileCenter } from '../board-data';
-import type { TileEdge } from '../game-board.enums';
+import { SpaceType, TileEdge } from '../game-board.enums';
 import type { BoardPlayer, WalkingPlayer } from '../game-board.types';
 import { getProperty, getOwner, isMortgaged } from '@/shared/protocol/selectors';
 import { PropertyTile } from './PropertyTile';
 import { CornerTile } from './CornerTile';
 import { SpecialTile } from './SpecialTile';
-import { N, W, gridCols, gridRows, BOARD_W, BOARD_PX, WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { N, W, gridCols, gridRows, BOARD_W, BOARD_PX, WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import type { TileContentProps, MonopolyBoardProps } from '../game-board.types';
 
 // ─── Tile rendering ───────────────────────────────────────────────────────────
 
 function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps) {
-  if (space.type === 'corner') {
+  if (space.type === SpaceType.CORNER) {
     return <CornerTile variant={space.corner!} />;
   }
-  if (space.type === 'property') {
+  if (space.type === SpaceType.PROPERTY) {
     const houses = ownership?.hotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
     return (
       <PropertyTile
@@ -45,11 +45,11 @@ function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps
 // ─── Edge wrapper ─────────────────────────────────────────────────────────────
 
 function EdgeWrapper({ edge, children }: { edge: TileEdge; children: React.ReactNode }) {
-  if (edge === 'corner' || edge === 'bottom' || edge === 'top') {
+  if (edge === TileEdge.CORNER || edge === TileEdge.BOTTOM || edge === TileEdge.TOP) {
     return <div className="h-full w-full">{children}</div>;
   }
 
-  const rotation = edge === 'left' ? 'rotate(90deg)' : 'rotate(-90deg)';
+  const rotation = edge === TileEdge.LEFT ? 'rotate(90deg)' : 'rotate(-90deg)';
   return (
     <div className="relative overflow-hidden" style={{ width: W, height: N }}>
       <div
@@ -90,12 +90,12 @@ function TokenDots({ players }: { players: BoardPlayer[] }) {
         <div
           key={p.id}
           style={{
-            width: 9,
-            height: 9,
+            width: 13,
+            height: 13,
             borderRadius: '50%',
             background: p.tokenColor,
-            border: '1.5px solid white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+            border: '2px solid white',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
             flexShrink: 0,
           }}
         />
@@ -126,14 +126,14 @@ function WalkingTokenOverlay({ players }: { players: WalkingPlayer[] }) {
               position: 'absolute',
               left: 0,
               top: 0,
-              width: 12,
-              height: 12,
+              width: 17,
+              height: 17,
               borderRadius: '50%',
               background: p.tokenColor,
-              border: '2px solid white',
+              border: '2.5px solid white',
               boxShadow: '0 2px 8px rgba(0,0,0,0.55)',
-              transform: `translate(${x - 6}px, ${y - 6}px)`,
-              transition: `transform ${WALK_STEP_DURATION_MS}ms ease-in-out`,
+              transform: `translate(${x - 8.5}px, ${y - 8.5}px)`,
+              transition: `transform ${p.fast ? CARD_WALK_STEP_DURATION_MS : WALK_STEP_DURATION_MS}ms ease-in-out`,
               willChange: 'transform',
             }}
           />
@@ -209,6 +209,13 @@ export function MonopolyBoard({
             overflow: 'hidden',
             background: '#d9e8d6',
             border: '1.5px solid #10182E',
+            // The outer board div sets fontSize: `${scale}rem` so that tile content
+            // scales through the em cascade. The inner grid is then CSS-transformed
+            // by scale. Without this correction, em-based overlay sizes inside the
+            // center panel are scaled twice (cascade × transform = scale²). Cancel
+            // the cascade here so only the CSS transform drives visual size, keeping
+            // every overlay at a constant fraction of the center area at all scales.
+            fontSize: `${1 / scale}em`,
           }}
         >
           {centerContent ?? (

@@ -33,8 +33,12 @@ export function useGameSocket(sessionId: string | null) {
   } = useSocketStore();
   const setSendCommand = useCommandBus((s) => s.setSendCommand);
 
-  const socketRef   = useRef<GameSocket | null>(null);
-  const seqStartRef = useRef<number>(0);
+  const socketRef    = useRef<GameSocket | null>(null);
+  const seqStartRef  = useRef<number>(0);
+  // Kept in a ref so the SESSION_UPDATED handler always reads the current value
+  // without viewerId needing to be a dep (which would reconnect on every login).
+  const viewerIdRef  = useRef(viewerId);
+  useEffect(() => { viewerIdRef.current = viewerId; }, [viewerId]);
 
   useEffect(() => {
     if (!sessionId || !token) return;
@@ -86,13 +90,14 @@ export function useGameSocket(sessionId: string | null) {
         case WsInboundType.SESSION_UPDATED: {
           const updated = msg.payload.session;
 
-          if (viewerId && !updated.members.find((m) => m.user_id === viewerId)) {
+          const vid = viewerIdRef.current;
+          if (vid && !updated.members.find((m) => m.user_id === vid)) {
             setWasKicked(true);
             return;
           }
 
-          const yourRole = viewerId
-            ? (updated.members.find((m) => m.user_id === viewerId)?.role ?? null)
+          const yourRole = vid
+            ? (updated.members.find((m) => m.user_id === vid)?.role ?? null)
             : null;
 
           setSession({ ...updated, your_role: yourRole as MemberRole | null });
