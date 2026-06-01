@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { TOKEN_COLORS } from '@/features/player-panel';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
@@ -90,7 +91,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
 function StickerPicker({ onSticker }: { onSticker: (url: string) => void }) {
   const [packIdx, setPackIdx] = useState(0);
   const packs = useStickerPacks();
-  if (packs.length === 0) return <p className="p-4 text-center font-sans text-[0.75em] text-muted">No sticker packs yet.</p>;
+  if (packs.length === 0) return null;
   const pack = packs[packIdx];
   return (
     <div className="flex flex-col">
@@ -167,6 +168,7 @@ export function WaitingCenterPanel({
   const [draft, setDraft] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
+  const t = useTranslations('Lobby');
   const isHost  = session.your_role === MemberRole.HOST;
   const canStart = isHost && session.member_count >= SESSION_MIN_PLAYERS_TO_START;
 
@@ -207,7 +209,7 @@ export function WaitingCenterPanel({
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <div className="flex shrink-0 items-center gap-2 border-b border-line bg-line/30 px-3 py-2">
             <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
-              Chat
+              {t('chat')}
             </span>
             {socketStatus && (
               <span className={cn('ml-auto h-2 w-2 rounded-full', STATUS_DOT[socketStatus])} title={socketStatus} />
@@ -217,7 +219,7 @@ export function WaitingCenterPanel({
             className="flex flex-1 flex-col gap-1 overflow-y-auto p-3"
             style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
           >
-            {messages.length === 0 && <EventRow text="Waiting for players…" />}
+            {messages.length === 0 && <EventRow text={t('waitingForPlayers')} />}
             {messages.map((msg) =>
               msg.kind === 'event'
                 ? <EventRow key={msg.id} text={msg.text} />
@@ -231,13 +233,13 @@ export function WaitingCenterPanel({
         <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
           <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
             <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
-              Room
+              {t('room')}
             </span>
           </div>
           <div className="flex flex-1 flex-col gap-2 p-2">
             {/* Invite code */}
             <div className="rounded border border-line bg-surface px-2 py-1.5">
-              <p className="font-mono text-[0.72em] uppercase tracking-widest text-muted">Invite code</p>
+              <p className="font-mono text-[0.72em] uppercase tracking-widest text-muted">{t('inviteCode')}</p>
               <div className="mt-0.5 flex items-center justify-between gap-1">
                 <span className="font-mono text-[0.95em] font-bold tracking-widest text-ink">{session.invite_code}</span>
                 <CopyButton text={session.invite_code} />
@@ -245,20 +247,20 @@ export function WaitingCenterPanel({
             </div>
             {/* Player count */}
             <div className="flex items-center justify-between px-0.5">
-              <span className="font-mono text-[0.78em] text-muted">Players</span>
+              <span className="font-mono text-[0.78em] text-muted">{t('players')}</span>
               <span className="font-mono text-[0.85em] font-semibold text-ink">{session.member_count} / {session.max_players}</span>
             </div>
             {/* Action buttons */}
             <div className="flex flex-1 flex-col justify-end gap-1.5">
               {isHost && (
                 <ActionBtn
-                  label={isStarting ? 'Starting…' : canStart ? 'Start Game' : `Need ${SESSION_MIN_PLAYERS_TO_START}+`}
+                  label={isStarting ? t('starting') : canStart ? t('startGame') : t('needMore', { min: SESSION_MIN_PLAYERS_TO_START })}
                   primary
                   enabled={canStart && !isStarting}
                   handler={onStart}
                 />
               )}
-              <ActionBtn label={isLeaving ? 'Leaving…' : 'Leave Room'} enabled={!isLeaving} handler={onLeave} />
+              <ActionBtn label={isLeaving ? t('leaving') : t('leaveRoom')} enabled={!isLeaving} handler={onLeave} />
             </div>
           </div>
         </div>
@@ -269,7 +271,7 @@ export function WaitingCenterPanel({
         <div className="flex items-center gap-1.5">
           <input
             className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-            placeholder="Message…"
+            placeholder={t('messagePlaceholder')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendText()}
@@ -281,7 +283,7 @@ export function WaitingCenterPanel({
               'flex h-8 w-8 shrink-0 items-center justify-center rounded border transition-colors',
               showPicker ? 'border-ink bg-ink text-white' : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
             )}
-            title="Stickers"
+            title={t('stickers')}
           >
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />

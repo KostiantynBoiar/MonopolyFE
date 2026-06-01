@@ -1,0 +1,231 @@
+{
+  "Corner": {
+    "go": {
+      "label": "START",
+      "sub": "Collect M200 salary as you pass"
+    },
+    "jail": {
+      "label": "Just Visiting",
+      "sub": "In Jail"
+    },
+    "parking": {
+      "label": "Free Parking"
+    },
+    "gotojail": {
+      "label": "Go to Jail!",
+      "sub": "Go directly to jail"
+    }
+  },
+
+  "Card": {
+    "chance": "CHANCE",
+    "community_chest": "COMMUNITY CHEST",
+    "proceed": "Proceed"
+  },
+
+  "Deed": {
+    "titleDeed": "Title Deed",
+    "buy": "Buy",
+    "cantAfford": "Can't Afford",
+    "auction": "Auction",
+    "manageProperties": "Manage Properties",
+    "housesHotels": "Houses / Hotels",
+    "mortgageValue": "Mortgage Value",
+    "rent": {
+      "base": "Rent",
+      "monopoly": "Full Color Group",
+      "house1": "With 1 House",
+      "house2": "With 2 Houses",
+      "house3": "With 3 Houses",
+      "house4": "With 4 Houses",
+      "hotel": "With Hotel",
+      "railroad1": "Rent",
+      "railroad2": "2 Stations owned",
+      "railroad3": "3 Stations owned",
+      "railroad4": "4 Stations owned",
+      "utility1": "1 utility owned",
+      "utilityBoth": "Both owned"
+    }
+  },
+
+  "Jail": {
+    "inJail": "In Jail",
+    "getOut": "Get Out",
+    "rollForDoubles": "Roll for Doubles",
+    "payFine": "Pay M50 Fine",
+    "useCard": "Use Jail Card",
+    "triesLeft": "{count, plural, one {{count} roll left} other {{count} rolls left}}",
+    "noTriesLeft": "Out of rolls — you must pay the fine",
+    "doubles": " — doubles!",
+    "noDoubles": " — no doubles"
+  },
+
+  "Debt": {
+    "paymentDue": "Payment Due",
+    "canCover": "You can cover this.",
+    "cantCover": "Raise cash by mortgaging or selling — or declare bankruptcy.",
+    "pay": "Pay M{amount}",
+    "manageProperties": "Manage Properties",
+    "declareBankruptcy": "Declare Bankruptcy"
+  },
+
+  "Auction": {
+    "header": "Auction",
+    "timeLeft": "Time left",
+    "noBids": "No bids",
+    "noBidsYet": "No bids yet",
+    "minimumBid": "Minimum bid: M{min}",
+    "bid": "Bid"
+  },
+
+  "Trade": {
+    "header": "Trade Offer",
+    "sentOffer": "{name} sent you an offer",
+    "waitingFor": "Waiting for {name}…",
+    "exchange": "{proposer} ↔ {target}",
+    "youGive": "You give",
+    "youGiveBack": "You give back",
+    "offers": "{name} offers",
+    "givesBack": "{name} gives back",
+    "gives": "{name} gives",
+    "nothing": "— nothing —",
+    "jailFree": "Jail Free",
+    "reject": "Reject",
+    "counter": "Counter",
+    "accept": "Accept",
+    "withdraw": "Withdraw",
+    "spectating": "Spectating"
+  },
+
+  "Manage": {
+    "title": "Manage Properties",
+    "empty": "You don't own any properties yet.",
+    "mortgaged": "Mortgaged",
+    "noBuildings": "No buildings",
+    "buildHouse": "Build House",
+    "buildHotel": "Build Hotel",
+    "sellHouse": "Sell House",
+    "sellHotel": "Sell Hotel",
+    "mortgage": "Mortgage",
+    "unmortgage": "Unmortgage",
+    "sellToBank": "Sell to Bank",
+    "close": "Close"
+  },
+
+  "Game": {
+    "rollDice": "Roll Dice",
+    "rolling": "Rolling…",
+    "endTurn": "End Turn",
+    "buyProperty": "Buy Property",
+    "manage": "Manage",
+    "trade": "Trade",
+    "roll": "Roll",
+    "gameLog": "Game Log",
+    "messagePlaceholder": "Message…"
+  },
+
+  "Player": {
+    "turn": "Turn",
+    "jail": "Jail",
+    "jailTurns": "Jail {turns}"
+  },
+
+  "Lobby": {
+    "publicGames": "Public Games",
+    "joinWithInviteCode": "Join with invite code",
+    "newGame": "+ New Game",
+    "openRooms": "Open rooms",
+    "all": "All",
+    "waiting": "Waiting",
+    "inProgress": "In Progress",
+    "hideFull": "Hide full",
+    "refresh": "Refresh",
+    "loadingRooms": "Loading rooms…",
+    "noOpenRooms": "No open rooms right now.",
+    "createOne": "Create one",
+    "noMatchingRooms": "No rooms match your filters.",
+    "loadMore": "Load more",
+    "loading": "Loading…",
+    "kickedNotice": "You were removed from the game by the host.",
+    "dismiss": "Dismiss",
+    "joinOrCreate": "Join an open room or create your own.",
+    "full": "Full",
+    "joining": "Joining…",
+    "join": "Join →",
+    "chat": "Chat",
+    "room": "Room",
+    "inviteCode": "Invite code",
+    "players": "Players",
+    "startGame": "Start Game",
+    "starting": "Starting…",
+    "needMore": "Need {min}+",
+    "leaveRoom": "Leave Room",
+    "leaving": "Leaving…",
+    "messagePlaceholder": "Message…",
+    "waitingForPlayers": "Waiting for players…",
+    "stickers": "Stickers",
+    "createGame": "New Game",
+    "creating": "Creating…",
+    "visibility": {
+      "public": "Public",
+      "private": "Private"
+    },
+    "newLobby": {
+      "back": "← Back to lobby",
+      "title": "Create a game",
+      "subtitle": "Set up a room and share the invite code with friends.",
+      "visibilityLabel": "Visibility",
+      "publicDescription": "Anyone browsing the lobby can see and join.",
+      "privateDescription": "Only players with the invite code can join.",
+      "createBtn": "Create Game",
+      "creatingBtn": "Creating…"
+    }
+  },
+
+  "Auth": {
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "passwordMinLength": "At least 8 characters",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Tycoon Player",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "createAccount": "Create account",
+    "creatingAccount": "Creating account…",
+    "signOut": "Sign out",
+    "signUp": "Sign up",
+    "logIn": "Log in",
+    "orContinueWith": "or continue with"
+  },
+
+  "Profile": {
+    "title": "Profile",
+    "subtitle": "Your account details",
+    "displayName": "Display name",
+    "email": "Email",
+    "memberSince": "Member since",
+    "userId": "User ID",
+    "signOut": "Sign out",
+    "goToLobby": "Go to lobby"
+  },
+
+  "Landing": {
+    "playersOnline": "{count} players online",
+    "headline": "Play the classic property game online",
+    "description": "Real-time multiplayer tables with private rooms and built-in negotiation. Create a session, share a code, and trade your way to the top.",
+    "createGame": "Create a game",
+    "joinWithCode": "Join with code",
+    "gameCode": "Game code",
+    "gameCodePlaceholder": "TYC-XXXX",
+    "invalidCode": "Enter a valid code like TYC-XXXX",
+    "join": "Join",
+    "howToPlay": "How to play",
+    "leaderboard": "Leaderboard"
+  },
+
+  "LocaleSwitcher": {
+    "label": "Language"
+  }
+}

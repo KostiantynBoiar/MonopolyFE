@@ -4,21 +4,23 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslations } from 'next-intl';
 import { registerSchema } from '../auth.schema';
+import type { RegisterInput } from '../auth.schema';
 import { OAuthButtons } from './OAuthButtons';
-import { RegisterFields } from '../auth.types';
 
 export function RegisterForm() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const { register, isLoading, error, clearError } = useAuthStore();
-  const [fields, setFields] = useState<RegisterFields>({
+  const [fields, setFields] = useState<RegisterInput>({
     email: '',
     password: '',
     display_name: '',
   });
-  const [fieldErrors, setFieldErrors] = useState<Partial<RegisterFields>>({});
+  const [fieldErrors, setFieldErrors] = useState<Partial<RegisterInput>>({});
 
-  function handleChange(key: keyof RegisterFields) {
+  function handleChange(key: keyof RegisterInput) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       setFields((f) => ({ ...f, [key]: e.target.value }));
       if (fieldErrors[key]) setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
@@ -30,9 +32,9 @@ export function RegisterForm() {
     e.preventDefault();
     const parsed = registerSchema.safeParse(fields);
     if (!parsed.success) {
-      const fe: Partial<RegisterFields> = {};
+      const fe: Partial<RegisterInput> = {};
       for (const err of parsed.error.errors) {
-        fe[err.path[0] as keyof RegisterFields] = err.message;
+        fe[err.path[0] as keyof RegisterInput] = err.message;
       }
       setFieldErrors(fe);
       return;
@@ -49,13 +51,13 @@ export function RegisterForm() {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="display_name" className="text-sm font-medium text-ink">
-          Display name
+          {t('displayName')}
         </label>
         <Input
           id="display_name"
           type="text"
           autoComplete="nickname"
-          placeholder="Tycoon Player"
+          placeholder={t('displayNamePlaceholder')}
           value={fields.display_name}
           onChange={handleChange('display_name')}
           error={!!fieldErrors.display_name}
@@ -68,13 +70,13 @@ export function RegisterForm() {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm font-medium text-ink">
-          Email
+          {t('email')}
         </label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('emailPlaceholder')}
           value={fields.email}
           onChange={handleChange('email')}
           error={!!fieldErrors.email}
@@ -87,13 +89,13 @@ export function RegisterForm() {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="password" className="text-sm font-medium text-ink">
-          Password
+          {t('password')}
         </label>
         <Input
           id="password"
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder={t('passwordMinLength')}
           value={fields.password}
           onChange={handleChange('password')}
           error={!!fieldErrors.password}
@@ -114,12 +116,12 @@ export function RegisterForm() {
         disabled={isLoading}
         className="w-full mt-1"
       >
-        {isLoading ? 'Creating account…' : 'Create account'}
+        {isLoading ? t('creatingAccount') : t('createAccount')}
       </Button>
 
       <div className="relative flex items-center gap-3">
         <div className="flex-1 border-t border-line" />
-        <span className="text-xs text-muted">or continue with</span>
+        <span className="text-xs text-muted">{t('orContinueWith')}</span>
         <div className="flex-1 border-t border-line" />
       </div>
       <OAuthButtons disabled={isLoading} />

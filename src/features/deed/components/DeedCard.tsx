@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
 import { DeedSpaceType } from '../deed.enums';
@@ -12,6 +13,7 @@ const SPACE_ICON: Record<DeedSpaceType, string> = {
 };
 
 export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, viewOnly = false }: DeedCardProps) {
+  const t = useTranslations('Deed');
   const icon = SPACE_ICON[deed.spaceType];
   const hasColor = deed.color != null;
 
@@ -31,7 +33,7 @@ export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, 
           <span className="mb-0.5 leading-none" style={{ fontSize: '1.1em' }}>{icon}</span>
         )}
         <span className="font-mono font-bold uppercase tracking-widest text-white/70" style={{ fontSize: '0.55em' }}>
-          Title Deed
+          {t('titleDeed')}
         </span>
         <span className="text-center font-display font-black uppercase leading-tight text-white" style={{ fontSize: '0.78em' }}>
           {deed.name}
@@ -41,12 +43,12 @@ export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, 
       {/* Rent rows */}
       <div className="flex flex-col border-b border-ink/20 px-3 py-1.5">
         {deed.rentRows.map((row, i) => (
-          <div key={row.label} className="flex items-baseline justify-between py-[0.15em]">
+          <div key={row.labelKey} className="flex items-baseline justify-between py-[0.15em]">
             <span
               className={cn('font-sans text-ink', i === 0 ? 'font-semibold' : 'font-normal')}
               style={{ fontSize: '0.62em' }}
             >
-              {row.label}
+              {t(`rent.${row.labelKey}`)}
             </span>
             <span
               className={cn('font-mono text-ink', i === 0 ? 'font-bold' : 'font-normal')}
@@ -62,12 +64,12 @@ export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, 
       <div className="flex flex-col border-b border-ink/20 px-3 py-1">
         {deed.buildingCost != null && (
           <div className="flex items-baseline justify-between py-[0.1em]">
-            <span className="font-sans text-muted" style={{ fontSize: '0.58em' }}>Houses / Hotels</span>
+            <span className="font-sans text-muted" style={{ fontSize: '0.58em' }}>{t('housesHotels')}</span>
             <span className="font-mono text-ink" style={{ fontSize: '0.58em' }}>M{deed.buildingCost} ea.</span>
           </div>
         )}
         <div className="flex items-baseline justify-between py-[0.1em]">
-          <span className="font-sans text-muted" style={{ fontSize: '0.58em' }}>Mortgage Value</span>
+          <span className="font-sans text-muted" style={{ fontSize: '0.58em' }}>{t('mortgageValue')}</span>
           <span className="font-mono text-ink" style={{ fontSize: '0.58em' }}>M{deed.mortgageValue}</span>
         </div>
       </div>
@@ -89,14 +91,14 @@ export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, 
             )}
             style={{ fontSize: '0.6em' }}
           >
-            {canBuy ? 'Buy' : "Can't Afford"}
+            {canBuy ? t('buy') : t('cantAfford')}
           </button>
           <button
             onClick={onAuction}
             className="flex-1 rounded border border-ink bg-surface py-1 font-display font-bold uppercase tracking-wide text-ink transition-colors hover:bg-paper active:scale-95"
             style={{ fontSize: '0.6em' }}
           >
-            Auction
+            {t('auction')}
           </button>
         </div>
         {!canBuy && canManage && (
@@ -105,7 +107,7 @@ export function DeedCard({ deed, canBuy, canManage, onBuy, onAuction, onManage, 
             className="w-full rounded border border-line-2 bg-surface py-1 font-display font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper active:scale-95"
             style={{ fontSize: '0.58em' }}
           >
-            Manage Properties
+            {t('manageProperties')}
           </button>
         )}
       </div>}

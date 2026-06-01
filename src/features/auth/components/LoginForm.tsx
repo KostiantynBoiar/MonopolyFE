@@ -4,17 +4,19 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslations } from 'next-intl';
 import { loginSchema } from '../auth.schema';
+import type { LoginInput } from '../auth.schema';
 import { OAuthButtons } from './OAuthButtons';
-import { LoginFields } from '../auth.types';
 
 export function LoginForm() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const { login, isLoading, error, clearError } = useAuthStore();
-  const [fields, setFields] = useState<LoginFields>({ email: '', password: '' });
-  const [fieldErrors, setFieldErrors] = useState<Partial<LoginFields>>({});
+  const [fields, setFields] = useState<LoginInput>({ email: '', password: '' });
+  const [fieldErrors, setFieldErrors] = useState<Partial<LoginInput>>({});
 
-  function handleChange(key: keyof LoginFields) {
+  function handleChange(key: keyof LoginInput) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       setFields((f) => ({ ...f, [key]: e.target.value }));
       if (fieldErrors[key]) setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
@@ -26,9 +28,9 @@ export function LoginForm() {
     e.preventDefault();
     const parsed = loginSchema.safeParse(fields);
     if (!parsed.success) {
-      const fe: Partial<LoginFields> = {};
+      const fe: Partial<LoginInput> = {};
       for (const err of parsed.error.errors) {
-        fe[err.path[0] as keyof LoginFields] = err.message;
+        fe[err.path[0] as keyof LoginInput] = err.message;
       }
       setFieldErrors(fe);
       return;
@@ -45,13 +47,13 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="text-sm font-medium text-ink">
-          Email
+          {t('email')}
         </label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('emailPlaceholder')}
           value={fields.email}
           onChange={handleChange('email')}
           error={!!fieldErrors.email}
@@ -64,13 +66,13 @@ export function LoginForm() {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="password" className="text-sm font-medium text-ink">
-          Password
+          {t('password')}
         </label>
         <Input
           id="password"
           type="password"
           autoComplete="current-password"
-          placeholder="••••••••"
+          placeholder={t('passwordPlaceholder')}
           value={fields.password}
           onChange={handleChange('password')}
           error={!!fieldErrors.password}
@@ -91,12 +93,12 @@ export function LoginForm() {
         disabled={isLoading}
         className="w-full mt-1"
       >
-        {isLoading ? 'Signing in…' : 'Sign in'}
+        {isLoading ? t('signingIn') : t('signIn')}
       </Button>
 
       <div className="relative flex items-center gap-3">
         <div className="flex-1 border-t border-line" />
-        <span className="text-xs text-muted">or continue with</span>
+        <span className="text-xs text-muted">{t('orContinueWith')}</span>
         <div className="flex-1 border-t border-line" />
       </div>
       <OAuthButtons disabled={isLoading} />

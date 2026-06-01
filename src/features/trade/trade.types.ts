@@ -1,21 +1,21 @@
 import type { TradeState, TradeOffer } from '@/shared/protocol/game-state.schema';
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
 
-export type TradeParticipant = {
+export interface TradeParticipant {
   id: string;
   name: string;
   token: TokenColor;
   balance: number;
   ownedPositions: number[];
-};
+}
 
-export type TradeOfferColumnProps = {
+export interface TradeOfferColumnProps {
   participant: TradeParticipant;
   offer: TradeOffer;
   label: string;
-};
+}
 
-export type TradeWindowProps = {
+export interface TradeWindowProps {
   trade: TradeState;
   proposer: TradeParticipant;
   target: TradeParticipant;
@@ -24,4 +24,4 @@ export type TradeWindowProps = {
   onReject?: () => void;
   onCounter?: () => void;
   onCancel?: () => void;
-};
+}

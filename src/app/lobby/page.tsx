@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useLobby, SessionCard, JoinByCodeForm } from '@/features/lobby';
@@ -14,6 +15,7 @@ import { SessionStatus } from '@/features/lobby/lobby.enums';
 type StatusFilter = 'all' | SessionStatus.WAITING | SessionStatus.IN_PROGRESS;
 
 export default function LobbyPage() {
+  const t = useTranslations('Lobby');
   const router = useRouter();
   const searchParams = useSearchParams();
   const wasKicked = searchParams.get('kicked') === '1';
@@ -55,9 +57,9 @@ export default function LobbyPage() {
       {/* Kicked notice */}
       {wasKicked && (
         <div className="mb-4 flex items-center gap-2 rounded-sm border border-red/30 bg-red/5 px-3 py-2 sm:mb-5 sm:gap-3 sm:px-4 sm:py-3 lg:mb-6">
-          <span className="text-xs text-red sm:text-sm">You were removed from the game by the host.</span>
+          <span className="text-xs text-red sm:text-sm">{t('kickedNotice')}</span>
           <Button as="a" href="/lobby" variant="ghost" size="sm" className="ml-auto shrink-0">
-            Dismiss
+            {t('dismiss')}
           </Button>
         </div>
       )}
@@ -73,18 +75,18 @@ export default function LobbyPage() {
       {/* Page header */}
       <div className="mb-5 flex items-start justify-between gap-3 sm:mb-7 sm:gap-4 lg:mb-10">
         <div>
-          <h1 className="font-display text-xl font-bold text-ink sm:text-2xl lg:text-3xl">Public Games</h1>
-          <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm lg:text-base">Join an open room or create your own.</p>
+          <h1 className="font-display text-xl font-bold text-ink sm:text-2xl lg:text-3xl">{t('publicGames')}</h1>
+          <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm lg:text-base">{t('joinOrCreate')}</p>
         </div>
         <Button as="a" href="/lobby/new" variant="gold" size="md">
-          + New Game
+          {t('newGame')}
         </Button>
       </div>
 
       {/* Join by invite code */}
       <div className="mb-5 rounded-sm border border-line bg-surface px-3 py-3 sm:mb-7 sm:px-4 sm:py-4 lg:mb-10 lg:px-5 lg:py-5">
         <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:mb-2 sm:text-xs lg:text-sm">
-          Join with invite code
+          {t('joinWithInviteCode')}
         </p>
         <JoinByCodeForm onSubmit={handleJoinByCode} />
       </div>
@@ -93,15 +95,15 @@ export default function LobbyPage() {
       <div>
         <div className="mb-2 flex flex-wrap items-center gap-2 sm:mb-3 sm:gap-3">
           <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:text-xs lg:text-sm">
-            Open rooms
+            {t('openRooms')}
           </p>
 
           {/* Status filter pills */}
           <div className="flex items-center gap-1 sm:gap-1.5">
             {([
-              { value: 'all',                        label: 'All' },
-              { value: SessionStatus.WAITING,        label: 'Waiting' },
-              { value: SessionStatus.IN_PROGRESS,    label: 'In Progress' },
+              { value: 'all',                        label: t('all') },
+              { value: SessionStatus.WAITING,        label: t('waiting') },
+              { value: SessionStatus.IN_PROGRESS,    label: t('inProgress') },
             ] as { value: StatusFilter; label: string }[]).map(({ value, label }) => (
               <button
                 key={value}
@@ -128,7 +130,7 @@ export default function LobbyPage() {
                 : 'border-line bg-surface text-muted hover:border-ink/40 hover:text-ink',
             )}
           >
-            Hide full
+            {t('hideFull')}
           </button>
 
           <button
@@ -136,13 +138,13 @@ export default function LobbyPage() {
             disabled={loading}
             className="ml-auto font-sans text-[10px] text-muted underline-offset-2 hover:text-ink hover:underline sm:text-xs lg:text-sm"
           >
-            Refresh
+            {t('refresh')}
           </button>
         </div>
 
         {loading && (
           <div className="flex items-center justify-center py-10 text-xs text-muted sm:py-14 sm:text-sm lg:py-20 lg:text-base">
-            Loading rooms…
+            {t('loadingRooms')}
           </div>
         )}
 
@@ -154,9 +156,9 @@ export default function LobbyPage() {
 
         {!loading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-10 text-center sm:gap-3 sm:py-14 lg:py-20">
-            <p className="text-xs text-muted sm:text-sm lg:text-base">No open rooms right now.</p>
+            <p className="text-xs text-muted sm:text-sm lg:text-base">{t('noOpenRooms')}</p>
             <Button as="a" href="/lobby/new" variant="blue" size="sm">
-              Create one
+              {t('createOne')}
             </Button>
           </div>
         )}
@@ -172,7 +174,7 @@ export default function LobbyPage() {
           <div className="flex flex-col gap-1.5 sm:gap-2">
             {filtered.length === 0 ? (
               <p className="py-10 text-center text-xs text-muted sm:py-14 sm:text-sm lg:py-20 lg:text-base">
-                No rooms match your filters.
+                {t('noMatchingRooms')}
               </p>
             ) : filtered.map((s) => (
               <SessionCard
@@ -189,7 +191,7 @@ export default function LobbyPage() {
                 disabled={isLoadingMore}
                 className="mt-1 w-full rounded-sm border border-line-2 bg-surface py-1.5 text-xs font-semibold text-muted transition-colors hover:bg-paper hover:text-ink disabled:cursor-not-allowed disabled:opacity-60 sm:py-2 sm:text-sm lg:py-2.5 lg:text-base"
               >
-                {isLoadingMore ? 'Loading…' : 'Load more'}
+                {isLoadingMore ? t('loading') : t('loadMore')}
               </button>
             )}
           </div>

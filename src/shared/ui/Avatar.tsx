@@ -1,9 +1,9 @@
 import { cn } from '@/shared/lib/cn';
 
-type AvatarProps = {
+interface AvatarProps {
   name: string;
   className?: string;
-};
+}
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);

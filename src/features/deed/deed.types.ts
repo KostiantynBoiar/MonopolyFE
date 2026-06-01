@@ -1,12 +1,13 @@
 import type { PropertyColor } from '@/features/game-board';
 import type { DeedSpaceType } from './deed.enums';
 
-export type RentRow = {
-  label: string;
+export interface RentRow {
+  /** Translation key within the `Deed.rent` namespace (e.g. `'base'`, `'house1'`). */
+  labelKey: string;
   amount: string;
-};
+}
 
-export type DeedInfo = {
+export interface DeedInfo {
   position: number;
   name: string;
   spaceType: DeedSpaceType;
@@ -15,9 +16,9 @@ export type DeedInfo = {
   rentRows: RentRow[];
   buildingCost?: number;
   mortgageValue: number;
-};
+}
 
-export type DeedCardProps = {
+export interface DeedCardProps {
   deed: DeedInfo;
   canBuy: boolean;
   canManage: boolean;
@@ -25,4 +26,4 @@ export type DeedCardProps = {
   onAuction: () => void;
   onManage: () => void;
   viewOnly?: boolean;
-};
+}

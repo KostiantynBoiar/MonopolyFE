@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useSessionStore } from '@/stores/session-store';
@@ -11,6 +12,8 @@ import { createSession } from '@/features/lobby/api';
 import { cn } from '@/shared/lib/cn';
 
 export default function NewLobbyPage() {
+  const t = useTranslations('Lobby.newLobby');
+  const tLobby = useTranslations('Lobby');
   const router = useRouter();
   const { ready } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
@@ -41,19 +44,17 @@ export default function NewLobbyPage() {
         href="/lobby"
         className="mb-6 inline-flex items-center gap-1 font-sans text-sm text-muted hover:text-ink"
       >
-        ← Back to lobby
+        {t('back')}
       </Link>
 
-      <h1 className="mb-1 font-display text-2xl font-bold text-ink">Create a game</h1>
-      <p className="mb-8 text-sm text-muted">
-        Set up a room and share the invite code with friends.
-      </p>
+      <h1 className="mb-1 font-display text-2xl font-bold text-ink">{t('title')}</h1>
+      <p className="mb-8 text-sm text-muted">{t('subtitle')}</p>
 
       <form onSubmit={handleCreate} className="flex flex-col gap-6">
         {/* Visibility toggle */}
         <div>
           <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-muted">
-            Visibility
+            {t('visibilityLabel')}
           </p>
           <div className="flex gap-2">
             {([SessionVisibility.PUBLIC, SessionVisibility.PRIVATE] as const).map((v) => (
@@ -62,20 +63,20 @@ export default function NewLobbyPage() {
                 type="button"
                 onClick={() => setVisibility(v)}
                 className={cn(
-                  'flex-1 rounded-sm border py-2 text-sm font-semibold capitalize transition-colors',
+                  'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
                   visibility === v
                     ? 'border-ink bg-ink text-white'
                     : 'border-line-2 bg-surface text-ink hover:bg-paper',
                 )}
               >
-                {v}
+                {tLobby(`visibility.${v}`)}
               </button>
             ))}
           </div>
           <p className="mt-2 text-xs text-muted">
             {visibility === SessionVisibility.PUBLIC
-              ? 'Anyone browsing the lobby can see and join.'
-              : 'Only players with the invite code can join.'}
+              ? t('publicDescription')
+              : t('privateDescription')}
           </p>
         </div>
 
@@ -95,7 +96,7 @@ export default function NewLobbyPage() {
               : 'border-gold-600 bg-gold text-white hover:bg-gold-600',
           )}
         >
-          {loading ? 'Creating…' : 'Create Game'}
+          {loading ? t('creatingBtn') : t('createBtn')}
         </button>
       </form>
     </div>

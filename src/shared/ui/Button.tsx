@@ -17,18 +17,16 @@ const sizeClasses: Record<ButtonSize, string> = {
   sm: 'h-8 px-3 text-xs',
 };
 
-type BaseProps = {
+interface BaseProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
   children: ReactNode;
-};
+}
 
-type ButtonAsButton = BaseProps &
-  ButtonHTMLAttributes<HTMLButtonElement> & { as?: 'button' };
+type ButtonAsButton = BaseProps & ButtonHTMLAttributes<HTMLButtonElement> & { as?: 'button' };
 
-type ButtonAsAnchor = BaseProps &
-  AnchorHTMLAttributes<HTMLAnchorElement> & { as: 'a'; href: string };
+type ButtonAsAnchor = BaseProps & AnchorHTMLAttributes<HTMLAnchorElement> & { as: 'a'; href: string };
 
 export type ButtonProps = ButtonAsButton | ButtonAsAnchor;
 

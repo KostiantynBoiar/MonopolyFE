@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import type { AuctionPanelProps } from '../auction.types';
 
@@ -10,6 +11,7 @@ function formatTime(ms: number): string {
 }
 
 export function AuctionPanel({ auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid }: AuctionPanelProps) {
+  const t = useTranslations('Auction');
   const [bidInput, setBidInput] = useState('');
   // Client-side countdown — re-syncs to server value on each new snapshot.
   const [displayMs, setDisplayMs] = useState(auctionState.timeRemainingMs);
@@ -48,7 +50,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
           className="font-mono font-bold uppercase tracking-widest text-white/60"
           style={{ fontSize: '0.6em' }}
         >
-          Auction
+          {t('header')}
         </div>
         <div className="font-display font-black uppercase text-white" style={{ fontSize: '0.85em' }}>
           {propertyName}
@@ -71,7 +73,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             className="font-sans uppercase tracking-wide text-muted"
             style={{ fontSize: '0.55em' }}
           >
-            Time left
+            {t('timeLeft')}
           </div>
         </div>
 
@@ -85,7 +87,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             className="font-sans uppercase tracking-wide text-muted"
             style={{ fontSize: '0.55em' }}
           >
-            {highestBidder?.name ?? 'No bids'}
+            {highestBidder?.name ?? t('noBids')}
           </div>
         </div>
       </div>
@@ -98,7 +100,7 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
         {auctionState.bids.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
             <span className="font-sans italic text-muted" style={{ fontSize: '0.68em' }}>
-              No bids yet
+              {t('noBidsYet')}
             </span>
           </div>
         ) : (
@@ -155,11 +157,11 @@ export function AuctionPanel({ auctionState, propertyName, viewerId, players, ca
             className="rounded border border-blue bg-blue px-3 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
             style={{ fontSize: '0.62em' }}
           >
-            Bid
+            {t('bid')}
           </button>
         </div>
         <p className="mt-0.5 font-sans text-muted" style={{ fontSize: '0.55em' }}>
-          Minimum bid: M{minBid}
+          {t('minimumBid', { min: minBid })}
         </p>
       </div>
     </div>

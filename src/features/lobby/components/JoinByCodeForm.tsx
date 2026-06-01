@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { inviteCodeSchema } from '../lobby.schema';
 
-export type JoinByCodeFormProps = {
+export interface JoinByCodeFormProps {
   onSubmit: (code: string) => Promise<void>;
-};
+}
 
 export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
+  const t = useTranslations('Lobby');
   const [raw, setRaw] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,7 +70,7 @@ export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
               : 'cursor-not-allowed border-line bg-paper text-muted',
           )}
         >
-          {loading ? 'Joining…' : 'Join'}
+          {loading ? t('joining') : t('join')}
         </button>
       </div>
       {error && <p className="font-sans text-xs text-red">{error}</p>}

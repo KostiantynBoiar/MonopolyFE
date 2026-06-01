@@ -1,4 +1,5 @@
 export { Avatar } from './Avatar';
+export { LocaleSwitcher } from './LocaleSwitcher';
 export { Badge } from './Badge';
 export { Button } from './Button';
 export type { ButtonProps } from './Button';

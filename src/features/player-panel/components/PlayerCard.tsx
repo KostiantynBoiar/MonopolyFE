@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { PropertyColor, TOKEN_COLORS, COLOR_GROUP, COLOR_GROUP_ORDER } from '../player-panel.schema';
 import type { Player } from '../player-panel.schema';
@@ -37,12 +40,13 @@ const GROUP_SIZE: Record<PropertyColor, number> = {
   [PropertyColor.BLUE]: 2,
 };
 
-type PlayerCardProps = {
+interface PlayerCardProps {
   player: Player;
   className?: string;
-};
+}
 
 export function PlayerCard({ player, className }: PlayerCardProps) {
+  const t = useTranslations('Player');
   const { name, balance, token, ownedPositions, isActive, isBankrupt, inJail, jailTurns } = player;
   const tokenBg = TOKEN_COLORS[token];
   const groups = groupOwned(ownedPositions);
@@ -87,12 +91,12 @@ export function PlayerCard({ player, className }: PlayerCardProps) {
             </span>
             {isActive && (
               <span className="shrink-0 rounded-sm bg-gold-50 px-1 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-gold-600">
-                Turn
+                {t('turn')}
               </span>
             )}
             {inJail && (
               <span className="shrink-0 rounded-sm bg-red/10 px-1 py-px font-mono text-[10px] font-bold uppercase tracking-wider text-red">
-                Jail{jailTurns != null ? ` ${jailTurns}` : ''}
+                {jailTurns != null ? t('jailTurns', { turns: jailTurns }) : t('jail')}
               </span>
             )}
           </div>

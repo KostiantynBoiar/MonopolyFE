@@ -4,19 +4,19 @@ import type { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums
 
 // ─── Wire types (snake_case matches backend REST/WS contract) ─────────────────
 
-export type LobbyHost = {
+export interface LobbyHost {
   id: string;
   display_name: string;
-};
+}
 
-export type SessionMember = {
+export interface SessionMember {
   user_id: string;
   display_name: string;
   role: MemberRole;
   joined_at: string;
-};
+}
 
-export type SessionSummary = {
+export interface SessionSummary {
   id: string;
   invite_code: string;       // e.g. "TYC-A1B2"
   status: SessionStatus;
@@ -25,35 +25,35 @@ export type SessionSummary = {
   max_players: number;       // always 8
   host: LobbyHost;
   created_at: string;        // ISO 8601
-};
+}
 
-export type SessionDetail = SessionSummary & {
+export interface SessionDetail extends SessionSummary {
   members: SessionMember[];
   your_role: MemberRole | null;
-};
+}
 
 // ─── Request payloads ─────────────────────────────────────────────────────────
 
-export type CreateSessionInput = {
+export interface CreateSessionInput {
   visibility: SessionVisibility;
-};
+}
 
-export type JoinByCodeInput = {
+export interface JoinByCodeInput {
   invite_code: string;
-};
+}
 
 // ─── Response envelopes ───────────────────────────────────────────────────────
 
-export type LobbyListResponse = {
+export interface LobbyListResponse {
   sessions: SessionSummary[];
   next_cursor: string | null;
-};
+}
 
-export type SessionResponse = {
+export interface SessionResponse {
   session: SessionDetail;
-};
+}
 
-export type WaitingCenterPanelProps = {
+export interface WaitingCenterPanelProps {
   session: SessionDetail;
   messages: ChatMessage[];
   onSendMessage?: (text: string) => void;
@@ -62,4 +62,4 @@ export type WaitingCenterPanelProps = {
   isLeaving?: boolean;
   isStarting?: boolean;
   socketStatus?: SocketStatus;
-};
+}

@@ -1,0 +1,231 @@
+{
+  "Corner": {
+    "go": {
+      "label": "СТАРТ",
+      "sub": "Отримайте M200 при проходженні"
+    },
+    "jail": {
+      "label": "Просто проїжджаю",
+      "sub": "Тюрма"
+    },
+    "parking": {
+      "label": "Вільне паркування"
+    },
+    "gotojail": {
+      "label": "До тюрми!",
+      "sub": "Прямо до тюрми"
+    }
+  },
+
+  "Card": {
+    "chance": "ШАНС",
+    "community_chest": "СКАРБНИЦЯ",
+    "proceed": "Далі"
+  },
+
+  "Deed": {
+    "titleDeed": "Свідоцтво",
+    "buy": "Купити",
+    "cantAfford": "Не вистачає",
+    "auction": "Аукціон",
+    "manageProperties": "Управляти нерухомістю",
+    "housesHotels": "Будинки / Готелі",
+    "mortgageValue": "Заставна вартість",
+    "rent": {
+      "base": "Оренда",
+      "monopoly": "Повна група",
+      "house1": "З 1 будинком",
+      "house2": "З 2 будинками",
+      "house3": "З 3 будинками",
+      "house4": "З 4 будинками",
+      "hotel": "З готелем",
+      "railroad1": "Оренда",
+      "railroad2": "2 станції",
+      "railroad3": "3 станції",
+      "railroad4": "4 станції",
+      "utility1": "1 компанія",
+      "utilityBoth": "Обидві компанії"
+    }
+  },
+
+  "Jail": {
+    "inJail": "У тюрмі",
+    "getOut": "Вийти",
+    "rollForDoubles": "Кинути на дублі",
+    "payFine": "Заплатити штраф M50",
+    "useCard": "Використати картку",
+    "triesLeft": "{count, plural, one {Залишилась {count} спроба} few {Залишилось {count} спроби} many {Залишилось {count} спроб} other {Залишилось {count} спроби}}",
+    "noTriesLeft": "Спроби вичерпані — сплатіть штраф",
+    "doubles": " — дублі!",
+    "noDoubles": " — не дублі"
+  },
+
+  "Debt": {
+    "paymentDue": "Борг",
+    "canCover": "Ви можете сплатити.",
+    "cantCover": "Залучте кошти — заставте або продайте майно, або оголосіть банкрутство.",
+    "pay": "Сплатити M{amount}",
+    "manageProperties": "Управляти нерухомістю",
+    "declareBankruptcy": "Оголосити банкрутство"
+  },
+
+  "Auction": {
+    "header": "Аукціон",
+    "timeLeft": "Часу",
+    "noBids": "Немає ставок",
+    "noBidsYet": "Ставок ще немає",
+    "minimumBid": "Мінімальна ставка: M{min}",
+    "bid": "Ставка"
+  },
+
+  "Trade": {
+    "header": "Пропозиція обміну",
+    "sentOffer": "{name} надіслав вам пропозицію",
+    "waitingFor": "Очікуємо {name}…",
+    "exchange": "{proposer} ↔ {target}",
+    "youGive": "Ви даєте",
+    "youGiveBack": "Ви даєте у відповідь",
+    "offers": "{name} пропонує",
+    "givesBack": "{name} дає у відповідь",
+    "gives": "{name} дає",
+    "nothing": "— нічого —",
+    "jailFree": "Картка виходу",
+    "reject": "Відхилити",
+    "counter": "Зустрічна",
+    "accept": "Прийняти",
+    "withdraw": "Відкликати",
+    "spectating": "Спостерігач"
+  },
+
+  "Manage": {
+    "title": "Управління нерухомістю",
+    "empty": "У вас ще немає нерухомості.",
+    "mortgaged": "Заставлено",
+    "noBuildings": "Без будівель",
+    "buildHouse": "Збудувати будинок",
+    "buildHotel": "Збудувати готель",
+    "sellHouse": "Продати будинок",
+    "sellHotel": "Продати готель",
+    "mortgage": "Заставити",
+    "unmortgage": "Викупити заставу",
+    "sellToBank": "Продати банку",
+    "close": "Закрити"
+  },
+
+  "Game": {
+    "rollDice": "Кинути кубики",
+    "rolling": "Кидаємо…",
+    "endTurn": "Завершити хід",
+    "buyProperty": "Купити",
+    "manage": "Управляти",
+    "trade": "Обмін",
+    "roll": "Кинути",
+    "gameLog": "Журнал гри",
+    "messagePlaceholder": "Повідомлення…"
+  },
+
+  "Player": {
+    "turn": "Хід",
+    "jail": "Тюрма",
+    "jailTurns": "Тюрма {turns}"
+  },
+
+  "Lobby": {
+    "publicGames": "Відкриті кімнати",
+    "joinWithInviteCode": "Приєднатися за кодом запрошення",
+    "newGame": "+ Нова гра",
+    "openRooms": "Відкриті кімнати",
+    "all": "Всі",
+    "waiting": "Очікування",
+    "inProgress": "В процесі",
+    "hideFull": "Приховати повні",
+    "refresh": "Оновити",
+    "loadingRooms": "Завантаження кімнат…",
+    "noOpenRooms": "Наразі немає відкритих кімнат.",
+    "createOne": "Створити",
+    "noMatchingRooms": "Немає кімнат, що відповідають фільтрам.",
+    "loadMore": "Завантажити ще",
+    "loading": "Завантаження…",
+    "kickedNotice": "Вас видалено з гри хостом.",
+    "dismiss": "Закрити",
+    "joinOrCreate": "Приєднайтесь до відкритої кімнати або створіть свою.",
+    "full": "Повна",
+    "joining": "Приєднуємось…",
+    "join": "Приєднатися →",
+    "chat": "Чат",
+    "room": "Кімната",
+    "inviteCode": "Код запрошення",
+    "players": "Гравці",
+    "startGame": "Почати гру",
+    "starting": "Запускаємо…",
+    "needMore": "Потрібно {min}+",
+    "leaveRoom": "Покинути кімнату",
+    "leaving": "Виходимо…",
+    "messagePlaceholder": "Повідомлення…",
+    "waitingForPlayers": "Очікуємо гравців…",
+    "stickers": "Стікери",
+    "createGame": "Нова гра",
+    "creating": "Створюємо…",
+    "visibility": {
+      "public": "Публічна",
+      "private": "Приватна"
+    },
+    "newLobby": {
+      "back": "← Назад до лобі",
+      "title": "Створити гру",
+      "subtitle": "Налаштуйте кімнату і поділіться кодом запрошення з друзями.",
+      "visibilityLabel": "Видимість",
+      "publicDescription": "Будь-хто в лобі може побачити і приєднатись.",
+      "privateDescription": "Лише гравці з кодом запрошення можуть приєднатись.",
+      "createBtn": "Створити гру",
+      "creatingBtn": "Створюємо…"
+    }
+  },
+
+  "Auth": {
+    "email": "Email",
+    "emailPlaceholder": "ви@приклад.com",
+    "password": "Пароль",
+    "passwordPlaceholder": "••••••••",
+    "passwordMinLength": "Щонайменше 8 символів",
+    "displayName": "Ім'я в грі",
+    "displayNamePlaceholder": "Гравець",
+    "signIn": "Увійти",
+    "signingIn": "Входимо…",
+    "createAccount": "Зареєструватися",
+    "creatingAccount": "Реєструємось…",
+    "signOut": "Вийти",
+    "signUp": "Реєстрація",
+    "logIn": "Увійти",
+    "orContinueWith": "або продовжити через"
+  },
+
+  "Profile": {
+    "title": "Профіль",
+    "subtitle": "Дані вашого акаунта",
+    "displayName": "Ім'я в грі",
+    "email": "Email",
+    "memberSince": "Учасник з",
+    "userId": "ID користувача",
+    "signOut": "Вийти",
+    "goToLobby": "До лобі"
+  },
+
+  "Landing": {
+    "playersOnline": "{count} гравців онлайн",
+    "headline": "Класична гра в нерухомість онлайн",
+    "description": "Мультиплеєрні столи в реальному часі з приватними кімнатами та вбудованими переговорами. Створіть сесію, поділіться кодом і торгуйте своїм шляхом до вершини.",
+    "createGame": "Створити гру",
+    "joinWithCode": "Приєднатися за кодом",
+    "gameCode": "Код гри",
+    "gameCodePlaceholder": "TYC-XXXX",
+    "invalidCode": "Введіть правильний код, наприклад TYC-XXXX",
+    "join": "Приєднатися",
+    "howToPlay": "Як грати",
+    "leaderboard": "Рейтинг"
+  },
+
+  "LocaleSwitcher": {
+    "label": "Мова"
+  }
+}

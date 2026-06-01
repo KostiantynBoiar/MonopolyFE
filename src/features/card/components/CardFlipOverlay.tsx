@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import {
   CARD_FLIP_TRIGGER_DELAY_MS,
@@ -10,36 +11,32 @@ import {
 import { CardFlipState, CardKind } from '../card.enums';
 import type { CardFlipOverlayProps } from '../card.types';
 
-// ─── Theme per card kind ──────────────────────────────────────────────────────
+// ─── Static theme (colors/glyphs only — labels are translated) ────────────────
 
-const CARD_THEME = {
+const CARD_STYLE = {
   [CardKind.CHANCE]: {
     bandBg:    'bg-band-orange',
     backBg:    'bg-band-orange',
-    backLabel: 'CHANCE',
     backGlyph: '?',
-    label:     'CHANCE',
   },
   [CardKind.COMMUNITY_CHEST]: {
     bandBg:    'bg-band-cyan',
     backBg:    'bg-band-cyan',
-    backLabel: 'COMMUNITY CHEST',
     backGlyph: '📦',
-    label:     'COMMUNITY CHEST',
   },
 } as const;
 
 // ─── Card face (front) ────────────────────────────────────────────────────────
 
-function CardFront({ card }: { card: CardFlipOverlayProps['card'] }) {
-  const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
+function CardFront({ card, label }: { card: CardFlipOverlayProps['card']; label: string }) {
+  const style = CARD_STYLE[card.kind as CardKind] ?? CARD_STYLE[CardKind.CHANCE];
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border-2 border-ink/20 bg-white shadow-xl">
       {/* Color band header */}
-      <div className={cn('flex shrink-0 items-center justify-center py-3', theme.bandBg)}>
+      <div className={cn('flex shrink-0 items-center justify-center py-3', style.bandBg)}>
         <span className="font-display text-[0.65em] font-bold uppercase tracking-widest text-white">
-          {theme.label}
+          {label}
         </span>
       </div>
 
@@ -51,29 +48,29 @@ function CardFront({ card }: { card: CardFlipOverlayProps['card'] }) {
       </div>
 
       {/* Footer stripe */}
-      <div className={cn('h-1.5 shrink-0', theme.bandBg)} />
+      <div className={cn('h-1.5 shrink-0', style.bandBg)} />
     </div>
   );
 }
 
 // ─── Card back ────────────────────────────────────────────────────────────────
 
-function CardBack({ card }: { card: CardFlipOverlayProps['card'] }) {
-  const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
+function CardBack({ card, label }: { card: CardFlipOverlayProps['card']; label: string }) {
+  const style = CARD_STYLE[card.kind as CardKind] ?? CARD_STYLE[CardKind.CHANCE];
 
   return (
     <div
       className={cn(
         'flex h-full w-full flex-col items-center justify-center gap-3',
         'rounded-xl border-2 border-white/30 shadow-xl',
-        theme.backBg,
+        style.backBg,
       )}
     >
       <span className="font-display text-[2.5em] font-black leading-none text-white/90">
-        {theme.backGlyph}
+        {style.backGlyph}
       </span>
       <span className="font-display text-[0.55em] font-bold uppercase tracking-widest text-white/70">
-        {theme.backLabel}
+        {label}
       </span>
     </div>
   );
@@ -82,6 +79,8 @@ function CardBack({ card }: { card: CardFlipOverlayProps['card'] }) {
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
 export function CardFlipOverlay({ card, onProceed }: CardFlipOverlayProps) {
+  const t = useTranslations('Card');
+  const label = t(card.kind as CardKind);
   const [flipState, setFlipState] = useState<CardFlipState>(CardFlipState.IDLE);
   const [showProceed, setShowProceed] = useState(false);
 
@@ -125,7 +124,7 @@ export function CardFlipOverlay({ card, onProceed }: CardFlipOverlayProps) {
           <div
             style={{ backfaceVisibility: 'hidden', position: 'absolute', inset: 0 }}
           >
-            <CardBack card={card} />
+            <CardBack card={card} label={label} />
           </div>
 
           {/* Front face */}
@@ -137,7 +136,7 @@ export function CardFlipOverlay({ card, onProceed }: CardFlipOverlayProps) {
               inset:              0,
             }}
           >
-            <CardFront card={card} />
+            <CardFront card={card} label={label} />
           </div>
         </div>
       </div>
@@ -153,7 +152,7 @@ export function CardFlipOverlay({ card, onProceed }: CardFlipOverlayProps) {
         )}
         style={{ padding: '0.55em 1.2em' }}
       >
-        Proceed
+        {t('proceed')}
       </button>
     </div>
   );

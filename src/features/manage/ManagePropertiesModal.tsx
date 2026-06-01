@@ -1,10 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import type { PropertyColor } from '@/features/game-board';
 import { DeedCard, getDeedInfo } from '@/features/deed';
 
-export type ManageProperty = {
+export interface ManageProperty {
   position:    number;
   name:        string;
   color?:      PropertyColor;
@@ -13,9 +14,9 @@ export type ManageProperty = {
   isMortgaged: boolean;
   inMonopoly:  boolean;
   rent:        number;
-};
+}
 
-export type ManagePropertiesModalProps = {
+export interface ManagePropertiesModalProps {
   properties:     ManageProperty[];
   canBuildHouse:  boolean;
   canBuildHotel:  boolean;
@@ -29,14 +30,16 @@ export type ManagePropertiesModalProps = {
   onUnmortgage:   (position: number) => void;
   onSellProperty?: (position: number) => void;
   onClose:        () => void;
-};
+}
 
-function ActionBtn({ label, onClick, disabled, primary }: {
+interface ActionBtnProps {
   label: string;
   onClick: () => void;
   disabled?: boolean;
   primary?: boolean;
-}) {
+}
+
+function ActionBtn({ label, onClick, disabled, primary }: ActionBtnProps) {
   return (
     <button
       onClick={onClick}
@@ -61,16 +64,18 @@ export function ManagePropertiesModal({
   onBuildHouse, onBuildHotel, onSellHouse, onSellHotel,
   onMortgage, onUnmortgage, onSellProperty, onClose,
 }: ManagePropertiesModalProps) {
+  const t = useTranslations('Manage');
+
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100">
       {/* Header — matches TradeWindow */}
       <div className="flex shrink-0 items-center gap-3 border-b-2 border-ink/20 bg-ink px-4 py-2.5">
         <span className="font-mono text-[0.72em] font-bold uppercase tracking-widest text-white/70">
-          Manage Properties
+          {t('title')}
         </span>
         <button
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t('close')}
           className="ml-auto font-mono text-[1.4em] leading-none text-white/50 transition-colors hover:text-white"
         >
           ✕
@@ -82,7 +87,7 @@ export function ManagePropertiesModal({
         {properties.length === 0 ? (
           <div className="flex flex-1 items-center justify-center px-8 py-6">
             <span className="font-sans text-[0.78em] italic text-muted">
-              You don't own any properties yet.
+              {t('empty')}
             </span>
           </div>
         ) : (
@@ -110,38 +115,38 @@ export function ManagePropertiesModal({
                   {/* Status badge */}
                   <div className="flex items-center justify-center gap-1 font-mono text-[0.58em] text-muted">
                     {p.isMortgaged
-                      ? <span className="text-red">Mortgaged</span>
+                      ? <span className="text-red">{t('mortgaged')}</span>
                       : p.hotel
                       ? <span>🏨 Hotel</span>
                       : p.houses > 0
                       ? <span>{'🏠'.repeat(p.houses)}</span>
-                      : <span>No buildings</span>}
+                      : <span>{t('noBuildings')}</span>}
                     <span className="ml-auto font-bold text-ink">M{p.rent}</span>
                   </div>
 
                   {/* Action buttons */}
                   <div className="flex flex-col gap-1">
                     {p.isMortgaged ? (
-                      <ActionBtn label="Unmortgage" onClick={() => onUnmortgage(p.position)} disabled={!canUnmortgage} primary />
+                      <ActionBtn label={t('unmortgage')} onClick={() => onUnmortgage(p.position)} disabled={!canUnmortgage} primary />
                     ) : (
                       <>
                         {p.inMonopoly && !p.hotel && p.houses < 4 && (
-                          <ActionBtn label="Build House" onClick={() => onBuildHouse(p.position)} disabled={!canBuildHouse} primary />
+                          <ActionBtn label={t('buildHouse')} onClick={() => onBuildHouse(p.position)} disabled={!canBuildHouse} primary />
                         )}
                         {p.inMonopoly && p.houses === 4 && (
-                          <ActionBtn label="Build Hotel" onClick={() => onBuildHotel(p.position)} disabled={!canBuildHotel} primary />
+                          <ActionBtn label={t('buildHotel')} onClick={() => onBuildHotel(p.position)} disabled={!canBuildHotel} primary />
                         )}
                         {p.color && p.houses > 0 && (
-                          <ActionBtn label="Sell House" onClick={() => onSellHouse(p.position)} />
+                          <ActionBtn label={t('sellHouse')} onClick={() => onSellHouse(p.position)} />
                         )}
                         {p.hotel && (
-                          <ActionBtn label="Sell Hotel" onClick={() => onSellHotel(p.position)} />
+                          <ActionBtn label={t('sellHotel')} onClick={() => onSellHotel(p.position)} />
                         )}
                         {!p.hotel && p.houses === 0 && (
-                          <ActionBtn label="Mortgage" onClick={() => onMortgage(p.position)} disabled={!canMortgage} />
+                          <ActionBtn label={t('mortgage')} onClick={() => onMortgage(p.position)} disabled={!canMortgage} />
                         )}
                         {onSellProperty && !p.hotel && p.houses === 0 && (
-                          <ActionBtn label="Sell to Bank" onClick={() => onSellProperty(p.position)} />
+                          <ActionBtn label={t('sellToBank')} onClick={() => onSellProperty(p.position)} />
                         )}
                       </>
                     )}
@@ -160,7 +165,7 @@ export function ManagePropertiesModal({
           className="rounded border border-line-2 bg-surface font-display text-[1em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
           style={{ padding: '0.55em 1em' }}
         >
-          Close
+          {t('close')}
         </button>
       </div>
     </div>

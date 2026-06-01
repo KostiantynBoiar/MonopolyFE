@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { TOKEN_COLORS } from '@/features/player-panel';
 import { cn } from '@/shared/lib/cn';
 import { TradeParty } from '../trade.enums';
@@ -9,6 +10,21 @@ import { DeedCard } from '@/features/deed';
 import { getDeedInfo } from '@/features/deed';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function JailFreeCard({ count }: { count: number }) {
+  const t = useTranslations('Trade');
+  return (
+    <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1">
+      <span className="text-[0.85em]">🎴</span>
+      <span className="font-sans text-[0.75em] text-ink">{count}× {t('jailFree')}</span>
+    </div>
+  );
+}
+
+function NothingLabel() {
+  const t = useTranslations('Trade');
+  return <span className="font-sans text-[0.75em] italic text-muted">{t('nothing')}</span>;
+}
 
 function resolveViewerRole(viewerId: string, proposerId: string, targetId: string): TradeParty {
   if (viewerId === proposerId) return TradeParty.PROPOSER;
@@ -64,12 +80,7 @@ function OfferSide({
           </div>
         )}
         {offer.getOutOfJailCards > 0 && (
-          <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1">
-            <span className="text-[0.85em]">🎴</span>
-            <span className="font-sans text-[0.75em] text-ink">
-              {offer.getOutOfJailCards}× Jail Free
-            </span>
-          </div>
+          <JailFreeCard count={offer.getOutOfJailCards} />
         )}
       </div>
 
@@ -93,7 +104,7 @@ function OfferSide({
       )}
 
       {isEmpty && (
-        <span className="font-sans text-[0.75em] italic text-muted">— nothing —</span>
+        <NothingLabel />
       )}
     </div>
   );
@@ -111,31 +122,32 @@ export function TradeWindow({
   onCounter,
   onCancel,
 }: TradeWindowProps) {
+  const t = useTranslations('Trade');
   const viewerRole = resolveViewerRole(viewerId, trade.proposerId, trade.targetId);
 
   const proposerLabel =
-    viewerRole === TradeParty.PROPOSER ? 'You give'
-    : viewerRole === TradeParty.TARGET  ? `${proposer.name} offers`
-    : `${proposer.name} gives`;
+    viewerRole === TradeParty.PROPOSER ? t('youGive')
+    : viewerRole === TradeParty.TARGET  ? t('offers', { name: proposer.name })
+    : t('gives', { name: proposer.name });
 
   const targetLabel =
-    viewerRole === TradeParty.TARGET    ? 'You give back'
-    : viewerRole === TradeParty.PROPOSER ? `${target.name} gives back`
-    : `${target.name} gives`;
+    viewerRole === TradeParty.TARGET    ? t('youGiveBack')
+    : viewerRole === TradeParty.PROPOSER ? t('givesBack', { name: target.name })
+    : t('gives', { name: target.name });
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-paper">
       {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b-2 border-ink/20 bg-ink px-4 py-2.5">
         <span className="font-mono text-[0.72em] font-bold uppercase tracking-widest text-white/70">
-          Trade Offer
+          {t('header')}
         </span>
         <span className="ml-auto font-sans text-[0.68em] italic text-white/50">
           {viewerRole === TradeParty.TARGET
-            ? `${proposer.name} sent you an offer`
+            ? t('sentOffer', { name: proposer.name })
             : viewerRole === TradeParty.PROPOSER
-            ? `Waiting for ${target.name}…`
-            : `${proposer.name} ↔ ${target.name}`}
+            ? t('waitingFor', { name: target.name })
+            : t('exchange', { proposer: proposer.name, target: target.name })}
         </span>
       </div>
 
@@ -169,7 +181,7 @@ export function TradeWindow({
               className="rounded border border-line-2 bg-surface font-display text-[0.65em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
               style={{ padding: '0.55em 1em' }}
             >
-              Reject
+              {t('reject')}
             </button>
             {onCounter && (
               <button
@@ -177,7 +189,7 @@ export function TradeWindow({
                 className="rounded border border-line-2 bg-surface font-display text-[0.65em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
                 style={{ padding: '0.55em 1em' }}
               >
-                Counter
+                {t('counter')}
               </button>
             )}
             <button
@@ -185,7 +197,7 @@ export function TradeWindow({
               className="rounded border border-gold-600 bg-gold font-display text-[0.65em] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-gold-600"
               style={{ padding: '0.55em 1em' }}
             >
-              Accept
+              {t('accept')}
             </button>
           </>
         )}
@@ -195,12 +207,12 @@ export function TradeWindow({
             className="rounded border border-line-2 bg-surface font-display text-[0.65em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
             style={{ padding: '0.55em 1em' }}
           >
-            Withdraw
+            {t('withdraw')}
           </button>
         )}
         {viewerRole === TradeParty.OBSERVER && (
           <span className="font-sans text-[0.68em] italic text-muted">
-            Spectating
+            {t('spectating')}
           </span>
         )}
       </div>

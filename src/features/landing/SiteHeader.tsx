@@ -1,14 +1,18 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { MobileNav } from './MobileNav';
 import { Badge, Container, ThemeToggle } from '@/shared/ui';
 import { UserMenu } from '@/features/auth/components/UserMenu';
+import { LocaleSwitcher } from '@/shared/ui/LocaleSwitcher';
 
-const navLinks = [
-  { href: '/how-to-play', label: 'How to play' },
-  { href: '/leaderboard', label: 'Leaderboard' },
-] as const;
+export async function SiteHeader() {
+  const t = await getTranslations('Landing');
 
-export function SiteHeader() {
+  const navLinks = [
+    { href: '/how-to-play', label: t('howToPlay') },
+    { href: '/leaderboard', label: t('leaderboard') },
+  ] as const;
+
   return (
     <header className="relative border-b border-line bg-surface">
       <Container className="flex h-16 items-center justify-between gap-4">
@@ -31,6 +35,7 @@ export function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          <LocaleSwitcher />
           <ThemeToggle />
           <UserMenu />
         </nav>

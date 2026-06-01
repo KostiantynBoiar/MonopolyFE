@@ -37,37 +37,37 @@ export type GameEvent =
 // BOARD DEFINITIONS (IMMUTABLE — sent once in snapshot)
 // ======================================================
 
-export type PropertyDefinition = {
-  position:      number;
-  name:          string;
-  color:         PropertyColor;
-  price:         number;
-  mortgageValue: number;
-  houseCost:     number;
-  rents: {
-    base:        number;
-    monopoly:    number;
-    oneHouse:    number;
-    twoHouses:   number;
-    threeHouses: number;
-    fourHouses:  number;
-    hotel:       number;
+export interface PropertyDefinition {
+  readonly position:      number;
+  readonly name:          string;
+  readonly color:         PropertyColor;
+  readonly price:         number;
+  readonly mortgageValue: number;
+  readonly houseCost:     number;
+  readonly rents: {
+    readonly base:        number;
+    readonly monopoly:    number;
+    readonly oneHouse:    number;
+    readonly twoHouses:   number;
+    readonly threeHouses: number;
+    readonly fourHouses:  number;
+    readonly hotel:       number;
   };
-};
+}
 
-export type RailroadDefinition = {
-  position:      number;
-  name:          string;
-  price:         number;
-  mortgageValue: number;
-};
+export interface RailroadDefinition {
+  readonly position:      number;
+  readonly name:          string;
+  readonly price:         number;
+  readonly mortgageValue: number;
+}
 
-export type UtilityDefinition = {
-  position:      number;
-  name:          string;
-  price:         number;
-  mortgageValue: number;
-};
+export interface UtilityDefinition {
+  readonly position:      number;
+  readonly name:          string;
+  readonly price:         number;
+  readonly mortgageValue: number;
+}
 
 export type BoardSpaceDefinition =
   | { position: number; type: BoardSpaceType.PROPERTY;  property: PropertyDefinition }
@@ -91,32 +91,32 @@ export type BoardSpaceDefinition =
 // BANK
 // ======================================================
 
-export type BankState = {
+export interface BankState {
   availableHouses: number;
   availableHotels: number;
-};
+}
 
 // ======================================================
 // PROPERTY OWNERSHIP
 // ======================================================
 
-export type PropertyState = {
+export interface PropertyState {
   position:    number;
   ownerId:     string | null;
   houses:      0 | 1 | 2 | 3 | 4;
   hotel:       boolean;
   isMortgaged: boolean;
-};
+}
 
 // ======================================================
 // PLAYERS
 // ======================================================
 
-export type JailStatus = {
+export interface JailStatus {
   attempts: number;
-};
+}
 
-export type PlayerState = {
+export interface PlayerState {
   id:                 string;
   userId:             string;
   displayName:        string;
@@ -129,19 +129,19 @@ export type PlayerState = {
   jailStatus:         JailStatus | null;
   isBankrupt:         boolean;
   isConnected:        boolean;
-};
+}
 
 // ======================================================
 // TURN
 // ======================================================
 
-export type DiceRoll = {
+export interface DiceRoll {
   die1:      number;
   die2:      number;
   isDoubles: boolean;
-};
+}
 
-export type TurnState = {
+export interface TurnState {
   phase:              TurnPhase;
   currentPlayerId:    string;
   turnNumber:         number;
@@ -150,52 +150,52 @@ export type TurnState = {
   doublesStreak:      number;
   extraTurn:          boolean;
   pendingBuyPosition: number | null;
-};
+}
 
 // ======================================================
 // DEBT
 // ======================================================
 
-export type DebtState = {
+export interface DebtState {
   debtorId:     string;
   creditorType: DebtCreditorType;
   creditorId:   string | null;
   amount:       number;
-};
+}
 
 // ======================================================
 // AUCTIONS
 // ======================================================
 
-export type AuctionBid = {
+export interface AuctionBid {
   playerId: string;
   amount:   number;
-};
+}
 
 export type AuctionTarget =
   | { kind: AuctionTargetKind.PROPERTY; position: number }
   | { kind: AuctionTargetKind.HOUSE }
   | { kind: AuctionTargetKind.HOTEL };
 
-export type AuctionState = {
+export interface AuctionState {
   target:           AuctionTarget;
   bids:             AuctionBid[];
   highestBid:       number;
   highestBidderId:  string | null;
   timeRemainingMs:  number;
-};
+}
 
 // ======================================================
 // TRADING
 // ======================================================
 
-export type TradeOffer = {
+export interface TradeOffer {
   money:              number;
   positions:          number[];
   getOutOfJailCards:  number;
-};
+}
 
-export type TradeState = {
+export interface TradeState {
   id:            string;
   proposerId:    string;
   targetId:      string;
@@ -203,7 +203,7 @@ export type TradeState = {
   targetRequest: TradeOffer;
   status:        TradeStatus;
   expiresAt:     IsoDateString;
-};
+}
 
 // ======================================================
 // CARDS
@@ -221,36 +221,36 @@ export type CardEffect =
   | { type: CardEffectType.GET_OUT_OF_JAIL_FREE }
   | { type: CardEffectType.REPAIRS;                 perHouse: number; perHotel: number };
 
-export type ActiveCard = {
+export interface ActiveCard {
   id:       string;
   kind:     CardKind;
   text:     string;
   effect:   CardEffect;
   drawerId: string;
-};
+}
 
-export type DeckState = {
+export interface DeckState {
   chance:                  string[];
   communityChest:          string[];
   discardedChance:         string[];
   discardedCommunityChest: string[];
-};
+}
 
 // ======================================================
 // BANKRUPTCY
 // ======================================================
 
-export type BankruptcyState = {
+export interface BankruptcyState {
   playerId:     string;
   creditorType: DebtCreditorType;
   creditorId:   string | null;
-};
+}
 
 // ======================================================
 // LOG
 // ======================================================
 
-export type LogEntry = {
+export interface LogEntry {
   id:           string;
   kind:         LogKind;
   playerId?:    string;
@@ -261,13 +261,13 @@ export type LogEntry = {
   ts:           IsoDateString;
   /** Machine-readable payload for EVENT-kind entries. Absent for chat/sticker. */
   event?:       GameEvent;
-};
+}
 
 // ======================================================
 // ROOT GAME STATE
 // ======================================================
 
-export type GameState = {
+export interface GameState {
   gameId:      string;
   sessionCode: string;
   status:      GameStatus;
@@ -287,4 +287,4 @@ export type GameState = {
   bankruptcy:  BankruptcyState | null;
   decks:       DeckState;
   log:         LogEntry[];
-};
+}

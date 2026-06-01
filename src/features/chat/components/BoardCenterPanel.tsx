@@ -12,6 +12,7 @@ import { JailModal } from '@/features/jail';
 import { DebtModal } from '@/features/bankruptcy';
 import { AuctionPanel } from '@/features/auction';
 import { ManagePropertiesModal } from '@/features/manage';
+import { useTranslations } from 'next-intl';
 import { StickerPack, BoardCenterPanelProps, Action } from '../chat.types';
 import { ActionKey } from '../chat.enums';
 import { LogKind } from '@/shared/protocol/game-state.enums';
@@ -287,6 +288,7 @@ export function BoardCenterPanel({
   compact = false,
 }: BoardCenterPanelProps & { compact?: boolean }) {
   // Hooks must come before any early return (React rules of hooks).
+  const t = useTranslations('Game');
   const bottomRef  = useRef<HTMLDivElement>(null);
   const pickerRef  = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
@@ -332,19 +334,19 @@ export function BoardCenterPanel({
   }
 
   const actions: Action[] = [
-    canManage && { key: ActionKey.MANAGE, label: 'Manage',       enabled: true, handler: onManage },
-    canBuy    && { key: ActionKey.BUY,    label: 'Buy Property', enabled: true, handler: onBuy },
-    canTrade  && { key: ActionKey.TRADE,  label: 'Trade',        enabled: true, handler: onTrade },
+    canManage && { key: ActionKey.MANAGE, label: t('manage'),       enabled: true, handler: onManage },
+    canBuy    && { key: ActionKey.BUY,    label: t('buyProperty'),  enabled: true, handler: onBuy },
+    canTrade  && { key: ActionKey.TRADE,  label: t('trade'),        enabled: true, handler: onTrade },
     canRoll && {
       key: ActionKey.ROLL,
-      label: isRolling ? 'Rolling…' : 'Roll Dice',
+      label: isRolling ? t('rolling') : t('rollDice'),
       primary: true,
       enabled: canRoll && !isRolling,
       handler: onRoll,
     },
     canEndTurn && {
       key: ActionKey.END_TURN,
-      label: 'End Turn',
+      label: t('endTurn'),
       primary: true,
       enabled: true,
       handler: onEndTurn,
@@ -390,7 +392,7 @@ export function BoardCenterPanel({
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
                 <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
-                  Game Log
+                  {t('gameLog')}
                 </span>
               </div>
               <div
@@ -417,7 +419,7 @@ export function BoardCenterPanel({
             <div className="flex w-2/5 shrink-0 flex-col border-l border-line">
               <div className="flex shrink-0 items-center border-b border-line bg-line/30 px-3 py-2">
                 <span className="font-mono text-[0.82em] font-semibold uppercase tracking-widest text-muted">
-                  Actions
+                  {t('gameLog')}
                 </span>
               </div>
               <div className="flex flex-1 flex-col justify-end gap-1.5 p-2">
@@ -451,7 +453,7 @@ export function BoardCenterPanel({
             <div className="flex items-center gap-1.5">
               <input
                 className="h-8 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-[0.82em] text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-                placeholder="Message…"
+                placeholder={t('messagePlaceholder')}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && sendText()}
@@ -464,7 +466,7 @@ export function BoardCenterPanel({
                     ? 'border-ink bg-ink text-white'
                     : 'border-line-2 bg-surface text-muted hover:border-line hover:text-ink',
                 )}
-                title="Stickers"
+                title={t('messagePlaceholder')}
               >
                 <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
                   <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="1.5" />

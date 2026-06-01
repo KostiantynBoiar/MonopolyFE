@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import type { LogEntry } from '@/shared/protocol/game-state';
-import type { DiceRoll } from '@/features/chat/chat.types';
+import type { DiceRoll, LogEntry } from '@/shared/protocol/game-state';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 
 interface Props {
@@ -59,6 +59,7 @@ export function MobileGamePanel({
   log, diceRoll, isRolling, canRoll, canEndTurn, canManage, canTrade,
   onRoll, onEndTurn, onManage, onTrade, onSendMessage,
 }: Props) {
+  const t = useTranslations('Game');
   const bottomRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState('');
 
@@ -84,17 +85,17 @@ export function MobileGamePanel({
           </div>
         )}
         <div className="flex flex-1 flex-wrap gap-1.5">
-          {canManage && <ActionBtn label="Manage"   enabled onClick={onManage} />}
-          {canTrade  && <ActionBtn label="Trade"    enabled onClick={onTrade} />}
-          {canRoll   && <ActionBtn label={isRolling ? 'Rolling…' : 'Roll'} primary enabled={!isRolling} onClick={onRoll} />}
-          {canEndTurn && <ActionBtn label="End Turn" primary enabled onClick={onEndTurn} />}
+          {canManage && <ActionBtn label={t('manage')}   enabled onClick={onManage} />}
+          {canTrade  && <ActionBtn label={t('trade')}    enabled onClick={onTrade} />}
+          {canRoll   && <ActionBtn label={isRolling ? t('rolling') : t('roll')} primary enabled={!isRolling} onClick={onRoll} />}
+          {canEndTurn && <ActionBtn label={t('endTurn')} primary enabled onClick={onEndTurn} />}
         </div>
       </div>
 
       {/* Game log */}
       <div className="shrink-0 border-b border-line bg-line/20 px-3 py-1">
         <span className="font-mono text-[0.68rem] font-semibold uppercase tracking-widest text-muted">
-          Game Log
+          {t('gameLog')}
         </span>
       </div>
       <div
@@ -127,7 +128,7 @@ export function MobileGamePanel({
         <div className="flex items-center gap-1.5">
           <input
             className="h-9 min-w-0 flex-1 rounded border border-line-2 bg-surface px-3 font-sans text-sm text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-            placeholder="Message…"
+            placeholder={t('messagePlaceholder')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendText()}

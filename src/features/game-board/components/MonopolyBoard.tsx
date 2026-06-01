@@ -1,7 +1,7 @@
 'use client';
 
 import { BOARD, getGridPos, getTileEdge, getTileCenter } from '../board-data';
-import type { TileEdge } from '../game-board.enums';
+import { SpaceType, TileEdge } from '../game-board.enums';
 import type { BoardPlayer, WalkingPlayer } from '../game-board.types';
 import { getProperty, getOwner, isMortgaged } from '@/shared/protocol/selectors';
 import { PropertyTile } from './PropertyTile';
@@ -13,10 +13,10 @@ import type { TileContentProps, MonopolyBoardProps } from '../game-board.types';
 // ─── Tile rendering ───────────────────────────────────────────────────────────
 
 function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps) {
-  if (space.type === 'corner') {
+  if (space.type === SpaceType.CORNER) {
     return <CornerTile variant={space.corner!} />;
   }
-  if (space.type === 'property') {
+  if (space.type === SpaceType.PROPERTY) {
     const houses = ownership?.hotel ? 5 : ((ownership?.houses ?? 0) as 0 | 1 | 2 | 3 | 4 | 5);
     return (
       <PropertyTile
@@ -45,11 +45,11 @@ function TileContent({ space, ownership, ownerColor, flipped }: TileContentProps
 // ─── Edge wrapper ─────────────────────────────────────────────────────────────
 
 function EdgeWrapper({ edge, children }: { edge: TileEdge; children: React.ReactNode }) {
-  if (edge === 'corner' || edge === 'bottom' || edge === 'top') {
+  if (edge === TileEdge.CORNER || edge === TileEdge.BOTTOM || edge === TileEdge.TOP) {
     return <div className="h-full w-full">{children}</div>;
   }
 
-  const rotation = edge === 'left' ? 'rotate(90deg)' : 'rotate(-90deg)';
+  const rotation = edge === TileEdge.LEFT ? 'rotate(90deg)' : 'rotate(-90deg)';
   return (
     <div className="relative overflow-hidden" style={{ width: W, height: N }}>
       <div

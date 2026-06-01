@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
-import { DM_Mono, Fraunces, Hanken_Grotesk } from 'next/font/google';
+import { DM_Mono, Fraunces, Roboto_Flex } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import { IconSprite } from '@/shared/ui/IconSprite';
 import { ThemeProvider } from '@/shared/ui/ThemeProvider';
 import './globals.css';
@@ -13,10 +15,10 @@ const fraunces = Fraunces({
   style: ['normal', 'italic'],
 });
 
-const hanken = Hanken_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-hanken',
-  weight: ['400', '500', '600', '700'],
+// Roboto Flex is a variable font with Cyrillic support — required for Ukrainian text.
+const robotoFlex = Roboto_Flex({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-hanken', // reuses existing CSS var so Tailwind config is unchanged
 });
 
 const dmMono = DM_Mono({
@@ -33,18 +35,23 @@ export const metadata: Metadata = {
   description: 'Play the classic property game online with friends.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning className={`${fraunces.variable} ${hanken.variable} ${dmMono.variable}`}>
+    <html lang={locale} suppressHydrationWarning className={`${fraunces.variable} ${robotoFlex.variable} ${dmMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body suppressHydrationWarning>
-        <ThemeProvider>
-          <IconSprite />
-          {children}
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider>
+            <IconSprite />
+            {children}
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
