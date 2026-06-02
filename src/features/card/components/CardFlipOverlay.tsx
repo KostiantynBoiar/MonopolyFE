@@ -78,7 +78,7 @@ function CardBack({ card, label }: { card: CardFlipOverlayProps['card']; label: 
 
 // ─── Main overlay ─────────────────────────────────────────────────────────────
 
-export function CardFlipOverlay({ card, onProceed }: CardFlipOverlayProps) {
+export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlipOverlayProps) {
   const t = useTranslations('Card');
   const label = t(card.kind as CardKind);
   const [flipState, setFlipState] = useState<CardFlipState>(CardFlipState.IDLE);
@@ -141,19 +141,30 @@ export function CardFlipOverlay({ card, onProceed }: CardFlipOverlayProps) {
         </div>
       </div>
 
-      {/* Proceed button */}
-      <button
-        onClick={onProceed}
-        className={cn(
-          'rounded border border-gold-600 bg-gold px-5 font-display font-semibold uppercase tracking-wide text-white',
-          'transition-all duration-300 hover:bg-gold-600',
-          'text-[0.68em]',
-          showProceed ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-1',
-        )}
-        style={{ padding: '0.55em 1.2em' }}
-      >
-        {t('proceed')}
-      </button>
+      {/* Proceed button — only the affected player gets it; others see a waiting hint. */}
+      {canProceed ? (
+        <button
+          onClick={onProceed}
+          className={cn(
+            'rounded border border-gold-600 bg-gold px-5 font-display font-semibold uppercase tracking-wide text-white',
+            'transition-all duration-300 hover:bg-gold-600',
+            'text-[0.68em]',
+            showProceed ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-1',
+          )}
+          style={{ padding: '0.55em 1.2em' }}
+        >
+          {t('proceed')}
+        </button>
+      ) : (
+        <span
+          className={cn(
+            'font-display text-[0.6em] uppercase tracking-wide text-white/60 transition-opacity duration-300',
+            showProceed ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          {t('waiting')}
+        </span>
+      )}
     </div>
   );
 }

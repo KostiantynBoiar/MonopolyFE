@@ -229,6 +229,7 @@ export function BoardCenterPanel({
   onSendMessage,
   activeCard = null,
   onCardProceed,
+  canCardProceed = true,
   activeDeed = null,
   canBuyDeed = true,
   canManageDeed = false,
@@ -497,7 +498,7 @@ export function BoardCenterPanel({
       {/* ── Card flip overlay ── highest priority overlay; always on top ── */}
       {activeCard && (
         <div className="absolute inset-0 z-30 flex items-center justify-center">
-          <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} />
+          <CardFlipOverlay card={activeCard} onProceed={onCardProceed ?? (() => {})} canProceed={canCardProceed} />
         </div>
       )}
 

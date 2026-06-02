@@ -36,6 +36,7 @@ import {
 } from '@/shared/protocol/game-state.enums';
 import type { GameSnapshot, PlayerPermissions } from '@/shared/protocol/permissions';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
+import type { AnimationInstruction } from '@/shared/protocol/animation';
 
 // ─── Backend wire shapes (snake_case) ─────────────────────────────────────────
 // Minimal structural typing of the payload we receive in a `game.state` frame.
@@ -174,7 +175,15 @@ export interface BeGameState {
   bank_houses?: number;
   bank_hotels?: number;
   log?: BeLogEntry[];
+  animation_timeline?: BeAnimationInstruction[];
 }
+
+// Wire (snake_case) animation instructions; mapped to the camelCase union.
+type BeAnimationInstruction =
+  | { type: 'roll_dice'; player_id: string; die1: number; die2: number; is_doubles: boolean }
+  | { type: 'move'; player_id: string; from_position: number; to_position: number; speed: 'normal' | 'fast'; reason: 'dice' | 'card' | 'teleport' | 'jail' }
+  | { type: 'show_card'; card: BeActiveCard }
+  | { type: 'wait_for_player'; interaction_id: string };
 
 // ─── Field mappers ────────────────────────────────────────────────────────────
 
@@ -258,6 +267,29 @@ function mapTrade(t: BeTrade | null | undefined): TradeState | null {
     status: t.status as TradeStatus,
     expiresAt: t.expires_at,
   };
+}
+
+function mapTimeline(raw: BeAnimationInstruction[] | undefined): AnimationInstruction[] {
+  if (!raw) return [];
+  return raw.map((i): AnimationInstruction => {
+    switch (i.type) {
+      case 'roll_dice':
+        return { type: 'roll_dice', playerId: i.player_id, die1: i.die1, die2: i.die2, isDoubles: i.is_doubles };
+      case 'move':
+        return {
+          type: 'move',
+          playerId: i.player_id,
+          fromPosition: i.from_position,
+          toPosition: i.to_position,
+          speed: i.speed,
+          reason: i.reason,
+        };
+      case 'show_card':
+        return { type: 'show_card', card: mapActiveCard(i.card)! };
+      case 'wait_for_player':
+        return { type: 'wait_for_player', interactionId: i.interaction_id };
+    }
+  });
 }
 
 function mapActiveCard(c: BeActiveCard | null | undefined): ActiveCard | null {
@@ -375,7 +407,11 @@ export function adaptGameStateFrame(payload: BeGameState): GameSnapshot {
     log: mapLog(payload.log),
   };
 
-  return { game, permissions: derivePermissions(payload) };
+  return {
+    game,
+    permissions: derivePermissions(payload),
+    animationTimeline: mapTimeline(payload.animation_timeline),
+  };
 }
 
 /** A safe, empty snapshot for before the first server frame arrives. */
@@ -410,5 +446,5 @@ export function emptySnapshot(): GameSnapshot {
     decks: { chance: [], communityChest: [], discardedChance: [], discardedCommunityChest: [] },
     log: [],
   };
-  return { game, permissions: EMPTY_PERMISSIONS };
+  return { game, permissions: EMPTY_PERMISSIONS, animationTimeline: [] };
 }

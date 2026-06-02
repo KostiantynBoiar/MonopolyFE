@@ -28,7 +28,7 @@ import type { ManageProperty } from '@/features/manage';
 import type { TradeParticipant, TradeAsset } from '@/features/trade';
 import type { TradeOffer } from '@/shared/protocol/game-state';
 import { useGameStore, useUiStore, useSocketStore } from '@/stores';
-import { resolveCardGate } from '@/shared/socket/snapshot-animator';
+import { resolveAnimationGate } from '@/shared/socket/timeline-executor';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
 import { AuctionPanel } from '@/features/auction';
@@ -142,13 +142,24 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     dispatch({ type: CommandType.EndTurn });
   }, [permissions.canEndTurn, dispatch]);
 
-  // Cards are auto-resolved by the backend. "Proceed" (1) unblocks the snapshot
-  // pipeline so the resolved frame can be applied and (2) dismisses the overlay
-  // locally so the card disappears immediately rather than waiting for the commit.
+  // "Continue" resumes the paused animation timeline. When a wait_for_player gate is
+  // active we tell the server (which authorizes the affected player and fans the signal
+  // out to every client) and optimistically un-pause our own replay. If there's no gate
+  // (e.g. a card shown via state on reconnect), just dismiss the overlay locally.
   const handleCardProceed = useCallback(() => {
-    resolveCardGate();
-    updateGame((g) => ({ ...g, activeCard: null }));
-  }, [updateGame]);
+    const interactionId = useUiStore.getState().pendingInteractionId;
+    if (interactionId) {
+      dispatch({ type: CommandType.AnimationContinue, interactionId });
+      resolveAnimationGate(interactionId);
+    } else {
+      updateGame((g) => ({ ...g, activeCard: null }));
+    }
+  }, [dispatch, updateGame]);
+
+  // Only the player whose turn it is may resume a card pause; spectators wait for the
+  // server's continue broadcast.
+  const isCurrentViewer =
+    !gameState.viewerId || gameState.viewerId === gameState.turn.currentPlayerId;
 
   const handleBuy = useCallback(() => {
     if (!activeDeed) return;
@@ -342,6 +353,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   const cardOverlayProps: CardOverlayProps = {
     activeCard:    gameState.activeCard,
     onCardProceed: handleCardProceed,
+    canCardProceed: isCurrentViewer,
   };
 
   const deedOverlayProps: DeedOverlayProps = {
@@ -497,7 +509,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         {/* Full-screen overlays for deed / card / jail / debt / manage / trade-builder */}
         {gameState.activeCard && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
-            <CardFlipOverlay card={gameState.activeCard} onProceed={handleCardProceed} />
+            <CardFlipOverlay card={gameState.activeCard} onProceed={handleCardProceed} canProceed={isCurrentViewer} />
           </div>
         )}
         {activeDeed && (

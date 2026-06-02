@@ -20,7 +20,8 @@
   "Card": {
     "chance": "ШАНС",
     "community_chest": "СКАРБНИЦЯ",
-    "proceed": "Далі"
+    "proceed": "Далі",
+    "waiting": "Очікування…"
   },
 
   "Deed": {
