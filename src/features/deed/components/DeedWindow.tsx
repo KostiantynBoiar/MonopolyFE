@@ -144,22 +144,23 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
         ) : null}
 
         {isDeed && deed ? (
-          <div className="grid min-h-0 content-center gap-[3px] text-[12px]" style={{ color: '#1e1e1e' }}>
+          <div className="grid min-h-0 content-center gap-[4px]" style={{ color: '#1e1e1e' }}>
             {deed.rentRows.slice(1).map((row) => (
               <div
                 key={row.labelKey}
-                className="grid grid-cols-[minmax(0,1fr)_minmax(28px,1fr)_auto] items-center gap-2"
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 text-[12px]"
               >
-                <span className="text-right font-medium leading-tight">
+                <span className="font-medium leading-[1.2] tracking-[0.01em]">
                   {formatLabel(row.labelKey)}
                 </span>
                 <span
-                  className="block h-px w-full"
-                  style={{
-                    backgroundColor: GAME_BOARD_COLORS.deedRule,
-                  }}
+                  className="block translate-y-[-1px] border-b border-dotted"
+                  style={{ borderColor: GAME_BOARD_COLORS.deedRule }}
                 />
-                <span className="shrink-0 text-left font-bold">
+                <span
+                  className="text-right font-bold tabular-nums leading-none"
+                  style={{ fontVariantNumeric: 'tabular-nums' }}
+                >
                   ${row.amount.replace(/^M/, '')}
                 </span>
               </div>

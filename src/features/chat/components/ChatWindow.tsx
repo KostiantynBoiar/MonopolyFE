@@ -134,7 +134,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
 
   return (
     <section
-      className="grid h-full min-h-0 overflow-hidden rounded-[16px] border p-[6px]"
+      className="relative grid h-full min-h-0 gap-[3px] overflow-hidden rounded-[16px] border p-[6px]"
       style={{
         gridTemplateRows: 'calc(100% / 12) minmax(0, 1fr) calc(100% / 6)',
         backgroundColor: GAME_BOARD_COLORS.widgetSurface,
@@ -148,7 +148,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
       >
         <button
           type="button"
-          className="flex items-start justify-center gap-2 border-r px-3 pt-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
+          className="flex min-h-0 items-center justify-center gap-2 border-r px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
           style={{
             backgroundColor:
               activeTab === ChatWindowTab.EVENTS ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
@@ -163,7 +163,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
 
         <button
           type="button"
-          className="flex items-start justify-center gap-2 px-3 pt-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
+          className="flex min-h-0 items-center justify-center gap-2 px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
           style={{
             backgroundColor:
               activeTab === ChatWindowTab.CHAT ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
@@ -195,7 +195,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
         }}
       >
         {activeTab === ChatWindowTab.EVENTS ? (
-          <div className="flex h-full min-h-0 flex-col gap-1.5 overflow-hidden">
+          <div className="flex h-full min-h-0 flex-col gap-[3px] overflow-y-auto pr-[2px]">
             {eventEntries.map((entry) => (
               <div
                 key={entry.id}
@@ -206,7 +206,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
                 }}
               >
                 <p
-                  className="truncate text-left text-[12px]"
+                  className="text-left text-[12px] leading-[1.35]"
                   style={{ color: GAME_BOARD_COLORS.widgetText }}
                   title={`${formatTime(new Date(entry.ts).getTime())} | ${entry.playerName ?? 'Table'}: ${entry.text}`}
                 >
@@ -217,15 +217,15 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
             <div ref={scrollRef} />
           </div>
         ) : (
-          <div className="flex h-full min-h-0 flex-col gap-1.5 overflow-hidden">
+          <div className="flex h-full min-h-0 flex-col gap-[3px] overflow-y-auto pr-[2px]">
             {messages.map((entry) => {
               const stickerUrl = getStickerUrl(entry.text);
 
               return (
                 <div
                   key={entry.id}
-                className="rounded-[8px] border px-2 py-1.5"
-                style={{
+                  className="rounded-[8px] border px-2 py-1.5"
+                  style={{
                     backgroundColor: GAME_BOARD_COLORS.widgetSurface,
                     borderColor: GAME_BOARD_COLORS.widgetBorder,
                   }}
@@ -251,7 +251,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
                     </div>
                   ) : (
                     <p
-                      className="truncate text-left text-[12px]"
+                      className="text-left text-[12px] leading-[1.35]"
                       style={{ color: GAME_BOARD_COLORS.widgetText }}
                       title={`${formatTime(entry.ts)} | ${entry.author ?? 'Player'}: ${entry.text}`}
                     >
@@ -284,47 +284,51 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
       </div>
 
       <div
-        className="relative grid min-h-0 grid-cols-[minmax(0,1fr)_40px_auto] gap-2 rounded-[10px] border px-3 py-2"
+        className="grid min-h-0 grid-cols-[minmax(0,1fr)_40px] gap-[3px]"
         style={{
-          borderColor: GAME_BOARD_COLORS.widgetBorder,
-          backgroundColor: GAME_BOARD_COLORS.widgetSurfaceAlt,
+          color: GAME_BOARD_COLORS.widgetText,
         }}
       >
-        <textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className="h-full min-h-0 resize-none rounded-[10px] border px-3 py-2 text-[12px] leading-tight outline-none"
+        <div
+          className="relative h-10 min-h-0 rounded-[10px] border"
           style={{
             backgroundColor: GAME_BOARD_COLORS.tileSurface,
             borderColor: GAME_BOARD_COLORS.widgetBorder,
-            color: GAME_BOARD_COLORS.widgetText,
           }}
-        />
-        <button
-          type="button"
-          onClick={() => setShowStickers((value) => !value)}
-          className="flex h-full w-10 items-center justify-center rounded-[10px] border p-0"
-          style={{
-            backgroundColor: showStickers ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.tileSurface,
-            borderColor: GAME_BOARD_COLORS.widgetBorder,
-            color: showStickers ? GAME_BOARD_COLORS.widgetHeaderText : GAME_BOARD_COLORS.widgetText,
-          }}
-          title="Stickers"
-          aria-label="Open stickers"
         >
-          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
-            <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="7.5" cy="8" r="1" fill="currentColor" />
-            <circle cx="12.5" cy="8" r="1" fill="currentColor" />
-            <path d="M7 12c1 1 5 1 6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
+          <textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-11 py-[10px] text-[12px] leading-tight outline-none"
+            style={{
+              color: GAME_BOARD_COLORS.widgetText,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowStickers((value) => !value)}
+            className="absolute right-[3px] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
+            style={{
+              backgroundColor: showStickers ? GAME_BOARD_COLORS.widgetHeader : 'transparent',
+              color: showStickers ? GAME_BOARD_COLORS.widgetHeaderText : GAME_BOARD_COLORS.widgetText,
+            }}
+            title="Stickers"
+            aria-label="Open stickers"
+          >
+            <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+              <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="7.5" cy="8" r="1" fill="currentColor" />
+              <circle cx="12.5" cy="8" r="1" fill="currentColor" />
+              <path d="M7 12c1 1 5 1 6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleSend}
-          className="rounded-[10px] border px-4 py-2 text-[12px] font-semibold uppercase tracking-[0.16em]"
+          className="flex h-10 w-10 items-center justify-center rounded-[10px] border text-[12px] font-semibold uppercase tracking-[0.02em]"
           style={{
             backgroundColor: GAME_BOARD_COLORS.widgetAccent,
             borderColor: GAME_BOARD_COLORS.widgetAccentBorder,
@@ -333,49 +337,49 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
         >
           Send
         </button>
-        {showStickers && (
-          <div
-            className="absolute bottom-full left-3 z-10 mb-2 w-[236px] overflow-hidden rounded-[10px] border"
-            style={{
-              backgroundColor: GAME_BOARD_COLORS.widgetSurface,
-              borderColor: GAME_BOARD_COLORS.widgetBorder,
-            }}
-          >
-            {stickerPacks.length > 1 && (
-              <div className="flex gap-1 border-b p-2" style={{ borderColor: GAME_BOARD_COLORS.widgetBorder }}>
-                {stickerPacks.map((pack, index) => (
-                  <button
-                    key={pack.id}
-                    type="button"
-                    onClick={() => setPackIndex(index)}
-                    className="rounded-[8px] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
-                    style={{
-                      backgroundColor: index === packIndex ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
-                      color: index === packIndex ? GAME_BOARD_COLORS.widgetHeaderText : GAME_BOARD_COLORS.widgetText,
-                    }}
-                  >
-                    {pack.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="grid max-h-[220px] grid-cols-4 gap-2 overflow-y-auto p-2">
-              {activePack?.stickers.map((file, index) => {
-                const url = `/stickers/${activePack.id}/${file}`;
-                return (
-                  <StickerCell
-                    key={`${activePack.id}-${file}`}
-                    url={url}
-                    file={file}
-                    index={index}
-                    onSelect={() => handleSticker(url)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
+      {showStickers && (
+        <div
+          className="absolute bottom-[49px] left-[calc(100%-43px)] z-10 w-[236px] -translate-x-full overflow-hidden rounded-[10px] border"
+          style={{
+            backgroundColor: GAME_BOARD_COLORS.widgetSurface,
+            borderColor: GAME_BOARD_COLORS.widgetBorder,
+          }}
+        >
+          {stickerPacks.length > 1 && (
+            <div className="flex gap-[3px] border-b p-2" style={{ borderColor: GAME_BOARD_COLORS.widgetBorder }}>
+              {stickerPacks.map((pack, index) => (
+                <button
+                  key={pack.id}
+                  type="button"
+                  onClick={() => setPackIndex(index)}
+                  className="rounded-[8px] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  style={{
+                    backgroundColor: index === packIndex ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
+                    color: index === packIndex ? GAME_BOARD_COLORS.widgetHeaderText : GAME_BOARD_COLORS.widgetText,
+                  }}
+                >
+                  {pack.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="grid max-h-[220px] grid-cols-4 gap-[3px] overflow-y-auto p-2">
+            {activePack?.stickers.map((file, index) => {
+              const url = `/stickers/${activePack.id}/${file}`;
+              return (
+                <StickerCell
+                  key={`${activePack.id}-${file}`}
+                  url={url}
+                  file={file}
+                  index={index}
+                  onSelect={() => handleSticker(url)}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
