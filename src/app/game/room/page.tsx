@@ -172,6 +172,7 @@ export default function GameRoomPage() {
   const resetSocket = useSocketStore((state) => state.reset);
 
   const isRolling = useUiStore((state) => state.isRolling);
+  const isTimelineRunning = useUiStore((state) => state.isTimelineRunning);
   const walkState = useUiStore((state) => state.walkState);
   const animatedDiceRoll = useUiStore((state) => state.animatedDiceRoll);
   const animatedDiceRollId = useUiStore((state) => state.animatedDiceRollId);
@@ -413,7 +414,7 @@ export default function GameRoomPage() {
   const deedPanelSpace = isBuyDecisionForViewer && pendingBuySpace
     ? pendingBuySpace
     : deedBrowseSpace;
-  const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling;
+  const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling && !isTimelineRunning;
   const canManage =
     permissions.canBuildHouse ||
     permissions.canBuildHotel ||
