@@ -34,8 +34,14 @@ export type WaitForPlayerAnimation = {
   interactionId: string;
 };
 
+export type OpenDeedAnimation = {
+  type: 'open_deed';
+  position: number;
+};
+
 export type AnimationInstruction =
   | RollDiceAnimation
   | MoveAnimation
   | ShowCardAnimation
-  | WaitForPlayerAnimation;
+  | WaitForPlayerAnimation
+  | OpenDeedAnimation;

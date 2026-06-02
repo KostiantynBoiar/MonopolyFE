@@ -4,11 +4,19 @@ import { useEffect, useRef } from 'react';
 import type { GameState } from '@/shared/protocol/game-state';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
+import { onAnimation } from '@/shared/socket/timeline-executor';
 
 export function useBoardSfx(gameState: GameState) {
   // Preload all sounds once on mount (dice_roll/auction_bid preloaded for handler use too)
   useEffect(() => {
     preloadSfx('dice_roll', 'notification', 'auction_bid', 'passed_go');
+  }, []);
+
+  // Play sounds driven by the animation timeline so all players hear them together.
+  useEffect(() => {
+    return onAnimation((instr) => {
+      if (instr.type === 'roll_dice') playSfx('dice_roll');
+    });
   }, []);
 
   const prevAuctionRef = useRef(false);

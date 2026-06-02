@@ -85,6 +85,7 @@ export interface BoardTileProps {
   flavor: BoardTileFlavor;
   ownership?: PropertyState | null;
   players?: BoardPlayer[];
+  walkingPlayerIds?: Set<string>;
 }
 
 export interface BoardPlayer {

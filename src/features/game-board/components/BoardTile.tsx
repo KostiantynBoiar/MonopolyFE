@@ -165,7 +165,7 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
 
 // ─── BoardTile ────────────────────────────────────────────────────────────────
 
-export function BoardTile({ space, edge, flavor, ownership, players }: BoardTileProps) {
+export function BoardTile({ space, edge, flavor, ownership, players, walkingPlayerIds }: BoardTileProps) {
   // Dynamic key lookup for board position — eslint-disable-next-line needed
   // because next-intl's type system only accepts literal string keys.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,7 +211,7 @@ export function BoardTile({ space, edge, flavor, ownership, players }: BoardTile
             {justVisit}
           </p>
         )}
-        <PlayerMarker players={players} edge={edge} />
+        <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
       </article>
     );
   }
@@ -252,7 +252,7 @@ export function BoardTile({ space, edge, flavor, ownership, players }: BoardTile
             </p>
           )}
         </div>
-        <PlayerMarker players={players} edge={edge} />
+        <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
       </article>
     );
   }

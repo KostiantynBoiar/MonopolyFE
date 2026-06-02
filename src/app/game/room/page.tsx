@@ -36,6 +36,7 @@ import { AuctionTargetKind, GameStatus, TradeStatus, TurnPhase } from '@/shared/
 import type { GameState, PlayerState, TradeOffer } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { useGameSocket } from '@/shared/socket';
+import { resolveAnimationGate } from '@/shared/socket/timeline-executor';
 import { Button } from '@/shared/ui/Button';
 import { FullScreenSpinner, Spinner } from '@/shared/ui/Spinner';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
@@ -444,12 +445,12 @@ export default function GameRoomPage() {
     const pending = useUiStore.getState().pendingAnimationInteraction;
     if (pending) {
       dispatch({ type: CommandType.AnimationContinue, interactionId: pending.interactionId });
-      setPendingAnimationInteraction(null);
+      resolveAnimationGate(pending.interactionId);
       return;
     }
 
     dispatch({ type: CommandType.ResolveCard });
-  }, [dispatch, setPendingAnimationInteraction]);
+  }, [dispatch]);
 
   function renderCenterPanel() {
     if (activeCard) {
@@ -457,7 +458,7 @@ export default function GameRoomPage() {
         <CardFlipOverlay
           card={activeCard}
           onProceed={handleCardProceed}
-          canProceed={!useUiStore.getState().isTimelineRunning}
+          canProceed={useUiStore.getState().pendingInteractionId !== null}
         />
       );
     }

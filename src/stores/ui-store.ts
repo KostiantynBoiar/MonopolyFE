@@ -15,11 +15,17 @@ export type ModalKind = 'trade' | 'manage' | null;
 
 interface UiStore {
   // Animations
-  isRolling: boolean;
-  walkState: WalkState | null;
-  // Set while the timeline is paused at a wait_for_player gate; the affected player's
-  // "Continue" sends this id back to the server. null when no animation is paused.
-  pendingInteractionId: string | null;
+  isRolling:    boolean;
+  walkState:    WalkState | null;
+  isTimelineRunning: boolean;
+  // Dice shown during the roll_dice animation (overrides game.turn.diceRoll until committed).
+  animatedDiceRoll:   DiceRoll | null;
+  animatedDiceRollId: number;
+  // Card shown by a show_card animation instruction.
+  activeAnimationCard: ActiveCard | null;
+  // Set while a wait_for_player gate is open. Both fields carry the same gate id.
+  pendingInteractionId:       string | null;
+  pendingAnimationInteraction: PendingAnimationInteraction | null;
 
   // Overlays / modals
   activeDeed:  DeedInfo | null;
@@ -30,26 +36,39 @@ interface UiStore {
   selectedTile: number | null;
 
   // Actions
-  setIsRolling:  (v: boolean) => void;
-  setWalkState:  (v: WalkState | null) => void;
+  setIsRolling:   (v: boolean) => void;
+  setWalkState:   (v: WalkState | null) => void;
+  setIsTimelineRunning: (v: boolean) => void;
+  setAnimatedDiceRoll:  (v: DiceRoll | null) => void;
+  bumpAnimatedDiceRollId: () => void;
+  setActiveAnimationCard: (v: ActiveCard | null) => void;
   setPendingInteractionId: (v: string | null) => void;
-  setActiveDeed: (v: DeedInfo | null) => void;
-  setOpenedModal:(v: ModalKind) => void;
-  setHoveredTile:(v: number | null) => void;
+  setPendingAnimationInteraction: (v: PendingAnimationInteraction | null) => void;
+  setActiveDeed:  (v: DeedInfo | null) => void;
+  setOpenedModal: (v: ModalKind) => void;
+  setHoveredTile: (v: number | null) => void;
   setSelectedTile:(v: number | null) => void;
-  reset:         () => void;
+  reset:          () => void;
 }
 
 const INITIAL: Pick<UiStore,
-  'isRolling' | 'walkState' | 'pendingInteractionId' | 'activeDeed' | 'openedModal' | 'hoveredTile' | 'selectedTile'
+  | 'isRolling' | 'walkState' | 'isTimelineRunning'
+  | 'animatedDiceRoll' | 'animatedDiceRollId' | 'activeAnimationCard'
+  | 'pendingInteractionId' | 'pendingAnimationInteraction'
+  | 'activeDeed' | 'openedModal' | 'hoveredTile' | 'selectedTile'
 > = {
-  isRolling:    false,
-  walkState:    null,
-  pendingInteractionId: null,
-  activeDeed:   null,
-  openedModal:  null,
-  hoveredTile:  null,
-  selectedTile: null,
+  isRolling:                   false,
+  walkState:                   null,
+  isTimelineRunning:           false,
+  animatedDiceRoll:            null,
+  animatedDiceRollId:          0,
+  activeAnimationCard:         null,
+  pendingInteractionId:        null,
+  pendingAnimationInteraction: null,
+  activeDeed:                  null,
+  openedModal:                 null,
+  hoveredTile:                 null,
+  selectedTile:                null,
 };
 
 export const useUiStore = create<UiStore>((set) => ({
@@ -57,7 +76,12 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setIsRolling:   (v) => set({ isRolling: v }),
   setWalkState:   (v) => set({ walkState: v }),
+  setIsTimelineRunning: (v) => set({ isTimelineRunning: v }),
+  setAnimatedDiceRoll:  (v) => set({ animatedDiceRoll: v }),
+  bumpAnimatedDiceRollId: () => set((s) => ({ animatedDiceRollId: s.animatedDiceRollId + 1 })),
+  setActiveAnimationCard: (v) => set({ activeAnimationCard: v }),
   setPendingInteractionId: (v) => set({ pendingInteractionId: v }),
+  setPendingAnimationInteraction: (v) => set({ pendingAnimationInteraction: v }),
   setActiveDeed:  (v) => set({ activeDeed: v }),
   setOpenedModal: (v) => set({ openedModal: v }),
   setHoveredTile: (v) => set({ hoveredTile: v }),

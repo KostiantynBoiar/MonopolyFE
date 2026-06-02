@@ -1,7 +1,7 @@
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 import type { GameSnapshot } from '@/shared/protocol/permissions';
-import type { AnimationInstruction, MoveAnimation } from '@/shared/protocol/animations';
+import type { AnimationInstruction, MoveAnimation } from '@/shared/protocol/animation';
 import {
   CARD_WALK_STEP_DURATION_MS,
   WALK_STEP_DURATION_MS,
@@ -44,8 +44,8 @@ function getMoveStepDuration(instruction: MoveAnimation) {
 }
 
 function getMovePath(instruction: MoveAnimation): number[] {
-  const from = normalizePosition(instruction.from);
-  const to = normalizePosition(instruction.to);
+  const from = normalizePosition(instruction.fromPosition);
+  const to = normalizePosition(instruction.toPosition);
 
   if (from === to) return [];
   if (instruction.reason === 'teleport' || instruction.reason === 'jail') return [to];
@@ -85,7 +85,7 @@ async function runRollDice(instruction: Extract<AnimationInstruction, { type: 'r
 async function runMove(instruction: MoveAnimation, token: number) {
   const duration = getMoveStepDuration(instruction);
   const fast = instruction.speed === 'fast';
-  const from = normalizePosition(instruction.from);
+  const from = normalizePosition(instruction.fromPosition);
   const path = getMovePath(instruction);
   const ui = useUiStore.getState();
 

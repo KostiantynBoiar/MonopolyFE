@@ -23,38 +23,48 @@ function randomFace() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
+const DIE_BG = 'linear-gradient(145deg, rgba(255,255,255,.13) 0%, rgba(0,0,0,.22) 100%)';
+
 function DieFace({
   value,
   tilt,
   rolling,
+  justSettled,
   side,
 }: {
   value: number;
   tilt: string;
   rolling: boolean;
+  justSettled: boolean;
   side: 'left' | 'right';
 }) {
   return (
     <div
-      className="monopoly-die relative aspect-square w-full max-w-[72px] rounded-[18px] border"
+      className={`monopoly-die relative aspect-square w-full max-w-[72px] rounded-[18px] border${justSettled ? ' die-settled' : ''}`}
       style={{
         ['--die-rest-transform' as string]: tilt,
         animation: rolling
           ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} 760ms cubic-bezier(.16,.84,.28,1)`
           : undefined,
-        background: `linear-gradient(135deg, rgba(255,255,255,.18), rgba(0,0,0,.14)), ${BOARD_TILE_COLORS.propertyRed}`,
-        borderColor: GAME_BOARD_COLORS.border,
+        background: `${DIE_BG}, #1a2340`,
+        borderColor: 'rgba(255,255,255,0.10)',
+        boxShadow: rolling
+          ? '0 12px 0 rgba(0,0,0,0.35), 0 20px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18)'
+          : '0 6px 0 rgba(0,0,0,0.3), 0 10px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.14)',
         transform: tilt,
       } as CSSProperties}
     >
       {PIP_LAYOUTS[value].map(([row, col], index) => (
         <span
           key={`${value}-${index}`}
-          className="absolute z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full"
           style={{
             top: `${row * 25}%`,
             left: `${col * 25}%`,
-            backgroundColor: BOARD_TILE_COLORS.altText,
+            width: 'clamp(7px, 14%, 11px)',
+            height: 'clamp(7px, 14%, 11px)',
+            backgroundColor: '#ffffff',
+            boxShadow: '0 0 4px rgba(255,255,255,0.6)',
           }}
         />
       ))}
@@ -64,6 +74,7 @@ function DieFace({
 
 export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
   const [rolling, setRolling] = useState(false);
+  const [justSettled, setJustSettled] = useState(false);
   const die1 = diceRoll?.die1 ?? 1;
   const die2 = diceRoll?.die2 ?? 1;
   const [displayDie1, setDisplayDie1] = useState(die1);
@@ -80,15 +91,12 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
     if (rollId === 0) {
       setDisplayDie1(die1);
       setDisplayDie2(die2);
-      setSettledRoll({
-        die1,
-        die2,
-        isDoubles: die1 === die2,
-      });
+      setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
       return;
     }
 
     setRolling(true);
+    setJustSettled(false);
     const interval = window.setInterval(() => {
       setDisplayDie1(randomFace());
       setDisplayDie2(randomFace());
@@ -97,12 +105,10 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
       window.clearInterval(interval);
       setDisplayDie1(die1);
       setDisplayDie2(die2);
-      setSettledRoll({
-        die1,
-        die2,
-        isDoubles: die1 === die2,
-      });
+      setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
       setRolling(false);
+      setJustSettled(true);
+      window.setTimeout(() => setJustSettled(false), 340);
     }, 760);
 
     return () => {
@@ -132,8 +138,8 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
       </div>
 
       <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-3">
-        <DieFace value={displayDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} side="left" />
-        <DieFace value={displayDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} side="right" />
+        <DieFace value={displayDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} justSettled={justSettled} side="left" />
+        <DieFace value={displayDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
       </div>
 
       <div className="flex flex-col items-center gap-1 px-2 py-2 text-[12px]">

@@ -7,6 +7,7 @@ import type { BoardPlayer } from '../game-board.types';
 interface PlayerMarkerProps {
   edge: TileEdge;
   players?: BoardPlayer[];
+  walkingPlayerIds?: Set<string>;
 }
 
 // ─── Sizing ────────────────────────────────────────────────────────────────────
@@ -41,9 +42,10 @@ const ANCHOR: Record<TileEdge, string> = {
 interface TokenProps {
   player: BoardPlayer;
   diameter: string;
+  isWalking?: boolean;
 }
 
-function Token({ player, diameter }: TokenProps) {
+function Token({ player, diameter, isWalking }: TokenProps) {
   const ring: React.CSSProperties = {
     width:         diameter,
     aspectRatio:   '1 / 1',
@@ -54,11 +56,14 @@ function Token({ player, diameter }: TokenProps) {
     boxShadow:     '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 9px rgba(0,0,0,0.65)',
   };
 
+  const cls = isWalking ? 'token-walking' : undefined;
+
   if (player.avatarUrl) {
     return (
       <img
         src={player.avatarUrl}
         alt=""
+        className={cls}
         style={{ ...ring, objectFit: 'cover', display: 'block', backgroundColor: player.tokenColor }}
       />
     );
@@ -66,6 +71,7 @@ function Token({ player, diameter }: TokenProps) {
 
   return (
     <span
+      className={cls}
       style={{ ...ring, display: 'block', backgroundColor: player.tokenColor }}
     />
   );
@@ -73,7 +79,7 @@ function Token({ player, diameter }: TokenProps) {
 
 // ─── PlayerMarker ─────────────────────────────────────────────────────────────
 
-export function PlayerMarker({ players, edge }: PlayerMarkerProps) {
+export function PlayerMarker({ players, edge, walkingPlayerIds }: PlayerMarkerProps) {
   if (!players?.length) return null;
 
   const many     = players.length > 1;
@@ -89,9 +95,18 @@ export function PlayerMarker({ players, edge }: PlayerMarkerProps) {
       style={{ maxWidth: '92%', maxHeight: '92%' }}
       aria-label={`${players.length} player token${players.length === 1 ? '' : 's'}`}
     >
-      {players.slice(0, 6).map((player) => (
-        <Token key={player.id} player={player} diameter={diameter} />
-      ))}
+      {players.slice(0, 6).map((player) => {
+        const isWalking = walkingPlayerIds?.has(player.id) ?? false;
+        return (
+          // key includes position so React remounts on each step → animation re-fires
+          <Token
+            key={isWalking ? `${player.id}-${player.position}` : player.id}
+            player={player}
+            diameter={diameter}
+            isWalking={isWalking}
+          />
+        );
+      })}
     </div>
   );
 }

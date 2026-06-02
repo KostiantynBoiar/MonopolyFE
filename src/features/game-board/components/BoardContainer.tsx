@@ -102,6 +102,7 @@ export function BoardContainer({
                       flavor={getTileFlavor(space.type)}
                       ownership={ownershipByPosition.get(space.pos) ?? null}
                       players={playersByPosition.get(space.pos) ?? []}
+                      walkingPlayerIds={walkingIds}
                     />
                   </div>
                 );
