@@ -13,6 +13,7 @@
  */
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
+import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
 import type { AnimationInstruction } from '@/shared/protocol/animation';
 import type { ActiveCard } from '@/shared/protocol/game-state';
 import { getWalkSteps } from '@/shared/config/board-layout';
@@ -22,8 +23,8 @@ import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 
 // How long each phase of the dice animation lasts (ms).
-// DICE_SPIN_MS must match DiceWindow's own spin timeout (760 ms).
-const DICE_SPIN_MS    = 760;
+// DICE_SPIN_MS must match DiceWindow's SPIN_MS constant (900 ms).
+const DICE_SPIN_MS    = 900;
 const DICE_LINGER_MS  = 900; // pause on the result before token moves
 
 // ─── Animation event listeners ────────────────────────────────────────────────
@@ -218,9 +219,15 @@ function patchForCard(
 ): GameSnapshot {
   return {
     ...snapshot,
+    // Blank all permissions while the card gate is open — no UI action should be
+    // available until the player acknowledges and the final state commits.
+    permissions: EMPTY_PERMISSIONS,
     game: {
       ...snapshot.game,
       activeCard: card,
+      // Zero out any pending buy so DeedWindow doesn't surface a buy decision
+      // for the post-card landing tile while the card is still being displayed.
+      turn: { ...snapshot.game.turn, pendingBuyPosition: null },
       players: position === null
         ? snapshot.game.players
         : snapshot.game.players.map((p) => (p.id === playerId ? { ...p, position } : p)),

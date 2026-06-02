@@ -1,7 +1,7 @@
-    
+
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 
@@ -18,6 +18,13 @@ const PIP_LAYOUTS: Record<number, Array<[number, number]>> = {
   5: [[1, 1], [1, 3], [2, 2], [3, 1], [3, 3]],
   6: [[1, 1], [1, 3], [2, 1], [2, 3], [3, 1], [3, 3]],
 };
+
+// Total CSS animation duration. timeline-executor's DICE_SPIN_MS must match.
+const SPIN_MS = 900;
+// Two-phase pip cycling: fast chaotic tumble → slow deceleration → reveal.
+const FAST_PHASE_MS       = 560;
+const FAST_INTERVAL_MS    = 42;
+const SLOW_INTERVAL_MS    = 130;
 
 function randomFace() {
   return Math.floor(Math.random() * 6) + 1;
@@ -44,7 +51,7 @@ function DieFace({
       style={{
         ['--die-rest-transform' as string]: tilt,
         animation: rolling
-          ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} 760ms cubic-bezier(.16,.84,.28,1)`
+          ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} ${SPIN_MS}ms cubic-bezier(.16,.84,.28,1)`
           : undefined,
         background: `${DIE_BG}, ${BOARD_TILE_COLORS.propertyRed}`,
         borderColor: 'rgba(255,255,255,0.10)',
@@ -87,34 +94,68 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
   const total = settledRoll.die1 + settledRoll.die2;
   const isDoubles = settledRoll.isDoubles;
 
+  // Tracks which rollId has already been animated so die1/die2 prop changes
+  // (e.g. game state commit after End Turn) don't re-trigger the animation.
+  const lastAnimatedRollIdRef = useRef(0);
+
   useEffect(() => {
     if (rollId === 0) {
+      // Late-joiner / initial sync — show current values without animation.
       setDisplayDie1(die1);
       setDisplayDie2(die2);
       setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
       return;
     }
 
+    if (rollId === lastAnimatedRollIdRef.current) {
+      // Same roll, die values changed due to game state commit — no re-animation.
+      return;
+    }
+
+    lastAnimatedRollIdRef.current = rollId;
+
+    // Collect disposables so the cleanup is a single pass.
+    const dispose: Array<() => void> = [];
+    const later = (fn: () => void, ms: number) => {
+      const id = window.setTimeout(fn, ms);
+      dispose.push(() => window.clearTimeout(id));
+    };
+    const cycle = (fn: () => void, ms: number) => {
+      const id = window.setInterval(fn, ms);
+      dispose.push(() => window.clearInterval(id));
+      return id;
+    };
+
     setRolling(true);
     setJustSettled(false);
-    const interval = window.setInterval(() => {
+
+    // Phase 1: fast chaotic pip cycling during tumble.
+    const fastId = cycle(() => {
       setDisplayDie1(randomFace());
       setDisplayDie2(randomFace());
-    }, 70);
-    const timeout = window.setTimeout(() => {
-      window.clearInterval(interval);
-      setDisplayDie1(die1);
-      setDisplayDie2(die2);
-      setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
-      setRolling(false);
-      setJustSettled(true);
-      window.setTimeout(() => setJustSettled(false), 340);
-    }, 760);
+    }, FAST_INTERVAL_MS);
 
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timeout);
-    };
+    // Phase 2: slow down as die decelerates.
+    later(() => {
+      window.clearInterval(fastId);
+      const slowId = cycle(() => {
+        setDisplayDie1(randomFace());
+        setDisplayDie2(randomFace());
+      }, SLOW_INTERVAL_MS);
+
+      // Reveal final values and settle.
+      later(() => {
+        window.clearInterval(slowId);
+        setDisplayDie1(die1);
+        setDisplayDie2(die2);
+        setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
+        setRolling(false);
+        setJustSettled(true);
+        later(() => setJustSettled(false), 340);
+      }, SPIN_MS - FAST_PHASE_MS);
+    }, FAST_PHASE_MS);
+
+    return () => dispose.forEach((fn) => fn());
   }, [die1, die2, rollId]);
 
   return (

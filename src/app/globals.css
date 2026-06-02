@@ -88,44 +88,69 @@
 @keyframes monopoly-die-roll-left {
   0% {
     transform: translate3d(0, 0, 0) rotateX(10deg) rotateY(-14deg) rotateZ(-12deg);
+    filter: blur(0px);
   }
-  22% {
-    transform: translate3d(-8px, -18px, 18px) rotateX(155deg) rotateY(80deg) rotateZ(-70deg);
+  14% {
+    transform: translate3d(-20px, -42px, 28px) rotateX(210deg) rotateY(128deg) rotateZ(-115deg);
+    filter: blur(2px);
   }
-  48% {
-    transform: translate3d(8px, -10px, 28px) rotateX(285deg) rotateY(190deg) rotateZ(120deg);
+  38% {
+    transform: translate3d(16px, -24px, 46px) rotateX(455deg) rotateY(278deg) rotateZ(195deg);
+    filter: blur(1.4px);
   }
-  74% {
-    transform: translate3d(-3px, -4px, 10px) rotateX(405deg) rotateY(285deg) rotateZ(245deg);
+  62% {
+    transform: translate3d(-10px, -6px, 22px) rotateX(638deg) rotateY(385deg) rotateZ(305deg);
+    filter: blur(0.5px);
+  }
+  80% {
+    transform: translate3d(4px, 5px, 10px) rotateX(718deg) rotateY(432deg) rotateZ(358deg);
+    filter: blur(0px);
+  }
+  91% {
+    transform: translate3d(-2px, -5px, 4px) rotateX(728deg) rotateY(440deg) rotateZ(365deg);
+    filter: blur(0px);
   }
   100% {
     transform: var(--die-rest-transform);
+    filter: blur(0px);
   }
 }
 
 @keyframes monopoly-die-roll-right {
   0% {
     transform: translate3d(0, 0, 0) rotateX(8deg) rotateY(16deg) rotateZ(14deg);
+    filter: blur(0px);
   }
-  20% {
-    transform: translate3d(10px, -20px, 18px) rotateX(-135deg) rotateY(115deg) rotateZ(88deg);
+  16% {
+    transform: translate3d(22px, -44px, 26px) rotateX(-185deg) rotateY(148deg) rotateZ(108deg);
+    filter: blur(2px);
   }
-  50% {
-    transform: translate3d(-7px, -8px, 30px) rotateX(-300deg) rotateY(220deg) rotateZ(-130deg);
+  42% {
+    transform: translate3d(-14px, -18px, 48px) rotateX(-408deg) rotateY(295deg) rotateZ(-185deg);
+    filter: blur(1.4px);
   }
-  76% {
-    transform: translate3d(4px, -5px, 12px) rotateX(-420deg) rotateY(310deg) rotateZ(-255deg);
+  64% {
+    transform: translate3d(8px, -4px, 20px) rotateX(-572deg) rotateY(392deg) rotateZ(-298deg);
+    filter: blur(0.5px);
+  }
+  81% {
+    transform: translate3d(-3px, 5px, 8px) rotateX(-645deg) rotateY(436deg) rotateZ(-352deg);
+    filter: blur(0px);
+  }
+  92% {
+    transform: translate3d(2px, -4px, 3px) rotateX(-658deg) rotateY(444deg) rotateZ(-360deg);
+    filter: blur(0px);
   }
   100% {
     transform: var(--die-rest-transform);
+    filter: blur(0px);
   }
 }
 
 /* Token step: spring pop-in on each tile arrival during walk animation */
 @keyframes token-step {
-  0%   { transform: scale(0.55) translateY(6px); opacity: 0.4; }
-  60%  { transform: scale(1.12) translateY(-2px); opacity: 1; }
-  100% { transform: scale(1)    translateY(0);    opacity: 1; }
+  0%   { transform: scale(0.7) translateY(5px); opacity: 0.5; }
+  100% { transform: scale(1)   translateY(0);   opacity: 1; }
 }
 
 .token-walking {
