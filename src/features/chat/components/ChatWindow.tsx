@@ -51,15 +51,15 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
     <button
       type="button"
       onClick={onSelect}
-      className="flex h-12 w-12 items-center justify-center rounded-[8px] border"
+      className="flex h-[60px] w-[60px] items-center justify-center rounded-[8px] border"
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,
       }}
     >
       {isTgs
-        ? (mounted ? <TgsPlayer src={url} size={36} loop={false} /> : <div style={{ width: 36, height: 36 }} />)
-        : <img src={url} alt={file} className="h-9 w-9 object-contain" />}
+        ? (mounted ? <TgsPlayer src={url} size={45} loop={false} /> : <div style={{ width: 45, height: 45 }} />)
+        : <img src={url} alt={file} className="h-[45px] w-[45px] object-contain" />}
     </button>
   );
 }
@@ -148,7 +148,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
       >
         <button
           type="button"
-          className="flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.16em]"
+          className="flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[14px] font-semibold uppercase tracking-[0.16em]"
           style={{
             backgroundColor:
               activeTab === ChatWindowTab.EVENTS ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
@@ -163,7 +163,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
 
         <button
           type="button"
-          className="flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.16em]"
+          className="flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[14px] font-semibold uppercase tracking-[0.16em]"
           style={{
             backgroundColor:
               activeTab === ChatWindowTab.CHAT ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
@@ -176,7 +176,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
           <span>Chat</span>
           {unreadCount > 0 && (
             <span
-              className="flex min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold"
+              className="flex min-w-5 items-center justify-center rounded-full px-1.5 text-[14px] font-bold"
               style={{
                 backgroundColor: BOARD_TILE_COLORS.propertyRed,
                 color: BOARD_TILE_COLORS.altText,
@@ -198,7 +198,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
         <div className="flex h-full min-h-0 flex-col overflow-y-auto p-[3px]">
           {activeEntries.length === 0 ? (
             <div
-              className="flex h-full items-center justify-center rounded-[8px] text-center text-[12px]"
+              className="flex h-full items-center justify-center rounded-[8px] text-center text-[15px]"
               style={{ color: GAME_BOARD_COLORS.muted }}
             >
               {activeTab === ChatWindowTab.EVENTS ? 'No events yet.' : 'No messages yet.'}
@@ -211,11 +211,11 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
                   className="grid min-w-0 gap-[1px] rounded-[8px] px-2 py-1.5"
                   style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: GAME_BOARD_COLORS.muted }}>
+                  <p className="text-[13px] font-semibold uppercase tracking-[0.12em]" style={{ color: GAME_BOARD_COLORS.muted }}>
                     {formatTime(new Date(entry.ts).getTime())}
                   </p>
                   <p
-                    className="min-w-0 whitespace-pre-wrap text-center text-[12px] leading-[1.35]"
+                    className="min-w-0 whitespace-pre-wrap text-center text-[15px] leading-[1.35]"
                     style={{ color: GAME_BOARD_COLORS.text, overflowWrap: 'anywhere' }}
                   >
                     <span className="font-semibold">{entry.playerName ?? 'Table'}</span>
@@ -236,7 +236,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
                     className="grid min-w-0 gap-[2px] rounded-[8px] px-2 py-1.5"
                     style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
                   >
-                    <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: GAME_BOARD_COLORS.muted }}>
+                    <div className="flex flex-wrap items-center gap-2 text-[13px] uppercase tracking-[0.12em]" style={{ color: GAME_BOARD_COLORS.muted }}>
                       <span>{formatTime(entry.ts)}</span>
                       {entry.token && (
                         <span
@@ -253,11 +253,11 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
                     </div>
                     {stickerUrl ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <img src={stickerUrl} alt="Sticker" className="h-16 w-16 max-w-full object-contain" />
+                        <img src={stickerUrl} alt="Sticker" className="h-20 w-20 max-w-full object-contain" />
                       </div>
                     ) : (
                       <p
-                        className="min-w-0 whitespace-pre-wrap text-left text-[12px] leading-[1.35]"
+                        className="min-w-0 whitespace-pre-wrap text-left text-[15px] leading-[1.35]"
                         style={{ color: GAME_BOARD_COLORS.text, overflowWrap: 'anywhere' }}
                         title={`${formatTime(entry.ts)} | ${entry.author ?? 'Player'}: ${entry.text}`}
                       >
@@ -291,7 +291,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
             onChange={(event) => setDraft(clampMessage(event.target.value))}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-11 py-[10px] text-[12px] leading-tight outline-none"
+            className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-11 py-[10px] text-[15px] leading-tight outline-none"
             maxLength={128}
             style={{
               color: GAME_BOARD_COLORS.text,
@@ -319,7 +319,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
         <button
           type="button"
           onClick={handleSend}
-          className="flex h-10 w-10 items-center justify-center rounded-[10px] border text-[12px] font-semibold uppercase tracking-[0.02em]"
+          className="flex h-10 w-10 items-center justify-center rounded-[10px] border text-[15px] font-semibold uppercase tracking-[0.02em]"
           style={{
             backgroundColor: BOARD_TILE_COLORS.propertyYellow,
             borderColor: BOARD_TILE_COLORS.propertyOrange,
@@ -344,7 +344,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
                   key={pack.id}
                   type="button"
                   onClick={() => setPackIndex(index)}
-                  className="rounded-[8px] px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]"
+                  className="rounded-[8px] px-2 py-1 text-[14px] font-semibold uppercase tracking-[0.16em]"
                   style={{
                     backgroundColor: index === packIndex ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
                     color: index === packIndex ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,

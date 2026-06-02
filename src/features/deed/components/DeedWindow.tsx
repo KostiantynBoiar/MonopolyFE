@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { BoardSpace } from '@/features/game-board';
 import { CornerVariant, SpaceType } from '@/features/game-board/game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor, getSpaceHeaderTextColor } from '@/features/game-board/game-board.colors';
@@ -73,9 +74,13 @@ function getSpecialText(space: BoardSpace) {
 // ─── DeedWindow ───────────────────────────────────────────────────────────────
 
 export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false, ownership }: DeedWindowProps) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tBoard = useTranslations('Board') as unknown as (key: string) => string;
+
   const isDecisionMode = Boolean(decisionSpace);
   // In decision mode show the landed-on space; otherwise show the browsed space.
   const activeSpace = decisionSpace ?? space;
+  const spaceName = tBoard(`tiles.p${activeSpace.pos}`);
 
   const deed           = getDeedInfo(activeSpace.pos);
   const isDeed         = deed !== null;
@@ -132,7 +137,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
         }}
       >
         <p className="font-display text-lg font-semibold uppercase tracking-[0.08em]">
-          {activeSpace.name}
+          {spaceName}
         </p>
       </div>
 

@@ -228,5 +228,51 @@
 
   "LocaleSwitcher": {
     "label": "Language"
+  },
+
+  "Board": {
+    "justVisiting": "Just Visiting",
+    "tiles": {
+      "p0":  "TYCOON",
+      "p1":  "Konstantynivska St.",
+      "p2":  "Community Chest",
+      "p3":  "Illinska St.",
+      "p4":  "Income Tax",
+      "p5":  "Kyiv-Pasazhyrsky Stn.",
+      "p6":  "Obolon Ave.",
+      "p7":  "Chance",
+      "p8":  "Tymoshenka St.",
+      "p9":  "Heroes of Dnipro St.",
+      "p10": "Jail",
+      "p11": "Zhylianska St.",
+      "p12": "Energy Company",
+      "p13": "Velyka Vasylkivska St.",
+      "p14": "Antonovycha St.",
+      "p15": "Lviv Station",
+      "p16": "Instytutska St.",
+      "p17": "Community Chest",
+      "p18": "Lypska St.",
+      "p19": "Hrushevsky St.",
+      "p20": "Free Parking",
+      "p21": "Market Sq.",
+      "p22": "Chance",
+      "p23": "Shevchenko St. (Lviv)",
+      "p24": "Liberty Ave.",
+      "p25": "Kharkiv Station",
+      "p26": "Deribasivska St.",
+      "p27": "Seaside Blvd.",
+      "p28": "Water Works",
+      "p29": "Richelievska St.",
+      "p30": "Go to Jail",
+      "p31": "Science Ave.",
+      "p32": "Sumska St.",
+      "p33": "Community Chest",
+      "p34": "Freedom Square",
+      "p35": "Odesa Station",
+      "p36": "Chance",
+      "p37": "Khreschatyk",
+      "p38": "Luxury Tax",
+      "p39": "Independence Square"
+    }
   }
 }
