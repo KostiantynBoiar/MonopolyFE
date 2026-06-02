@@ -2,7 +2,7 @@
 
 import { BoardTileFlavor, CornerVariant, SpaceType, TileEdge } from '../game-board.enums';
 import type { BoardTileProps } from '../game-board.types';
-import { CORNER_COLOR_MAP, GAME_BOARD_COLORS, PROPERTY_COLOR_MAP, SPACE_SURFACE_MAP, SPACE_SYMBOL_MAP } from '../game-board.colors';
+import { BOARD_TILE_COLORS, CORNER_COLOR_MAP, GAME_BOARD_COLORS, SPACE_SURFACE_MAP, SPACE_SYMBOL_MAP, getSpaceHeaderColor } from '../game-board.colors';
 import { cn } from '@/shared/lib/cn';
 
 const PROPERTY_HEADER_RATIO = 1.25;
@@ -29,6 +29,12 @@ const CORNER_SYMBOL_MAP: Record<CornerVariant, string> = {
   [CornerVariant.PARKING]: '🚗',
   [CornerVariant.GOTO_JAIL]: '🚨',
 };
+
+function getTileTextColor(type: SpaceType) {
+  return type === SpaceType.RAILROAD || type === SpaceType.TAX
+    ? BOARD_TILE_COLORS.altText
+    : GAME_BOARD_COLORS.tileText;
+}
 
 function getHeaderStyle(edge: TileEdge, color: string) {
   if (edge === TileEdge.LEFT || edge === TileEdge.RIGHT) {
@@ -97,7 +103,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
       <article
         className="flex h-full w-full flex-col items-center justify-center rounded-[16px] border shadow-sm text-center"
         style={{
-          backgroundColor: GAME_BOARD_COLORS.tileSurface,
+          backgroundColor: GAME_BOARD_COLORS.tile,
           borderColor: GAME_BOARD_COLORS.tileBorder,
           color: GAME_BOARD_COLORS.tileText,
           padding: getTilePadding(),
@@ -111,7 +117,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             className="leading-none"
             style={{
               fontSize: 'clamp(24px, calc(var(--board-corner-size) * 0.34), 48px)',
-              color: GAME_BOARD_COLORS.boardCenterText,
+              color: BOARD_TILE_COLORS.altText,
             }}
           >
             {CORNER_SYMBOL_MAP[space.corner]}
@@ -120,7 +126,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             className="font-display font-semibold uppercase leading-tight"
             style={{
               fontSize: 'clamp(14px, calc(var(--board-corner-size) * 0.18), 24px)',
-              color: GAME_BOARD_COLORS.boardCenterText,
+              color: BOARD_TILE_COLORS.altText,
             }}
           >
             {space.name}
@@ -129,7 +135,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             <p
               className="uppercase tracking-[0.2em]"
               style={{
-                color: GAME_BOARD_COLORS.playerPanelMuted,
+                color: BOARD_TILE_COLORS.altText,
                 fontSize: 'clamp(9px, calc(var(--board-tile-width) * 0.16), 12px)',
               }}
             >
@@ -146,9 +152,9 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
       <article
         className="flex h-full w-full flex-col items-center justify-center rounded-[12px] border text-center shadow-sm"
         style={{
-          backgroundColor: SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.specialSurface,
-          borderColor: GAME_BOARD_COLORS.specialBorder,
-          color: GAME_BOARD_COLORS.tileText,
+          backgroundColor: SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.special,
+          borderColor: BOARD_TILE_COLORS.propertyOrange,
+          color: BOARD_TILE_COLORS.altText,
           padding: getTilePadding(),
         }}
       >
@@ -169,7 +175,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             <p
               className="mt-1 font-extrabold"
               style={{
-                color: GAME_BOARD_COLORS.priceText,
+                color: BOARD_TILE_COLORS.altText,
                 fontSize: 'clamp(10px, calc(var(--board-tile-width) * 0.18), 13px)',
               }}
             >
@@ -181,9 +187,10 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
     );
   }
 
-  const propertyColor = space.color ? PROPERTY_COLOR_MAP[space.color] : undefined;
+  const propertyColor = space.color ? getSpaceHeaderColor(space) : undefined;
   const symbol = SPACE_SYMBOL_MAP[space.type];
-  const surface = SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.tileSurface;
+  const surface = SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.tile;
+  const textColor = getTileTextColor(space.type);
 
   return (
     <article
@@ -193,7 +200,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
       style={{
         backgroundColor: surface,
         borderColor: GAME_BOARD_COLORS.tileBorder,
-        color: GAME_BOARD_COLORS.tileText,
+        color: textColor,
       }}
     >
       {propertyColor && (
@@ -217,7 +224,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             <p
               className="mt-1 font-extrabold"
               style={{
-                color: GAME_BOARD_COLORS.priceText,
+                color: textColor,
                 fontSize: 'clamp(10px, calc(var(--board-tile-width) * 0.17), 13px)',
               }}
             >
@@ -233,10 +240,10 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
               fontSize: 'clamp(14px, calc(var(--board-tile-width) * 0.28), 22px)',
               color:
                 space.type === SpaceType.TAX
-                  ? GAME_BOARD_COLORS.symbolTax
+                  ? BOARD_TILE_COLORS.propertyRed
                   : space.type === SpaceType.UTILITY
-                    ? GAME_BOARD_COLORS.symbolUtility
-                    : GAME_BOARD_COLORS.symbolRailroad,
+                    ? BOARD_TILE_COLORS.utility
+                    : BOARD_TILE_COLORS.altText,
             }}
           >
             {symbol}

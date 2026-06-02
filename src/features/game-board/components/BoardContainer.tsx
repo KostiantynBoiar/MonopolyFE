@@ -9,7 +9,7 @@ import { TokenColor } from '@/shared/protocol/game-state.enums';
 import { BOARD, getGridPos, getTileEdge } from '../board-data';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
-import { GAME_BOARD_COLORS } from '../game-board.colors';
+import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '../game-board.colors';
 import { BoardTile } from './BoardTile';
 
 const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
@@ -48,9 +48,9 @@ function ActionPanel() {
         type="button"
         className="col-span-2 rounded-[12px] border px-3 py-3 text-sm font-black uppercase tracking-[0.12em]"
         style={{
-          backgroundColor: GAME_BOARD_COLORS.actionPrimary,
-          borderColor: GAME_BOARD_COLORS.actionPrimaryBorder,
-          color: GAME_BOARD_COLORS.widgetAccentText,
+          backgroundColor: BOARD_TILE_COLORS.propertyYellow,
+          borderColor: BOARD_TILE_COLORS.propertyOrange,
+          color: BOARD_TILE_COLORS.altText,
         }}
       >
         Roll Dice
@@ -62,9 +62,9 @@ function ActionPanel() {
           type="button"
           className="rounded-[12px] border px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.08em]"
           style={{
-            backgroundColor: GAME_BOARD_COLORS.actionSecondary,
-            borderColor: GAME_BOARD_COLORS.actionSecondaryBorder,
-            color: GAME_BOARD_COLORS.actionSecondaryText,
+            backgroundColor: GAME_BOARD_COLORS.tile,
+            borderColor: GAME_BOARD_COLORS.border,
+            color: GAME_BOARD_COLORS.tileText,
           }}
         >
           {action.label}
@@ -81,12 +81,12 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
   return (
     <div
       className="flex h-screen w-full items-center justify-center p-[4px]"
-      style={{ backgroundColor: GAME_BOARD_COLORS.boardFrame }}
+      style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
     >
       <section
         className="grid h-full w-full gap-[4px] overflow-hidden lg:grid-cols-[minmax(0,1fr)_320px]"
         aria-label="Tycoon board"
-        style={{ backgroundColor: GAME_BOARD_COLORS.shell }}
+        style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
       >
         <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
           <div className="aspect-square h-full max-h-full w-full max-w-full">
@@ -99,7 +99,7 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
                 ['--board-edge-depth' as string]: 'calc(var(--board-unit) * 2)',
                 gridTemplateColumns: BOARD_COLUMNS,
                 gridTemplateRows: BOARD_ROWS,
-                backgroundColor: GAME_BOARD_COLORS.boardFrame,
+                backgroundColor: GAME_BOARD_COLORS.ink,
               }}
             >
               {BOARD.map((space) => {
@@ -128,14 +128,14 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
                   gridRow: '2 / 11',
                   margin: '4px',
                   borderRadius: '16px',
-                  border: `1px solid ${GAME_BOARD_COLORS.boardCenterBorder}`,
-                  backgroundColor: GAME_BOARD_COLORS.boardCenterSurface,
-                  color: GAME_BOARD_COLORS.widgetText,
+                  border: `1px solid ${GAME_BOARD_COLORS.center}`,
+                  backgroundColor: GAME_BOARD_COLORS.center,
+                  color: GAME_BOARD_COLORS.text,
                 }}
               >
                 <div
                   className="absolute inset-[8px] rounded-[12px]"
-                  style={{ backgroundColor: GAME_BOARD_COLORS.boardCenterInset }}
+                  style={{ backgroundColor: GAME_BOARD_COLORS.center }}
                 />
                 <div className="relative z-10 grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[10px]">
                   <div className="col-span-2 row-span-2 min-h-0">
@@ -162,14 +162,14 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
         <aside
           className="flex min-h-[220px] flex-col justify-between p-6"
           style={{
-            backgroundColor: GAME_BOARD_COLORS.playerPanel,
-            color: GAME_BOARD_COLORS.playerPanelText,
+            backgroundColor: BOARD_TILE_COLORS.propertyGreen,
+            color: BOARD_TILE_COLORS.altText,
           }}
         >
           <div>
             <p
               className="font-mono text-xs uppercase tracking-[0.35em]"
-              style={{ color: GAME_BOARD_COLORS.playerPanelMuted }}
+              style={{ color: BOARD_TILE_COLORS.altText }}
             >
               Future Player Panel
             </p>
@@ -178,7 +178,7 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
             </p>
           </div>
 
-          <p className="max-w-xs text-sm" style={{ color: GAME_BOARD_COLORS.playerPanelMuted }}>
+          <p className="max-w-xs text-sm" style={{ color: BOARD_TILE_COLORS.altText }}>
             Reserved for player cards, balances, turn state, and quick actions.
           </p>
         </aside>

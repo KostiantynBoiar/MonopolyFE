@@ -17,7 +17,7 @@ export function ChatLog({ log }: ChatLogProps) {
     <section
       className="flex h-full min-h-0 flex-col overflow-hidden rounded-[12px] border"
       style={{
-        backgroundColor: GAME_BOARD_COLORS.tileSurface,
+        backgroundColor: GAME_BOARD_COLORS.tile,
         borderColor: GAME_BOARD_COLORS.tileBorder,
         color: GAME_BOARD_COLORS.tileText,
       }}
@@ -28,7 +28,7 @@ export function ChatLog({ log }: ChatLogProps) {
       >
         <span
           className="font-display font-semibold uppercase tracking-[0.28em]"
-          style={{ color: GAME_BOARD_COLORS.tileMuted, fontSize: '0.78rem' }}
+          style={{ color: GAME_BOARD_COLORS.muted, fontSize: '0.78rem' }}
         >
           Table Chat
         </span>
@@ -40,7 +40,7 @@ export function ChatLog({ log }: ChatLogProps) {
             <p
               key={entry.id}
               className="font-sans italic"
-              style={{ color: GAME_BOARD_COLORS.tileMuted, fontSize: '0.82rem' }}
+              style={{ color: GAME_BOARD_COLORS.muted, fontSize: '0.82rem' }}
             >
               {entry.text}
             </p>

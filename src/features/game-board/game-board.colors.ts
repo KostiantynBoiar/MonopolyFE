@@ -1,80 +1,50 @@
 import { CornerVariant, PropertyColor, SpaceType } from './game-board.enums';
+import type { BoardSpace } from './game-board.types';
 
 export const GAME_BOARD_COLORS = {
-  shell: '#0e0c14',
-  boardFrame: '#0e0c14',
-  boardField: '#dce8ff',
-  boardCenter: '#1b1727',
-  boardCenterSurface: '#f2e7d6',
-  boardCenterInset: '#eadbc7',
-  boardCenterBorder: '#bca48c',
-  boardCenterText: '#f5f9ff',
-  widgetSurface: '#fbf4ea',
-  widgetSurfaceAlt: '#f4eadb',
-  widgetBorder: '#c9b39b',
-  widgetHeader: '#245bd1',
-  widgetHeaderText: '#f7fbff',
-  widgetText: '#182440',
-  widgetMuted: '#6a748f',
-  widgetAccent: '#ffba18',
-  widgetAccentBorder: '#d89100',
-  widgetAccentText: '#2b1c00',
-  widgetSuccess: '#15a43e',
-  widgetSuccessText: '#f8fff9',
-  widgetNeutral: '#ffffff',
-  widgetNeutralText: '#2143a7',
-  dicePanelSurface: '#fbf4ea',
-  dicePanelBorder: '#c9b39b',
-  dicePanelText: '#182440',
-  diceDieFace: '#fff8f2',
-  diceDieEdge: '#eadfd6',
-  dicePip: '#1e1b1b',
-  diceStatus: '#57d88b',
-  diceStatusText: '#11311d',
-  deedShell: '#fbf4ea',
-  deedShellBorder: '#c9b39b',
-  deedRail: '#245bd1',
-  deedBody: '#fbf4ea',
-  deedRule: '#dcc7b1',
-  actionPrimary: '#ffba18',
-  actionPrimaryBorder: '#d89100',
-  actionSecondary: '#f6ede0',
-  actionSecondaryBorder: '#d5c2ae',
-  actionSecondaryText: '#5b4a3a',
-  playerPanel: '#228558',
-  playerPanelText: '#f4fff7',
-  playerPanelMuted: 'rgba(244, 255, 247, 0.8)',
-  tileSurface: '#fffdf7',
-  tileBorder: '#24385d',
-  tileText: '#182440',
-  tileMuted: '#66718d',
-  priceText: '#31415f',
-  specialSurface: '#fff0ca',
-  specialBorder: '#ddbf71',
-  utilitySurface: '#f5f4ef',
-  railroadSurface: '#edf1f8',
-  taxSurface: '#fde5e0',
-  symbolRailroad: '#1b2b4d',
-  symbolUtility: '#1d5b99',
-  symbolTax: '#b84e40',
+  ink: '#faf4ed',
+  center: '#fffaf3',
+  panel: '#f2e9e1',
+  surface: '#fffaf3',
+  border: '#cecacd',
+  muted: '#837e9f',
+  text: '#575279',
+  tile: '#f2e9e1',
+  tileBorder: '#cecacd',
+  tileText: '#575279',
+  special: '#ea9d34',
+} as const;
+
+export const BOARD_TILE_COLORS = {
+  altText: GAME_BOARD_COLORS.surface,
+  propertyBrown: '#6B4A2E',
+  propertyCyan: '#286983',
+  propertyPink: '#d7827e',
+  propertyOrange: '#ea9d34',
+  propertyRed: '#b4637a',
+  propertyYellow: '#DDAE1A',
+  propertyGreen: '#2E7D4F',
+  propertyBlue: '#56949f',
+  railroad: '#1b2b4d',
+  utility: '#1d5b99',
 } as const;
 
 export const PROPERTY_COLOR_MAP: Record<PropertyColor, string> = {
-  [PropertyColor.BROWN]: '#6B4A2E',
-  [PropertyColor.CYAN]: '#8FC9DC',
-  [PropertyColor.PINK]: '#C24C8B',
-  [PropertyColor.ORANGE]: '#D9802C',
-  [PropertyColor.RED]: '#C53A33',
-  [PropertyColor.YELLOW]: '#DDAE1A',
-  [PropertyColor.GREEN]: '#2E7D4F',
-  [PropertyColor.BLUE]: '#2B57C6',
+  [PropertyColor.BROWN]: BOARD_TILE_COLORS.propertyBrown,
+  [PropertyColor.CYAN]: BOARD_TILE_COLORS.propertyCyan,
+  [PropertyColor.PINK]: BOARD_TILE_COLORS.propertyPink,
+  [PropertyColor.ORANGE]: BOARD_TILE_COLORS.propertyOrange,
+  [PropertyColor.RED]: BOARD_TILE_COLORS.propertyRed,
+  [PropertyColor.YELLOW]: BOARD_TILE_COLORS.propertyYellow,
+  [PropertyColor.GREEN]: BOARD_TILE_COLORS.propertyGreen,
+  [PropertyColor.BLUE]: BOARD_TILE_COLORS.propertyBlue,
 };
 
 export const CORNER_COLOR_MAP: Record<CornerVariant, string> = {
-  [CornerVariant.GO]: '#2B57C6',
-  [CornerVariant.JAIL]: '#D9802C',
-  [CornerVariant.PARKING]: '#2E7D4F',
-  [CornerVariant.GOTO_JAIL]: '#C53A33',
+  [CornerVariant.GO]: BOARD_TILE_COLORS.propertyBlue,
+  [CornerVariant.JAIL]: BOARD_TILE_COLORS.propertyOrange,
+  [CornerVariant.PARKING]: BOARD_TILE_COLORS.propertyGreen,
+  [CornerVariant.GOTO_JAIL]: BOARD_TILE_COLORS.propertyRed,
 };
 
 export const SPACE_SYMBOL_MAP: Partial<Record<SpaceType, string>> = {
@@ -86,9 +56,38 @@ export const SPACE_SYMBOL_MAP: Partial<Record<SpaceType, string>> = {
 };
 
 export const SPACE_SURFACE_MAP: Partial<Record<SpaceType, string>> = {
-  [SpaceType.CHANCE]: GAME_BOARD_COLORS.specialSurface,
-  [SpaceType.CHEST]: GAME_BOARD_COLORS.specialSurface,
-  [SpaceType.RAILROAD]: GAME_BOARD_COLORS.railroadSurface,
-  [SpaceType.UTILITY]: GAME_BOARD_COLORS.utilitySurface,
-  [SpaceType.TAX]: GAME_BOARD_COLORS.taxSurface,
+  [SpaceType.CHANCE]: GAME_BOARD_COLORS.special,
+  [SpaceType.CHEST]: GAME_BOARD_COLORS.special,
+  [SpaceType.RAILROAD]: BOARD_TILE_COLORS.railroad,
+  [SpaceType.UTILITY]: GAME_BOARD_COLORS.special,
+  [SpaceType.TAX]: GAME_BOARD_COLORS.special,
 };
+
+export function getSpaceHeaderColor(space: BoardSpace) {
+  if (space.color) {
+    return PROPERTY_COLOR_MAP[space.color];
+  }
+
+  if (space.corner) {
+    return CORNER_COLOR_MAP[space.corner];
+  }
+
+  switch (space.type) {
+    case SpaceType.CHANCE:
+      return BOARD_TILE_COLORS.propertyYellow;
+    case SpaceType.CHEST:
+      return BOARD_TILE_COLORS.propertyCyan;
+    case SpaceType.RAILROAD:
+      return BOARD_TILE_COLORS.railroad;
+    case SpaceType.UTILITY:
+      return BOARD_TILE_COLORS.utility;
+    case SpaceType.TAX:
+      return BOARD_TILE_COLORS.propertyRed;
+    default:
+      return BOARD_TILE_COLORS.propertyBlue;
+  }
+}
+
+export function getSpaceHeaderTextColor(_space: BoardSpace) {
+  return BOARD_TILE_COLORS.altText;
+}
