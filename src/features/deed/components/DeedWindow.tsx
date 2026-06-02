@@ -21,6 +21,7 @@ interface DeedWindowProps {
   onBuy?: () => void;
   onAuction?: () => void;
   viewOnly?: boolean;
+  compact?: boolean;              // smaller typography to fit constrained height containers
   ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
 }
 
@@ -73,7 +74,7 @@ function getSpecialText(space: BoardSpace) {
 
 // ─── DeedWindow ───────────────────────────────────────────────────────────────
 
-export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false, ownership }: DeedWindowProps) {
+export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false, compact = false, ownership }: DeedWindowProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
 
@@ -136,7 +137,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
           color:           headerTextColor,
         }}
       >
-        <p className="font-display text-lg font-semibold uppercase tracking-[0.08em]">
+        <p className={`font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
           {spaceName}
         </p>
       </div>
@@ -152,10 +153,10 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
       >
         {!isSpecialCard && (
           <div className="text-center">
-            <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.text }}>
+            <p className={`font-semibold ${compact ? 'text-[10px]' : 'text-sm'}`} style={{ color: GAME_BOARD_COLORS.text }}>
               {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? 'Status'}
             </p>
-            <p className="mt-1 text-4xl font-black leading-none" style={{ color: GAME_BOARD_COLORS.tileText }}>
+            <p className={`mt-1 font-black leading-none ${compact ? 'text-xl' : 'text-4xl'}`} style={{ color: GAME_BOARD_COLORS.tileText }}>
               {isDeed && headlineRent
                 ? `$${headlineRent.replace(/^M/, '')}`
                 : cornerText?.value ?? '--'}
@@ -172,7 +173,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
             {deed.rentRows.slice(1).map((row) => (
               <div
                 key={row.labelKey}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 text-sm"
+                className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[10px]' : 'text-sm'}`}
               >
                 <span className="font-medium leading-[1.2] tracking-[0.01em]">
                   {formatLabel(row.labelKey)}
@@ -190,7 +191,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
         ) : (
           <div className="flex h-full items-center justify-center text-center">
             <p
-              className="max-w-[18ch] text-lg font-black leading-tight"
+              className={`max-w-[18ch] font-black leading-tight ${compact ? 'text-sm' : 'text-lg'}`}
               style={{ color: cornerText ? GAME_BOARD_COLORS.tileText : GAME_BOARD_COLORS.text }}
             >
               {nonDeedTitle}

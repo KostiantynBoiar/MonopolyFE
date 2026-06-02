@@ -133,11 +133,11 @@ export function ManagePropertiesOverlay({
               return (
                 <div key={p.position} className="flex shrink-0 flex-col gap-2">
                   {space ? (
-                    // 1:2 portrait — matches the physical deed card proportions
-                    <div style={{ width: '9.5em', aspectRatio: '1 / 2' }}>
+                    <div style={{ width: '9.5em', height: '13em' }}>
                       <DeedWindow
                         space={space}
                         viewOnly
+                        compact
                         ownership={{ houses: p.houses, hotel: p.hotel }}
                       />
                     </div>
