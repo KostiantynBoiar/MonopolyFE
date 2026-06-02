@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TOKEN_COLORS } from '@/shared/config/constants';
-import { LogKind, TokenColor } from '@/shared/protocol/game-state.enums';
+import { LogKind } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { ChatWindowTab } from '../chat.enums';
 import type { ChatMessage, ChatWindowProps, StickerPack } from '../chat.types';
@@ -18,6 +18,10 @@ function formatTime(ts: number) {
 function getStickerUrl(text: string) {
   const match = text.match(/^\[sticker:(.+?)\]$/);
   return match?.[1] ?? null;
+}
+
+function isTgsSticker(url: string) {
+  return url.toLowerCase().endsWith('.tgs');
 }
 
 function clampMessage(text: string) {
@@ -37,34 +41,79 @@ function useStickerPacks() {
   return packs;
 }
 
-function StickerCell({ url, file, index, onSelect }: { url: string; file: string; index: number; onSelect: () => void }) {
-  const isTgs = file.endsWith('.tgs');
-  const [mounted, setMounted] = useState(!isTgs);
+function StickerFallback({ size, label = 'TGS' }: { size: number; label?: string }) {
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded-[8px] border text-[11px] font-black uppercase tracking-[0.12em]"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: GAME_BOARD_COLORS.panel,
+        borderColor: GAME_BOARD_COLORS.border,
+        color: GAME_BOARD_COLORS.muted,
+      }}
+      aria-hidden="true"
+    >
+      {label}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    if (!isTgs) return;
-    const timer = setTimeout(() => setMounted(true), index * 20);
-    return () => clearTimeout(timer);
-  }, [index, isTgs]);
+function StickerPreview({ url, alt, size, loop = true }: { url: string; alt: string; size: number; loop?: boolean }) {
+  const [failed, setFailed] = useState(false);
+
+  if (isTgsSticker(url)) {
+    return (
+      <TgsPlayer
+        src={url}
+        size={size}
+        loop={loop}
+        fallback={<StickerFallback size={size} />}
+      />
+    );
+  }
+
+  if (failed) {
+    return <StickerFallback size={size} label="IMG" />;
+  }
+
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="max-w-full object-contain"
+      style={{ width: size, height: size }}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+function StickerCell({ url, file, onSelect }: { url: string; file: string; onSelect: () => void }) {
+  const isTgs = isTgsSticker(file);
+  const [previewActive, setPreviewActive] = useState(false);
 
   return (
     <button
       type="button"
       onClick={onSelect}
       className="flex h-[60px] w-[60px] items-center justify-center rounded-[8px] border"
+      onBlur={() => setPreviewActive(false)}
+      onFocus={() => setPreviewActive(true)}
+      onPointerEnter={() => setPreviewActive(true)}
+      onPointerLeave={() => setPreviewActive(false)}
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,
       }}
     >
-      {isTgs
-        ? (mounted ? <TgsPlayer src={url} size={45} loop={false} /> : <div style={{ width: 45, height: 45 }} />)
-        : <img src={url} alt={file} className="h-[45px] w-[45px] object-contain" />}
+      {isTgs && !previewActive
+        ? <StickerFallback size={45} />
+        : <StickerPreview url={url} alt={file} size={45} loop={false} />}
     </button>
   );
 }
 
-export function ChatWindow({ log, initialMessages = [], externalMessages, onSendMessage, onSendSticker }: ChatWindowProps) {
+export function ChatWindow({ log, initialMessages = [], externalMessages, viewerToken, onSendMessage, onSendSticker }: ChatWindowProps) {
   const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -85,15 +134,33 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
     setMessages((current) => {
       const existingIds = new Set(current.map((m) => m.id));
       const incoming = externalMessages.filter((m) => !existingIds.has(m.id));
-      if (!incoming.length) return current;
-      if (activeTab !== ChatWindowTab.CHAT) {
-        setUnreadCount((n) => n + incoming.length);
+      const matchedLocalIds = new Set<string>();
+      for (const message of incoming) {
+        if (message.author !== 'You') continue;
+
+        const localMatch = current.find((candidate) => (
+          (candidate.id.startsWith('local-') || candidate.id.startsWith('sticker-')) &&
+          candidate.author === 'You' &&
+          candidate.text === message.text &&
+          Math.abs(candidate.ts - message.ts) < 30_000
+        ));
+
+        if (localMatch) {
+          matchedLocalIds.add(localMatch.id);
+        }
       }
-      return [...current, ...incoming].sort((a, b) => a.ts - b.ts);
+
+      const retainedLocal = current.filter((message) => (
+        (message.id.startsWith('local-') || message.id.startsWith('sticker-')) &&
+        !matchedLocalIds.has(message.id)
+      ));
+
+      if (activeTab !== ChatWindowTab.CHAT) {
+        setUnreadCount((n) => n + incoming.filter((message) => message.author !== 'You').length);
+      }
+      return [...externalMessages, ...retainedLocal].sort((a, b) => a.ts - b.ts);
     });
-  // externalMessages.length is the stable trigger — the array reference changes on every render
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [externalMessages?.length]);
+  }, [activeTab, externalMessages]);
 
   useEffect(() => {
     if (activeTab === ChatWindowTab.CHAT) {
@@ -113,7 +180,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
       id: `local-${Date.now()}`,
       kind: 'chat',
       author: 'You',
-      token: TokenColor.BLUE,
+      token: viewerToken,
       text,
       ts: Date.now(),
     };
@@ -131,7 +198,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
       id: `sticker-${Date.now()}`,
       kind: 'chat',
       author: 'You',
-      token: TokenColor.BLUE,
+      token: viewerToken,
       text: `[sticker:${url}]`,
       ts: Date.now(),
     };
@@ -268,7 +335,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
                     </div>
                     {stickerUrl ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <img src={stickerUrl} alt="Sticker" className="h-20 w-20 max-w-full object-contain" />
+                        <StickerPreview url={stickerUrl} alt="Sticker" size={80} />
                       </div>
                     ) : (
                       <p
@@ -315,8 +382,8 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
           <button
             type="button"
             onClick={() => setShowStickers((value) => !value)}
-          className="absolute right-[4px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
-          style={{
+            className="absolute right-[4px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
+            style={{
               backgroundColor: showStickers ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
               color: showStickers ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
             }}
@@ -346,7 +413,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
       </div>
       {showStickers && (
         <div
-          className="absolute bottom-[57px] left-[calc(100%-51px)] z-10 w-[214px] -translate-x-full overflow-hidden rounded-[10px] border"
+          className="absolute bottom-[57px] left-[calc(100%-51px)] z-10 w-[324px] -translate-x-full overflow-hidden rounded-[10px] border"
           style={{
             backgroundColor: GAME_BOARD_COLORS.surface,
             borderColor: GAME_BOARD_COLORS.border,
@@ -370,15 +437,14 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, onSend
               ))}
             </div>
           )}
-          <div className="grid max-h-[280px] grid-cols-3 gap-[4px] overflow-y-auto p-2">
-            {activePack?.stickers.map((file, index) => {
+          <div className="grid max-h-[280px] grid-cols-5 gap-[4px] overflow-y-auto p-2">
+            {activePack?.stickers.map((file) => {
               const url = `/stickers/${activePack.id}/${file}`;
               return (
                 <StickerCell
                   key={`${activePack.id}-${file}`}
                   url={url}
                   file={file}
-                  index={index}
                   onSelect={() => handleSticker(url)}
                 />
               );

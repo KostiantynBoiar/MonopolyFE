@@ -379,18 +379,23 @@ export default function GameRoomPage() {
     [socketMessages],
   );
 
+  const tokenByUserId = useMemo(
+    () => new Map(game.players.map((player) => [player.userId, player.token])),
+    [game.players],
+  );
+
   const gameChatMessages = useMemo(
     () =>
       socketMessages
-        .filter((message) => message.from_user_id !== user?.id)
         .map((message) => ({
           id: message.id,
           kind: 'chat' as const,
-          author: message.display_name,
+          author: message.from_user_id === user?.id ? 'You' : message.display_name,
+          token: tokenByUserId.get(message.from_user_id),
           text: message.kind === 'sticker' ? `[sticker:${message.sticker_url}]` : message.text,
           ts: Date.parse(message.ts),
         })),
-    [socketMessages, user?.id],
+    [socketMessages, tokenByUserId, user?.id],
   );
 
   const diceRoll = animatedDiceRoll ?? game.turn.diceRoll;
@@ -545,6 +550,7 @@ export default function GameRoomPage() {
       <ChatWindow
         log={game.log}
         externalMessages={gameChatMessages}
+        viewerToken={viewerPlayer?.token}
         onSendMessage={sendChat}
         onSendSticker={sendSticker}
       />

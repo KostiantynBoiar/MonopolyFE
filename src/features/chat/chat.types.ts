@@ -29,6 +29,7 @@ export interface ChatWindowProps {
   log: LogEntry[];
   initialMessages?: ChatMessage[];
   externalMessages?: ChatMessage[];
+  viewerToken?: TokenColor;
   onSendMessage?: (text: string) => void;
   onSendSticker?: (url: string) => void;
 }
