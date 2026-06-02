@@ -6,6 +6,7 @@ import { LogKind } from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { onAnimation } from '@/shared/socket/timeline-executor';
 import { useBalanceChange } from './useBalanceChange';
+import { useCurrentTurn } from './useCurrentTurn';
 
 export function useBoardSfx(gameState: GameState) {
   // Preload all sounds once on mount
@@ -21,6 +22,7 @@ export function useBoardSfx(gameState: GameState) {
   }, []);
 
   useBalanceChange(gameState.players, () => playSfx('paid'));
+  useCurrentTurn(gameState.turn.currentPlayerId, gameState.viewerId, () => playSfx('notification'));
 
   const prevAuctionRef = useRef(false);
   const prevTradeIdRef = useRef<string | null>(null);
