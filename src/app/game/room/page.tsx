@@ -176,7 +176,7 @@ export default function GameRoomPage() {
   const animatedDiceRoll = useUiStore((state) => state.animatedDiceRoll);
   const animatedDiceRollId = useUiStore((state) => state.animatedDiceRollId);
   const activeAnimationCard = useUiStore((state) => state.activeAnimationCard);
-  const setPendingAnimationInteraction = useUiStore((state) => state.setPendingAnimationInteraction);
+  const pendingAnimationInteraction = useUiStore((state) => state.pendingAnimationInteraction);
   const selectedTile = useUiStore((state) => state.selectedTile);
   const setSelectedTile = useUiStore((state) => state.setSelectedTile);
 
@@ -491,11 +491,14 @@ export default function GameRoomPage() {
 
   function renderCenterPanel() {
     if (activeCard) {
+      const isAffectedPlayer =
+        pendingAnimationInteraction !== null &&
+        pendingAnimationInteraction.affectedPlayerId === viewerPlayerId;
       return (
         <CardFlipOverlay
           card={activeCard}
           onProceed={handleCardProceed}
-          canProceed={useUiStore.getState().pendingInteractionId !== null}
+          canProceed={isAffectedPlayer}
         />
       );
     }
