@@ -12,6 +12,9 @@ interface UiStore {
   // Animations
   isRolling: boolean;
   walkState: WalkState | null;
+  // Set while the timeline is paused at a wait_for_player gate; the affected player's
+  // "Continue" sends this id back to the server. null when no animation is paused.
+  pendingInteractionId: string | null;
 
   // Overlays / modals
   activeDeed:  DeedInfo | null;
@@ -24,6 +27,7 @@ interface UiStore {
   // Actions
   setIsRolling:  (v: boolean) => void;
   setWalkState:  (v: WalkState | null) => void;
+  setPendingInteractionId: (v: string | null) => void;
   setActiveDeed: (v: DeedInfo | null) => void;
   setOpenedModal:(v: ModalKind) => void;
   setHoveredTile:(v: number | null) => void;
@@ -32,10 +36,11 @@ interface UiStore {
 }
 
 const INITIAL: Pick<UiStore,
-  'isRolling' | 'walkState' | 'activeDeed' | 'openedModal' | 'hoveredTile' | 'selectedTile'
+  'isRolling' | 'walkState' | 'pendingInteractionId' | 'activeDeed' | 'openedModal' | 'hoveredTile' | 'selectedTile'
 > = {
   isRolling:    false,
   walkState:    null,
+  pendingInteractionId: null,
   activeDeed:   null,
   openedModal:  null,
   hoveredTile:  null,
@@ -47,6 +52,7 @@ export const useUiStore = create<UiStore>((set) => ({
 
   setIsRolling:   (v) => set({ isRolling: v }),
   setWalkState:   (v) => set({ walkState: v }),
+  setPendingInteractionId: (v) => set({ pendingInteractionId: v }),
   setActiveDeed:  (v) => set({ activeDeed: v }),
   setOpenedModal: (v) => set({ openedModal: v }),
   setHoveredTile: (v) => set({ hoveredTile: v }),

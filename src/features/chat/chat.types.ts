@@ -61,6 +61,7 @@ export interface LogAndActionsProps {
 export interface CardOverlayProps {
   activeCard?: ActiveCard | null;
   onCardProceed?: () => void;
+  canCardProceed?: boolean;
 }
 
 /** Deed (buy/auction) overlay props */

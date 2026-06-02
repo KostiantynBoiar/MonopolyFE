@@ -1,4 +1,5 @@
 import type { GameState } from './game-state';
+import type { AnimationInstruction } from './animation';
 
 // ======================================================
 // PLAYER PERMISSIONS
@@ -56,5 +57,7 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
 export interface GameSnapshot {
   game:        GameState;
   permissions: PlayerPermissions;
-  // TODO:  animationTimeline: AnimationInstruction[]
+  // Ordered animation instructions emitted by the backend describing how this state was
+  // reached; replayed by the timeline-executor. Empty for reconnect/system frames.
+  animationTimeline: AnimationInstruction[];
 }

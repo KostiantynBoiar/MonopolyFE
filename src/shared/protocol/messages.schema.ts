@@ -19,6 +19,9 @@ export enum WsInboundType {
   // Full per-viewer game snapshot. Payload is the backend GameState (snake_case)
   // with `viewer_id` and `turn.actions_available`; translated by the state adapter.
   GAME_STATE      = 'game.state',
+  // Server fan-out of a player's animation "Continue" — un-pauses the matching
+  // wait_for_player gate on every client. Carries { interaction_id }.
+  GAME_ANIMATION_CONTINUE = 'game.animation_continue',
 }
 
 export enum WsOutboundType {
@@ -71,6 +74,10 @@ export type WsSessionUpdatedPayload = {
 // adapter (BeGameState) owns the structural contract.
 export type WsGameStatePayload = Record<string, unknown>;
 
+export type WsAnimationContinuePayload = {
+  interaction_id: string;
+};
+
 export type WsErrorPayload = {
   code: 'malformed' | 'unsupported_version' | 'unknown_type' | 'unauthorized' | 'not_member' | 'rate_limited' | 'internal';
   message: string;
@@ -86,6 +93,7 @@ export type WsChatSticker    = WsEnvelope<WsInboundType.CHAT_STICKER,    WsChatS
 export type WsSessionUpdated = WsEnvelope<WsInboundType.SESSION_UPDATED, WsSessionUpdatedPayload>;
 export type WsError          = WsEnvelope<WsInboundType.SYSTEM_ERROR,    WsErrorPayload>;
 export type WsGameState      = WsEnvelope<WsInboundType.GAME_STATE,      WsGameStatePayload>;
+export type WsAnimationContinue = WsEnvelope<WsInboundType.GAME_ANIMATION_CONTINUE, WsAnimationContinuePayload>;
 
 export type WsInbound =
   | WsWelcome
@@ -94,7 +102,8 @@ export type WsInbound =
   | WsChatSticker
   | WsSessionUpdated
   | WsError
-  | WsGameState;
+  | WsGameState
+  | WsAnimationContinue;
 
 // ─── Outbound message builders (client → server) ─────────────────────────────
 

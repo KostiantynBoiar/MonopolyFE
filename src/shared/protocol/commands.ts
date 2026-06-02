@@ -37,6 +37,8 @@ export enum CommandType {
   RollInJail  = 'roll_in_jail',
 
   ResolveCard = 'resolve_card',
+
+  AnimationContinue = 'animation_continue',
 }
 
 // ======================================================
@@ -84,6 +86,7 @@ export type PayJailFineCommand = { type: CommandType.PayJailFine };
 export type UseJailCardCommand = { type: CommandType.UseJailCard };
 export type RollInJailCommand  = { type: CommandType.RollInJail };
 export type ResolveCardCommand = { type: CommandType.ResolveCard };
+export type AnimationContinueCommand = { type: CommandType.AnimationContinue; interactionId: string };
 
 // ======================================================
 // DISCRIMINATED UNION
@@ -111,4 +114,5 @@ export type ClientCommand =
   | PayJailFineCommand
   | UseJailCardCommand
   | RollInJailCommand
-  | ResolveCardCommand;
+  | ResolveCardCommand
+  | AnimationContinueCommand;

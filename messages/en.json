@@ -20,7 +20,8 @@
   "Card": {
     "chance": "CHANCE",
     "community_chest": "COMMUNITY CHEST",
-    "proceed": "Proceed"
+    "proceed": "Proceed",
+    "waiting": "Waiting…"
   },
 
   "Deed": {

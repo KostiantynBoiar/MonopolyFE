@@ -17,7 +17,7 @@ import type {
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { adaptGameStateFrame, type BeGameState } from '@/shared/transport/state-adapter';
 import { serializeCommand } from '@/shared/transport/command-serializer';
-import { enqueueSnapshot, resetSnapshotPipeline } from './snapshot-animator';
+import { enqueueSnapshot, resetSnapshotPipeline, resolveAnimationGate } from './timeline-executor';
 import { useCommandBus } from '@/stores/command-bus';
 import { useUiStore } from '@/stores/ui-store';
 import { GameSocket } from './GameSocket';
@@ -105,10 +105,18 @@ export function useGameSocket(sessionId: string | null) {
         }
 
         case WsInboundType.GAME_STATE: {
-          // Server-authoritative full snapshot. Translate then hand to the animation
-          // pipeline, which diffs against the committed state and commits to the store.
+          // Server-authoritative full snapshot + the animation timeline describing how
+          // it was reached. The executor replays the timeline, then commits the state.
           const snapshot = adaptGameStateFrame(msg.payload as unknown as BeGameState);
           enqueueSnapshot(snapshot);
+          break;
+        }
+
+        case WsInboundType.GAME_ANIMATION_CONTINUE: {
+          // The affected player clicked Continue; the server fanned it out so every
+          // client un-pauses the same wait_for_player gate together.
+          const p = msg.payload as { interaction_id: string };
+          resolveAnimationGate(p.interaction_id);
           break;
         }
 

@@ -103,6 +103,10 @@ export function serializeCommand(cmd: ClientCommand): WireCommand | null {
     case CommandType.DeclareBankruptcy:
       return { type: 'game.declare_bankruptcy', payload: {} };
 
+    // Resume a paused animation; the server authorizes + fans it out to all clients.
+    case CommandType.AnimationContinue:
+      return { type: 'game.animation_continue', payload: { interaction_id: cmd.interactionId } };
+
     // Paying debt = ending the turn; the backend auto-deducts once the player
     // has raised enough cash and calls end_turn.
     case CommandType.PayDebt:
