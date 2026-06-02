@@ -4,6 +4,8 @@ import { BoardTileFlavor, CornerVariant, SpaceType, TileEdge } from '../game-boa
 import type { BoardTileProps } from '../game-board.types';
 import { BOARD_TILE_COLORS, CORNER_COLOR_MAP, GAME_BOARD_COLORS, SPACE_SURFACE_MAP, SPACE_SYMBOL_MAP, getSpaceHeaderColor } from '../game-board.colors';
 import { cn } from '@/shared/lib/cn';
+import { BuildingsMarker } from './BuildingsMarker';
+import { PlayerMarker } from './PlayerMarker';
 
 const PROPERTY_HEADER_RATIO = 1.25;
 
@@ -101,13 +103,13 @@ function getContentPadding(edge: TileEdge, hasHeader: boolean) {
   }
 }
 
-export function BoardTile({ space, edge, flavor }: BoardTileProps) {
+export function BoardTile({ space, edge, flavor, ownership, players }: BoardTileProps) {
   if (flavor === BoardTileFlavor.CORNER && space.corner) {
     const cornerColor = CORNER_COLOR_MAP[space.corner];
 
     return (
       <article
-        className="flex h-full w-full flex-col items-center justify-center rounded-[16px] border shadow-sm text-center"
+        className="relative flex h-full w-full flex-col items-center justify-center rounded-[16px] border shadow-sm text-center"
         style={{
           backgroundColor: cornerColor,
           borderColor: cornerColor,
@@ -148,6 +150,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             </p>
           )}
         </div>
+        <PlayerMarker players={players} edge={edge} />
       </article>
     );
   }
@@ -155,7 +158,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
   if (flavor === BoardTileFlavor.SPECIAL) {
     return (
       <article
-        className="flex h-full w-full flex-col items-center justify-center rounded-[12px] border text-center shadow-sm"
+        className="relative flex h-full w-full flex-col items-center justify-center rounded-[12px] border text-center shadow-sm"
         style={{
           backgroundColor: SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.special,
           borderColor: BOARD_TILE_COLORS.propertyOrange,
@@ -188,6 +191,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
             </p>
           )}
         </div>
+        <PlayerMarker players={players} edge={edge} />
       </article>
     );
   }
@@ -216,6 +220,8 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
           style={getHeaderStyle(edge, propertyColor)}
         />
       )}
+      <BuildingsMarker ownership={ownership} edge={edge} />
+      <PlayerMarker players={players} edge={edge} />
       <div
         className={cn(
           'flex min-w-0 flex-1 justify-between',

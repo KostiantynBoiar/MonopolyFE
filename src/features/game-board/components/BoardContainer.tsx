@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
+import { TOKEN_COLORS } from '@/features/player-panel';
 import { createMockGameRoomSnapshot } from '@/shared/mocks/game-room.mock';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
@@ -19,6 +20,14 @@ const BOARD_ROWS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) cal
 const MOCK_SNAPSHOT = createMockGameRoomSnapshot();
 const MOCK_LOG = MOCK_SNAPSHOT.game.log;
 const MOCK_DICE_ROLL = MOCK_SNAPSHOT.game.turn.diceRoll;
+const MOCK_SPACES = MOCK_SNAPSHOT.game.spaces;
+const MOCK_PLAYERS = MOCK_SNAPSHOT.game.players.map((player) => ({
+  id: player.id,
+  position: player.position,
+  tokenColor: TOKEN_COLORS[player.token],
+  isBankrupt: player.isBankrupt,
+}));
+const MOCK_PANEL_PLAYERS = MOCK_SNAPSHOT.game.players;
 const MOCK_CHAT_MESSAGES = [
   { id: 'c1', kind: 'chat' as const, author: 'Bob', token: TokenColor.RED, text: 'Need one more turn before I trade.', ts: Date.now() - 1000 * 60 * 8 },
   { id: 'c2', kind: 'chat' as const, author: 'Carol', token: TokenColor.GREEN, text: 'Auction that if you skip it.', ts: Date.now() - 1000 * 60 * 4 },
@@ -85,10 +94,153 @@ function rollDie() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-export function BoardContainer({ centerContent }: BoardContainerProps) {
+function getOwnedPropertyNames(playerId: string, spaces: typeof MOCK_SPACES) {
+  return spaces
+    .filter((space) => space.ownerId === playerId)
+    .map((space) => BOARD.find((boardSpace) => boardSpace.pos === space.position)?.name)
+    .filter((name): name is string => Boolean(name));
+}
+
+interface PlayerPanelProps {
+  currentPlayerId: string;
+  spaces: typeof MOCK_SPACES;
+}
+
+function PlayerPanel({ currentPlayerId, spaces }: PlayerPanelProps) {
+  const currentPlayer = MOCK_PANEL_PLAYERS.find((player) => player.id === currentPlayerId);
+
+  return (
+    <aside
+      className="flex min-h-[220px] flex-col gap-4 rounded-[18px] border p-4"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.panel,
+        borderColor: GAME_BOARD_COLORS.border,
+        color: GAME_BOARD_COLORS.text,
+      }}
+    >
+      <div
+        className="rounded-[14px] border px-3 py-3"
+        style={{
+          backgroundColor: BOARD_TILE_COLORS.propertyBlue,
+          borderColor: BOARD_TILE_COLORS.propertyBlue,
+          color: BOARD_TILE_COLORS.altText,
+        }}
+      >
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em]">
+          Current Turn
+        </p>
+        <p className="mt-1 truncate font-display text-2xl font-semibold">
+          {currentPlayer?.displayName ?? 'Unknown'}
+        </p>
+      </div>
+
+      <div className="grid min-h-0 gap-3">
+        {MOCK_PANEL_PLAYERS.map((player) => {
+          const ownedProperties = getOwnedPropertyNames(player.id, spaces);
+          const isCurrent = player.id === currentPlayerId;
+
+          return (
+            <article
+              key={player.id}
+              className="grid gap-3 rounded-[14px] border px-3 py-3"
+              style={{
+                backgroundColor: isCurrent ? GAME_BOARD_COLORS.center : GAME_BOARD_COLORS.surface,
+                borderColor: isCurrent ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.border,
+                color: GAME_BOARD_COLORS.text,
+              }}
+            >
+              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-full border-2 font-mono text-sm font-black"
+                  style={{
+                    backgroundColor: TOKEN_COLORS[player.token],
+                    borderColor: BOARD_TILE_COLORS.altText,
+                    color: BOARD_TILE_COLORS.altText,
+                    boxShadow: '0 2px 6px rgba(0,0,0,.22)',
+                  }}
+                >
+                  {player.id.replace(/\D/g, '') || player.displayName.slice(0, 1)}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <p className="truncate font-display text-lg font-semibold leading-tight">
+                      {player.displayName}
+                    </p>
+                    {isCurrent && (
+                      <span
+                        className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-[0.12em]"
+                        style={{
+                          backgroundColor: BOARD_TILE_COLORS.propertyBlue,
+                          color: BOARD_TILE_COLORS.altText,
+                        }}
+                      >
+                        Turn
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 font-mono text-xs font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
+                    ${player.balance}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {ownedProperties.length > 0 ? (
+                  ownedProperties.slice(0, 4).map((property) => (
+                    <span
+                      key={property}
+                      className="max-w-full truncate rounded-[8px] border px-2 py-1 text-[11px] font-semibold leading-none"
+                      style={{
+                        backgroundColor: GAME_BOARD_COLORS.tile,
+                        borderColor: GAME_BOARD_COLORS.border,
+                        color: GAME_BOARD_COLORS.tileText,
+                      }}
+                    >
+                      {property}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[11px] font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
+                    No properties
+                  </span>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        className="mt-auto rounded-[14px] border px-4 py-3 text-sm font-black uppercase tracking-[0.12em]"
+        style={{
+          backgroundColor: BOARD_TILE_COLORS.propertyRed,
+          borderColor: BOARD_TILE_COLORS.propertyRed,
+          color: BOARD_TILE_COLORS.altText,
+        }}
+      >
+        Surrender
+      </button>
+    </aside>
+  );
+}
+
+export function BoardContainer({ centerContent, spaces, players }: BoardContainerProps) {
   const [selectedPos, setSelectedPos] = useState(37);
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(MOCK_DICE_ROLL);
   const [diceRollId, setDiceRollId] = useState(0);
+  const boardSpaces = spaces ?? MOCK_SPACES;
+  const boardPlayers = players ?? MOCK_PLAYERS;
+  const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
+  const playersByPosition = new Map<number, typeof boardPlayers>();
+
+  for (const player of boardPlayers) {
+    if (player.isBankrupt) {
+      continue;
+    }
+
+    playersByPosition.set(player.position, [...(playersByPosition.get(player.position) ?? []), player]);
+  }
   const selectedSpace = BOARD[selectedPos] ?? BOARD[0];
 
   useEffect(() => {
@@ -146,6 +298,8 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
                       space={space}
                       edge={getTileEdge(space.pos)}
                       flavor={getTileFlavor(space.type)}
+                      ownership={ownershipByPosition.get(space.pos) ?? null}
+                      players={playersByPosition.get(space.pos) ?? []}
                     />
                   </div>
                 );
@@ -189,29 +343,7 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
           </div>
         </div>
 
-        <aside
-          className="flex min-h-[220px] flex-col justify-between p-6"
-          style={{
-            backgroundColor: BOARD_TILE_COLORS.propertyGreen,
-            color: BOARD_TILE_COLORS.altText,
-          }}
-        >
-          <div>
-            <p
-              className="font-mono text-xs uppercase tracking-[0.35em]"
-              style={{ color: BOARD_TILE_COLORS.altText }}
-            >
-              Future Player Panel
-            </p>
-            <p className="mt-3 font-display text-3xl font-semibold">
-              Green side panel
-            </p>
-          </div>
-
-          <p className="max-w-xs text-sm" style={{ color: BOARD_TILE_COLORS.altText }}>
-            Reserved for player cards, balances, turn state, and quick actions.
-          </p>
-        </aside>
+        <PlayerPanel currentPlayerId={MOCK_SNAPSHOT.game.turn.currentPlayerId} spaces={boardSpaces} />
       </section>
     </div>
   );

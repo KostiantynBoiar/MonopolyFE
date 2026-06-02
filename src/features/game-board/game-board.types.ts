@@ -72,6 +72,8 @@ export interface BoardTileProps {
   space: BoardSpace;
   edge: TileEdge;
   flavor: BoardTileFlavor;
+  ownership?: PropertyState | null;
+  players?: BoardPlayer[];
 }
 
 export interface BoardPlayer {
