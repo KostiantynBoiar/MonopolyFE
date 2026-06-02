@@ -28,19 +28,19 @@ Apply New Snapshot
 
 Examples of frontend inference:
 
-* Did a dice roll happen?
-* Was a card drawn?
-* Did the card move the player?
-* Is this a direct movement or a card movement?
-* Should movement be animated?
-* Should the card modal pause execution?
+- Did a dice roll happen?
+- Was a card drawn?
+- Did the card move the player?
+- Is this a direct movement or a card movement?
+- Should movement be animated?
+- Should the card modal pause execution?
 
 This causes:
 
-* complex frontend logic
-* duplicated game rules
-* fragile edge cases
-* difficult maintenance
+- complex frontend logic
+- duplicated game rules
+- fragile edge cases
+- difficult maintenance
 
 ---
 
@@ -48,17 +48,17 @@ This causes:
 
 Backend owns:
 
-* game rules
-* state transitions
-* animation order
-* interaction pauses
+- game rules
+- state transitions
+- animation order
+- interaction pauses
 
 Frontend owns:
 
-* rendering
-* animations
-* sounds
-* visual effects
+- rendering
+- animations
+- sounds
+- visual effects
 
 ---
 
@@ -96,7 +96,7 @@ The animation timeline is only a visual replay of how the state was reached.
 
 ```ts
 type RollDiceAnimation = {
-  type: 'roll_dice';
+  type: "roll_dice";
 
   playerId: string;
 
@@ -109,8 +109,8 @@ type RollDiceAnimation = {
 
 Purpose:
 
-* trigger dice animation
-* trigger dice sounds
+- trigger dice animation
+- trigger dice sounds
 
 No game logic attached.
 
@@ -120,20 +120,16 @@ No game logic attached.
 
 ```ts
 type MoveAnimation = {
-  type: 'move';
+  type: "move";
 
   playerId: string;
 
   from: number;
   to: number;
 
-  speed: 'normal' | 'fast';
+  speed: "normal" | "fast";
 
-  reason:
-    | 'dice'
-    | 'card'
-    | 'teleport'
-    | 'jail';
+  reason: "dice" | "card" | "teleport" | "jail";
 };
 ```
 
@@ -171,7 +167,7 @@ Card move:
 
 ```ts
 type ShowCardAnimation = {
-  type: 'show_card';
+  type: "show_card";
 
   card: ActiveCard;
 };
@@ -189,7 +185,7 @@ No movement occurs automatically.
 
 ```ts
 type WaitForPlayerAnimation = {
-  type: 'wait_for_player';
+  type: "wait_for_player";
 
   interactionId: string;
 };
@@ -216,7 +212,7 @@ Backend resumes execution.
 
 ```ts
 type OpenDeedAnimation = {
-  type: 'open_deed';
+  type: "open_deed";
 
   position: number;
 };
@@ -396,17 +392,21 @@ AnimationInstruction = Union[
 
 Frontend:
 
-* dramatically simpler animation pipeline
-* no snapshot diffing
-* no card heuristics
-* no movement inference
-* easier testing
+- dramatically simpler animation pipeline
+- no snapshot diffing
+- no card heuristics
+- no movement inference
+- easier testing
 
 Backend:
 
-* single source of truth
-* deterministic replay
-* easier debugging
-* future-proof for auctions, trades, jail, bankruptcy, and special events
+- single source of truth
+- deterministic replay
+- easier debugging
+- future-proof for auctions, trades, jail, bankruptcy, and special events
+
+Backend emits animation instructions in snake_case.
+Continue is sent as a generic game command named animation_continue.
+Backend enforces authorization for continue commands; frontend only enables the button for the affected player.
 
 The game engine becomes responsible for both state transitions and the visual sequence that produced those transitions.

@@ -24,6 +24,7 @@ import type {
   DebtState,
   LogEntry,
 } from '@/shared/protocol/game-state';
+import type { AnimationInstruction } from '@/shared/protocol/animations';
 import {
   GameStatus,
   TurnPhase,
@@ -155,6 +156,45 @@ interface BeLogEntry {
   player_token?: string | null;
   sticker_url?: string | null;
 }
+
+interface BeRollDiceAnimation {
+  type: 'roll_dice';
+  player_id: string;
+  die1: number;
+  die2: number;
+  is_doubles: boolean;
+}
+
+interface BeMoveAnimation {
+  type: 'move';
+  player_id: string;
+  from_position: number;
+  to_position: number;
+  speed: 'normal' | 'fast';
+  reason: 'dice' | 'card' | 'teleport' | 'jail';
+}
+
+interface BeShowCardAnimation {
+  type: 'show_card';
+  card: BeActiveCard;
+}
+
+interface BeWaitForPlayerAnimation {
+  type: 'wait_for_player';
+  interaction_id: string;
+}
+
+interface BeOpenDeedAnimation {
+  type: 'open_deed';
+  position: number;
+}
+
+type BeAnimationInstruction =
+  | BeRollDiceAnimation
+  | BeMoveAnimation
+  | BeShowCardAnimation
+  | BeWaitForPlayerAnimation
+  | BeOpenDeedAnimation;
 
 export interface BeGameState {
   game_id: string;
@@ -328,6 +368,48 @@ function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
     ts: e.ts,
     // BE log is text-only; no machine-readable `event` payload.
   }));
+}
+
+function mapAnimationInstruction(i: BeAnimationInstruction): AnimationInstruction | null {
+  switch (i.type) {
+    case 'roll_dice':
+      return {
+        type: 'roll_dice',
+        playerId: i.player_id,
+        die1: i.die1,
+        die2: i.die2,
+        isDoubles: i.is_doubles,
+      };
+
+    case 'move':
+      return {
+        type: 'move',
+        playerId: i.player_id,
+        from: i.from_position,
+        to: i.to_position,
+        speed: i.speed,
+        reason: i.reason,
+      };
+
+    case 'show_card':
+      return { type: 'show_card', card: mapActiveCard(i.card)! };
+
+    case 'wait_for_player':
+      return { type: 'wait_for_player', interactionId: i.interaction_id };
+
+    case 'open_deed':
+      return { type: 'open_deed', position: i.position };
+
+    default:
+      return null;
+  }
+}
+
+function mapAnimationTimeline(timeline: BeAnimationInstruction[] | undefined): AnimationInstruction[] {
+  return (timeline ?? []).flatMap((instruction) => {
+    const mapped = mapAnimationInstruction(instruction);
+    return mapped ? [mapped] : [];
+  });
 }
 
 // ─── Permissions ──────────────────────────────────────────────────────────────

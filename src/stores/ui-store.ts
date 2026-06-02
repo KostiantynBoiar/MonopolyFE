@@ -1,9 +1,14 @@
 import { create } from 'zustand';
 import type { DeedInfo } from '@/features/deed';
+import type { ActiveCard, DiceRoll } from '@/shared/protocol/game-state';
 
 // ── WalkState lives here so the game-dispatch hook and board consumers share
 //    one definition without a cross-feature import.
 export interface WalkState { playerId: string; currentPos: number; fast?: boolean }
+export interface PendingAnimationInteraction {
+  interactionId: string;
+  affectedPlayerId: string;
+}
 
 // ── Modals the UI can open
 export type ModalKind = 'trade' | 'manage' | null;

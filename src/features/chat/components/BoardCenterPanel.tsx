@@ -1,6 +1,7 @@
 'use client';
 
 import { ChatWindow } from './ChatWindow';
+import { DiceWindow } from '@/features/dice';
 import type { BoardCenterPanelProps } from '../chat.types';
 
 interface BoardCenterPanelComponentProps extends BoardCenterPanelProps {
@@ -10,6 +11,7 @@ interface BoardCenterPanelComponentProps extends BoardCenterPanelProps {
 export function BoardCenterPanel({
   log,
   diceRoll,
+  diceRollId,
   isRolling,
   canRoll,
   canBuy,
@@ -27,6 +29,12 @@ export function BoardCenterPanel({
   return (
     <div className="flex h-full w-full flex-col bg-paper">
       {/* Game log and actions */}
+      {(diceRoll || isRolling) && (
+        <div className={`${compact ? 'h-32' : 'h-36'} shrink-0 border-b border-line bg-surface p-2`}>
+          <DiceWindow diceRoll={diceRoll} rollId={diceRollId ?? 0} />
+        </div>
+      )}
+
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ChatWindow
           log={log}

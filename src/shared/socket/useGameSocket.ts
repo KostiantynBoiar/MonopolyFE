@@ -13,12 +13,14 @@ import type {
   WsWelcomePayload,
   WsErrorPayload,
 } from '@/shared/protocol/messages.schema';
+import type { MemberRole } from '@/features/lobby';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { adaptGameStateFrame, type BeGameState } from '@/shared/transport/state-adapter';
 import { serializeCommand } from '@/shared/transport/command-serializer';
 import { enqueueSnapshot, resetSnapshotPipeline, resolveAnimationGate } from './timeline-executor';
 import { useCommandBus } from '@/stores/command-bus';
 import { useUiStore } from '@/stores/ui-store';
+import { enqueueSnapshot, resetSnapshotPipeline } from './snapshot-animator';
 import { GameSocket } from './GameSocket';
 
 export function useGameSocket(sessionId: string | null) {

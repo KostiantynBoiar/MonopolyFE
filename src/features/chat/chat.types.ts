@@ -50,6 +50,7 @@ export interface Action {
 export interface LogAndActionsProps {
   log: LogEntry[];
   diceRoll?: DiceRoll | null;
+  diceRollId?: number;
   isRolling?: boolean;
   canRoll?: boolean;
   canBuy?: boolean;

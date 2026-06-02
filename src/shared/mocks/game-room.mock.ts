@@ -175,5 +175,6 @@ export function createMockGameRoomSnapshot(): GameSnapshot {
       canPayDebt: false,
       canDeclareBankruptcy: false,
     },
+    animationTimeline: [],
   };
 }

@@ -179,10 +179,22 @@ function rollDie() {
 
 // ─── BoardContainer ───────────────────────────────────────────────────────────
 
-export function BoardContainer({ centerContent, centerSlots, spaces, players, sidebarPlayers }: BoardContainerProps) {
+export function BoardContainer({
+  centerContent,
+  centerSlots,
+  spaces,
+  players,
+  walkingPlayers,
+  sidebarPlayers,
+  diceRoll: controlledDiceRoll,
+  diceRollId: controlledDiceRollId,
+  onRollDice,
+}: BoardContainerProps) {
   const [selectedPos, setSelectedPos] = useState(37);
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(MOCK_DICE_ROLL);
   const [diceRollId, setDiceRollId] = useState(0);
+  const displayedDiceRoll = controlledDiceRoll ?? diceRoll;
+  const displayedDiceRollId = controlledDiceRollId ?? diceRollId;
   const boardSpaces = spaces ?? MOCK_SPACES;
   const boardPlayers = players ?? MOCK_PLAYERS;
   const hasSidebar = sidebarPlayers !== undefined;
@@ -190,12 +202,29 @@ export function BoardContainer({ centerContent, centerSlots, spaces, players, si
   const playersByPosition = new Map<number, typeof boardPlayers>();
   const { activeOverlay, handleAction, closeOverlay } = useActionButtons();
 
+  const walkingIds = new Set((walkingPlayers ?? []).map((player) => player.id));
+
   for (const player of boardPlayers) {
+    if (walkingIds.has(player.id)) {
+      continue;
+    }
+
     if (player.isBankrupt) {
       continue;
     }
 
     playersByPosition.set(player.position, [...(playersByPosition.get(player.position) ?? []), player]);
+  }
+
+  for (const player of walkingPlayers ?? []) {
+    const boardPlayer = {
+      id: player.id,
+      position: player.currentPos,
+      tokenColor: player.tokenColor,
+      isBankrupt: false,
+      avatarUrl: null,
+    };
+    playersByPosition.set(player.currentPos, [...(playersByPosition.get(player.currentPos) ?? []), boardPlayer]);
   }
   const selectedSpace = BOARD[selectedPos] ?? BOARD[0];
 
@@ -209,6 +238,11 @@ export function BoardContainer({ centerContent, centerSlots, spaces, players, si
   }, []);
 
   function handleRollDice() {
+    if (onRollDice) {
+      onRollDice();
+      return;
+    }
+
     const die1 = rollDie();
     const die2 = rollDie();
 
@@ -393,7 +427,7 @@ export function BoardContainer({ centerContent, centerSlots, spaces, players, si
                   ) : (
                     <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px]">
                       <div className="col-span-2 row-span-2 min-h-0">
-                        {centerSlots?.dice ?? <DiceWindow diceRoll={diceRoll} rollId={diceRollId} />}
+                        {centerSlots?.dice ?? <DiceWindow diceRoll={displayedDiceRoll} rollId={displayedDiceRollId} />}
                       </div>
 
                       <div className="col-span-4 col-start-3 row-span-2 min-h-0">

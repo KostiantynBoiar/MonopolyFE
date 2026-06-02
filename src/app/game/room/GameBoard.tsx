@@ -70,11 +70,30 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   const { snapshot, updateGame } = useGameStore();
   const { game: gameState, permissions } = snapshot;
 
-  const { isRolling, walkState, activeDeed, setActiveDeed, openedModal, setOpenedModal } = useUiStore();
+  const {
+    isRolling,
+    walkState,
+    isTimelineRunning,
+    animatedDiceRoll,
+    animatedDiceRollId,
+    activeAnimationCard,
+    pendingAnimationInteraction,
+    activeDeed,
+    setActiveDeed,
+    openedModal,
+    setOpenedModal,
+  } = useUiStore();
   const { messages: wsMessages } = useSocketStore();
 
   const { dispatch } = useGameDispatch();
   useBoardSfx(gameState);
+  const timelineBlocked = isTimelineRunning || pendingAnimationInteraction !== null;
+  const displayedDiceRoll = animatedDiceRoll ?? gameState.turn.diceRoll;
+  const displayedDiceRollId = animatedDiceRoll ? animatedDiceRollId : 0;
+  const visibleCard = activeAnimationCard ?? gameState.activeCard;
+  const canProceedAnimation =
+    !pendingAnimationInteraction ||
+    pendingAnimationInteraction.affectedPlayerId === gameState.viewerId;
 
   // ── Viewer ───────────────────────────────────────────────────────────────────
 
@@ -104,15 +123,15 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   // ── Game handlers ──────────────────────────────────────────────────────────────
 
   const handleRoll = useCallback(() => {
-    if (!permissions.canRoll || isRolling) return;
+    if (!permissions.canRoll || isRolling || timelineBlocked) return;
     playSfx('dice_roll');
     dispatch({ type: CommandType.RollDice });
-  }, [permissions.canRoll, isRolling, dispatch]);
+  }, [permissions.canRoll, isRolling, timelineBlocked, dispatch]);
 
   const handleEndTurn = useCallback(() => {
-    if (!permissions.canEndTurn) return;
+    if (!permissions.canEndTurn || timelineBlocked) return;
     dispatch({ type: CommandType.EndTurn });
-  }, [permissions.canEndTurn, dispatch]);
+  }, [permissions.canEndTurn, timelineBlocked, dispatch]);
 
   // "Continue" resumes the paused animation timeline. When a wait_for_player gate is
   // active we tell the server (which authorizes the affected player and fans the signal
@@ -308,13 +327,14 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
 
   const logAndActionsProps: LogAndActionsProps = {
     log:          combinedLog,
-    diceRoll:     gameState.turn.diceRoll,
+    diceRoll:     displayedDiceRoll,
+    diceRollId:   displayedDiceRollId,
     isRolling,
-    canRoll:      permissions.canRoll && !isRolling,
-    canBuy:       permissions.canBuyProperty,
-    canManage,
-    canTrade:     permissions.canTrade,
-    canEndTurn:   permissions.canEndTurn,
+    canRoll:      permissions.canRoll && !isRolling && !timelineBlocked,
+    canBuy:       permissions.canBuyProperty && !timelineBlocked,
+    canManage:    canManage && !timelineBlocked,
+    canTrade:     permissions.canTrade && !timelineBlocked,
+    canEndTurn:   permissions.canEndTurn && !timelineBlocked,
     onRoll:       handleRoll,
     onBuy:        handleBuy,
     onManage:     handleManage,
@@ -324,7 +344,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   };
 
   const cardOverlayProps: CardOverlayProps = {
-    activeCard:    gameState.activeCard,
+    activeCard:    visibleCard,
     onCardProceed: handleCardProceed,
     canCardProceed: isCurrentViewer,
   };
@@ -340,10 +360,10 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   const jailOverlayProps: JailOverlayProps = {
     jailDecision,
     jailAttempts:    viewer?.jailStatus?.attempts ?? 0,
-    canPayJailFine:  permissions.canPayJailFine,
-    canUseJailCard:  permissions.canUseJailCard,
-    canRollInJail:   permissions.canRollInJail && !isRolling,
-    jailDiceRoll:    jailDecision || isRolling ? gameState.turn.diceRoll : null,
+    canPayJailFine:  permissions.canPayJailFine && !timelineBlocked,
+    canUseJailCard:  permissions.canUseJailCard && !timelineBlocked,
+    canRollInJail:   permissions.canRollInJail && !isRolling && !timelineBlocked,
+    jailDiceRoll:    jailDecision || isRolling ? displayedDiceRoll : null,
     jailIsRolling:   isRolling && jailDecision,
     onPayJailFine:   handlePayJailFine,
     onUseJailCard:   handleUseJailCard,
@@ -363,7 +383,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     auctionState:        gameState.auction,
     auctionPropertyName,
     auctionPlayers,
-    canBid:              permissions.canBidAuction,
+    canBid:              permissions.canBidAuction && !timelineBlocked,
     onBid:               handleBid,
   };
 
@@ -464,12 +484,13 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
           ) : (
             <MobileGamePanel
               log={combinedLog}
-              diceRoll={gameState.turn.diceRoll}
+              diceRoll={displayedDiceRoll}
+              diceRollId={displayedDiceRollId}
               isRolling={isRolling}
-              canRoll={permissions.canRoll && !isRolling}
-              canEndTurn={permissions.canEndTurn}
-              canManage={canManage}
-              canTrade={permissions.canTrade}
+              canRoll={permissions.canRoll && !isRolling && !timelineBlocked}
+              canEndTurn={permissions.canEndTurn && !timelineBlocked}
+              canManage={canManage && !timelineBlocked}
+              canTrade={permissions.canTrade && !timelineBlocked}
               onRoll={handleRoll}
               onEndTurn={handleEndTurn}
               onManage={handleManage}
@@ -480,7 +501,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         </div>
 
         {/* Full-screen overlays for deed / card / jail / debt / manage / trade-builder */}
-        {gameState.activeCard && (
+        {visibleCard && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
             <CardFlipOverlay card={gameState.activeCard} onProceed={handleCardProceed} canProceed={isCurrentViewer} />
           </div>
@@ -497,14 +518,14 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
             </div>
           </div>
         )}
-        {jailDecision && !gameState.activeCard && (
+        {jailDecision && !visibleCard && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
             <JailOverlay
               attempts={viewer?.jailStatus?.attempts ?? 0}
-              canPayFine={permissions.canPayJailFine}
-              canUseCard={permissions.canUseJailCard}
-              canRoll={permissions.canRollInJail}
-              diceRoll={jailDecision || isRolling ? gameState.turn.diceRoll : null}
+              canPayFine={permissions.canPayJailFine && !timelineBlocked}
+              canUseCard={permissions.canUseJailCard && !timelineBlocked}
+              canRoll={permissions.canRollInJail && !timelineBlocked}
+              diceRoll={jailDecision || isRolling ? displayedDiceRoll : null}
               isRolling={isRolling && jailDecision}
               onPayFine={handlePayJailFine}
               onUseCard={handleUseJailCard}
@@ -570,6 +591,11 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
             centerContent={<BoardCenterPanel {...centerPanelProps} />}
           />
         </div>
+        {visibleCard && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
+            <CardFlipOverlay card={visibleCard} onProceed={handleCardProceed} canProceed={canProceedAnimation} />
+          </div>
+        )}
       </div>
     </>
   );

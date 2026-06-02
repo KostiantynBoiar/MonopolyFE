@@ -1,11 +1,13 @@
 'use client';
 
 import { ChatWindow } from './ChatWindow';
+import { DiceWindow } from '@/features/dice';
 import type { LogAndActionsProps } from '../chat.types';
 
 export function MobileGamePanel({
   log,
   diceRoll,
+  diceRollId,
   isRolling,
   canRoll,
   canEndTurn,
@@ -20,6 +22,12 @@ export function MobileGamePanel({
   return (
     <div className="flex h-full min-h-0 w-full flex-col bg-paper">
       {/* Game log and chat */}
+      {(diceRoll || isRolling) && (
+        <div className="h-32 shrink-0 border-b border-line bg-surface p-2">
+          <DiceWindow diceRoll={diceRoll} rollId={diceRollId ?? 0} />
+        </div>
+      )}
+
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ChatWindow
           log={log}
