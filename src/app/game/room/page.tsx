@@ -397,6 +397,7 @@ export default function GameRoomPage() {
   const pendingBuyPosition = game.turn.pendingBuyPosition;
   const pendingBuySpace = pendingBuyPosition != null ? (BOARD[pendingBuyPosition] ?? null) : null;
   const isViewerTurn = Boolean(viewerPlayerId && game.turn.currentPlayerId === viewerPlayerId);
+  const currentPlayerName = game.players.find((p) => p.id === game.turn.currentPlayerId)?.displayName ?? null;
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling;
   const canManage =
     permissions.canBuildHouse ||
@@ -597,41 +598,55 @@ export default function GameRoomPage() {
         </div>
 
         <section className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-cols-3 gap-[6px]">
-          <button
-            type="button"
-            onClick={handleRoll}
-            disabled={!canRoll}
-            className="col-span-2 rounded-[12px] border border-green bg-green px-3 py-2 font-display text-xl font-black uppercase tracking-[0.12em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-          >
-            {isRolling ? 'Rolling' : 'Roll'}
-          </button>
-          <button
-            type="button"
-            onClick={() => dispatchCommand(CommandType.EndTurn)}
-            disabled={!permissions.canEndTurn}
-            className="rounded-[12px] border border-red bg-red px-3 py-2 font-display text-sm font-black uppercase tracking-[0.1em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-          >
-            End turn
-          </button>
-          <button
-            type="button"
-            onClick={() => setCenterOverlay('manage')}
-            disabled={!canManage}
-            className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
-          >
-            Manage
-          </button>
-          <button
-            type="button"
-            onClick={() => setCenterOverlay('trade-builder')}
-            disabled={!permissions.canTrade || !tradeBuilderData?.others.length}
-            className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
-          >
-            Trade
-          </button>
-          <div className="flex min-w-0 items-center justify-center rounded-[12px] border border-line bg-surface px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-            {isViewerTurn ? 'Your turn' : `Round ${game.turn.roundNumber}`}
-          </div>
+          {isViewerTurn ? (
+            <>
+              <button
+                type="button"
+                onClick={handleRoll}
+                disabled={!canRoll}
+                className="col-span-2 rounded-[12px] border border-green bg-green px-3 py-2 font-display text-xl font-black uppercase tracking-[0.12em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+              >
+                {isRolling ? 'Rolling' : 'Roll'}
+              </button>
+              <button
+                type="button"
+                onClick={() => dispatchCommand(CommandType.EndTurn)}
+                disabled={!permissions.canEndTurn}
+                className="rounded-[12px] border border-red bg-red px-3 py-2 font-display text-sm font-black uppercase tracking-[0.1em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+              >
+                End turn
+              </button>
+              <button
+                type="button"
+                onClick={() => setCenterOverlay('manage')}
+                disabled={!canManage}
+                className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
+              >
+                Manage
+              </button>
+              <button
+                type="button"
+                onClick={() => setCenterOverlay('trade-builder')}
+                disabled={!permissions.canTrade || !tradeBuilderData?.others.length}
+                className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
+              >
+                Trade
+              </button>
+              <div className="flex min-w-0 items-center justify-center rounded-[12px] border border-line bg-surface px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                Your turn
+              </div>
+            </>
+          ) : (
+            // Not your turn — hide the action controls entirely; just show whose turn it is.
+            <div className="col-span-3 flex min-w-0 flex-col items-center justify-center gap-1 rounded-[12px] border border-line bg-surface px-3 text-center">
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                Round {game.turn.roundNumber}
+              </span>
+              <span className="font-display text-sm font-bold text-ink">
+                {currentPlayerName ? `${currentPlayerName}'s turn` : 'Waiting…'}
+              </span>
+            </div>
+          )}
         </section>
 
         <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
@@ -639,13 +654,16 @@ export default function GameRoomPage() {
         </div>
 
         <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0 overflow-hidden">
-          {pendingBuySpace ? (
+          {pendingBuySpace && isViewerTurn ? (
+            // Only the current player gets the buy/auction decision; others just see it.
             <DeedWindow
               space={pendingBuySpace}
               decisionSpace={pendingBuySpace}
               onBuy={handleBuy}
               onAuction={handlePassBuy}
             />
+          ) : pendingBuySpace ? (
+            <DeedWindow space={pendingBuySpace} viewOnly />
           ) : (
             <DeedWindow space={BOARD[viewerPlayer?.position ?? 0] ?? BOARD[0]} viewOnly />
           )}
