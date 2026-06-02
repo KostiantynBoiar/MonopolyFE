@@ -6,6 +6,7 @@ import { AuctionOverlay } from '@/features/auction';
 import { DebtOverlay } from '@/features/bankruptcy';
 import { CardFlipOverlay } from '@/features/card';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
+import type { ChatMessage } from '@/features/chat/chat.types';
 import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
 import {
@@ -376,6 +377,21 @@ export default function GameRoomPage() {
     [socketMessages],
   );
 
+  // In-game chat: same socket messages, but resolved to each sender's token color so
+  // every player's messages show up (not just the viewer's own).
+  const chatMessages = useMemo<ChatMessage[]>(
+    () =>
+      socketMessages.map((message) => ({
+        id: message.id,
+        kind: 'chat' as const,
+        author: message.display_name,
+        token: game.players.find((p) => p.userId === message.from_user_id)?.token,
+        text: message.kind === 'sticker' ? `[sticker:${message.sticker_url}]` : message.text,
+        ts: Date.parse(message.ts),
+      })),
+    [socketMessages, game.players],
+  );
+
   const diceRoll = animatedDiceRoll ?? game.turn.diceRoll;
   const activeCard = activeAnimationCard ?? game.activeCard;
   const pendingBuyPosition = game.turn.pendingBuyPosition;
@@ -566,6 +582,7 @@ export default function GameRoomPage() {
     return (
       <ChatWindow
         log={game.log}
+        messages={chatMessages}
         onSendMessage={sendChat}
         onSendSticker={sendSticker}
       />

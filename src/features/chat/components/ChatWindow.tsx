@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TOKEN_COLORS } from '@/shared/config/constants';
-import { LogKind, TokenColor } from '@/shared/protocol/game-state.enums';
+import { LogKind } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { ChatWindowTab } from '../chat.enums';
-import type { ChatMessage, ChatWindowProps, StickerPack } from '../chat.types';
+import type { ChatWindowProps, StickerPack } from '../chat.types';
 
 function formatTime(ts: number) {
   return new Intl.DateTimeFormat('en-GB', {
@@ -64,14 +64,14 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
   );
 }
 
-export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSticker }: ChatWindowProps) {
+export function ChatWindow({ log, messages = [], onSendMessage, onSendSticker }: ChatWindowProps) {
   const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft, setDraft] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [unreadCount, setUnreadCount] = useState(initialMessages.length);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showStickers, setShowStickers] = useState(false);
   const [packIndex, setPackIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevMsgCountRef = useRef(messages.length);
   const stickerPacks = useStickerPacks();
 
   const eventEntries = useMemo(
@@ -79,6 +79,16 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
     [log],
   );
   const activePack = stickerPacks[packIndex];
+
+  // Messages now arrive over the socket (every player's, incl. the sender's own echo) —
+  // we render them reactively instead of keeping a local optimistic copy. Bump the unread
+  // badge when new ones land while the Events tab is open.
+  useEffect(() => {
+    if (messages.length > prevMsgCountRef.current && activeTab !== ChatWindowTab.CHAT) {
+      setUnreadCount((count) => count + (messages.length - prevMsgCountRef.current));
+    }
+    prevMsgCountRef.current = messages.length;
+  }, [messages.length, activeTab]);
 
   useEffect(() => {
     if (activeTab === ChatWindowTab.CHAT) {
@@ -93,38 +103,11 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
   function handleSend() {
     const text = clampMessage(draft.trim());
     if (!text) return;
-
-    const nextMessage: ChatMessage = {
-      id: `local-${Date.now()}`,
-      kind: 'chat',
-      author: 'You',
-      token: TokenColor.BLUE,
-      text,
-      ts: Date.now(),
-    };
-
-    setMessages((current) => [...current, nextMessage]);
-    if (activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + 1);
-    }
     setDraft('');
     onSendMessage?.(text);
   }
 
   function handleSticker(url: string) {
-    const nextMessage: ChatMessage = {
-      id: `sticker-${Date.now()}`,
-      kind: 'chat',
-      author: 'You',
-      token: TokenColor.BLUE,
-      text: `[sticker:${url}]`,
-      ts: Date.now(),
-    };
-
-    setMessages((current) => [...current, nextMessage]);
-    if (activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + 1);
-    }
     setShowStickers(false);
     onSendSticker?.(url);
   }
