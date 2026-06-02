@@ -36,6 +36,8 @@ export function BoardContainer({
   const boardPlayers = players ?? [];
   const hasSidebar = sidebarPlayers !== undefined;
   const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
+  // ownerId → token color, so each owned tile can show its owner's marker.
+  const colorByPlayerId = new Map(boardPlayers.map((player) => [player.id, player.tokenColor]));
   const playersByPosition = new Map<number, typeof boardPlayers>();
 
   const walkingIds = new Set((walkingPlayers ?? []).map((player) => player.id));
@@ -90,6 +92,10 @@ export function BoardContainer({
             >
               {BOARD.map((space) => {
                 const { col, row } = getGridPos(space.pos);
+                const ownership = ownershipByPosition.get(space.pos) ?? null;
+                const ownerColor = ownership?.ownerId
+                  ? colorByPlayerId.get(ownership.ownerId) ?? null
+                  : null;
 
                 return (
                   <div
@@ -100,7 +106,8 @@ export function BoardContainer({
                       space={space}
                       edge={getTileEdge(space.pos)}
                       flavor={getTileFlavor(space.type)}
-                      ownership={ownershipByPosition.get(space.pos) ?? null}
+                      ownership={ownership}
+                      ownerColor={ownerColor}
                       players={playersByPosition.get(space.pos) ?? []}
                       walkingPlayerIds={walkingIds}
                     />

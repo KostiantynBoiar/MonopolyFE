@@ -165,7 +165,7 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
 
 // ─── BoardTile ────────────────────────────────────────────────────────────────
 
-export function BoardTile({ space, edge, flavor, ownership, players, walkingPlayerIds }: BoardTileProps) {
+export function BoardTile({ space, edge, flavor, ownership, ownerColor, players, walkingPlayerIds }: BoardTileProps) {
   // Dynamic key lookup for board position — eslint-disable-next-line needed
   // because next-intl's type system only accepts literal string keys.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -285,6 +285,14 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
     >
       {propertyColor && (
         <div className={EDGE_HEADER[edge]} style={getHeaderStyle(edge, propertyColor)} />
+      )}
+      {/* Ownership marker — frame the tile in the owning player's token color. */}
+      {ownerColor && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[12px]"
+          style={{ border: `2.5px solid ${ownerColor}`, zIndex: 15 }}
+        />
       )}
       <BuildingsMarker ownership={ownership} edge={edge} />
       <PlayerMarker players={players} edge={edge} />
