@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
+import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
 
@@ -102,29 +103,18 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
   const jailSpace = BOARD.find((space) => space.corner === CornerVariant.JAIL);
   const jailColor = jailSpace ? getSpaceHeaderColor(jailSpace) : BOARD_TILE_COLORS.propertyOrange;
 
-  const prevBalancesRef = useRef<Map<string, number>>(new Map());
   const [deltas, setDeltas] = useState<Map<string, BalanceDeltaEntry>>(new Map());
   const deltaCounterRef = useRef(0);
 
-  useEffect(() => {
-    const updates: [string, BalanceDeltaEntry][] = [];
-
-    for (const player of players) {
-      const prev = prevBalancesRef.current.get(player.id);
-      if (prev !== undefined && prev !== player.balance) {
-        updates.push([player.id, { id: ++deltaCounterRef.current, amount: player.balance - prev }]);
+  useBalanceChange(players, (changes) => {
+    setDeltas((prev) => {
+      const next = new Map(prev);
+      for (const { playerId, delta } of changes) {
+        next.set(playerId, { id: ++deltaCounterRef.current, amount: delta });
       }
-      prevBalancesRef.current.set(player.id, player.balance);
-    }
-
-    if (updates.length > 0) {
-      setDeltas((prev) => {
-        const next = new Map(prev);
-        for (const [id, entry] of updates) next.set(id, entry);
-        return next;
-      });
-    }
-  }, [players]);
+      return next;
+    });
+  });
 
   function clearDelta(playerId: string) {
     setDeltas((prev) => {

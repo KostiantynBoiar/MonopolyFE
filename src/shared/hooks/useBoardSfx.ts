@@ -5,11 +5,12 @@ import type { GameState } from '@/shared/protocol/game-state';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { onAnimation } from '@/shared/socket/timeline-executor';
+import { useBalanceChange } from './useBalanceChange';
 
 export function useBoardSfx(gameState: GameState) {
-  // Preload all sounds once on mount (dice_roll/auction_bid preloaded for handler use too)
+  // Preload all sounds once on mount
   useEffect(() => {
-    preloadSfx('dice_roll', 'notification', 'auction_bid', 'passed_go');
+    preloadSfx('dice_roll', 'notification', 'auction_bid', 'passed_go', 'paid');
   }, []);
 
   // Play sounds driven by the animation timeline so all players hear them together.
@@ -18,6 +19,8 @@ export function useBoardSfx(gameState: GameState) {
       if (instr.type === 'roll_dice') playSfx('dice_roll');
     });
   }, []);
+
+  useBalanceChange(gameState.players, () => playSfx('paid'));
 
   const prevAuctionRef = useRef(false);
   const prevTradeIdRef = useRef<string | null>(null);
