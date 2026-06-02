@@ -22,7 +22,7 @@ import {
   PropertyColor as GamePropertyColor,
 } from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
-import { BOARD, getGridPos, getTileEdge } from '../board-data';
+import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';

@@ -59,7 +59,7 @@ export function createMockGameRoomSnapshot(): GameSnapshot {
           userId: 'u1',
           displayName: 'Alice',
           token: TokenColor.BLUE,
-          avatarUrl: null,
+          avatarUrl: 'https://images.nationalgeographic.org/image/upload/t_edhub_resource_key_image/v1638882786/EducationHub/photos/sun-blasts-a-m66-flare.jpg',
           turnOrder: 0,
           position: 24,
           balance: 1460,

@@ -1,9 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { cn } from '@/shared/lib/cn';
 import type { PropertyColor } from '@/features/game-board';
-import { BOARD } from '@/features/game-board';
+import { BOARD, GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
 import { DeedWindow } from '@/features/deed';
 
 export interface ManageProperty {
@@ -33,31 +32,43 @@ export interface ManagePropertiesOverlayProps {
   onClose:        () => void;
 }
 
+// ─── Shared action button ─────────────────────────────────────────────────────
+
 interface ActionBtnProps {
-  label: string;
-  onClick: () => void;
+  label:    string;
+  onClick:  () => void;
   disabled?: boolean;
-  primary?: boolean;
+  primary?:  boolean;
 }
 
 function ActionBtn({ label, onClick, disabled, primary }: ActionBtnProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
-      className={cn(
-        'w-full rounded border font-display font-bold uppercase tracking-wide transition-colors active:scale-95',
-        'disabled:cursor-not-allowed disabled:border-line disabled:bg-paper disabled:text-muted/50',
-        primary && !disabled
-          ? 'border-gold-600 bg-gold text-white hover:bg-gold-600'
-          : 'border-ink/40 bg-surface text-ink hover:bg-paper',
-      )}
-      style={{ fontSize: '1em', padding: '0.5em 0.75em' }}
+      className="w-full rounded-[8px] border font-display font-bold uppercase transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+      style={{
+        fontSize: '0.72rem',
+        letterSpacing: '0.07em',
+        padding: '0.5em 0.75em',
+        backgroundColor: primary && !disabled
+          ? BOARD_TILE_COLORS.propertyBlue
+          : GAME_BOARD_COLORS.panel,
+        borderColor: primary && !disabled
+          ? BOARD_TILE_COLORS.propertyBlue
+          : GAME_BOARD_COLORS.border,
+        color: primary && !disabled
+          ? BOARD_TILE_COLORS.altText
+          : GAME_BOARD_COLORS.text,
+      }}
     >
       {label}
     </button>
   );
 }
+
+// ─── ManagePropertiesOverlay ──────────────────────────────────────────────────
 
 export function ManagePropertiesOverlay({
   properties,
@@ -68,26 +79,49 @@ export function ManagePropertiesOverlay({
   const t = useTranslations('Manage');
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-paper">
-      {/* Header — matches TradeOverlay */}
-      <div className="flex shrink-0 items-center gap-3 border-b-2 border-ink/20 bg-ink px-4 py-2.5">
-        <span className="font-mono text-[0.72em] font-bold uppercase tracking-widest text-white/70">
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
+    >
+      {/* Accent strip — blue = management */}
+      <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyBlue, flexShrink: 0 }} />
+
+      {/* Header */}
+      <div
+        className="flex shrink-0 items-center gap-3 px-5 py-3"
+        style={{
+          backgroundColor: GAME_BOARD_COLORS.panel,
+          borderBottom: `1px solid ${GAME_BOARD_COLORS.border}`,
+        }}
+      >
+        <h2
+          className="font-display font-black uppercase"
+          style={{ fontSize: '1rem', color: GAME_BOARD_COLORS.text }}
+        >
           {t('title')}
-        </span>
+        </h2>
         <button
+          type="button"
           onClick={onClose}
           aria-label={t('close')}
-          className="ml-auto font-mono text-[1.4em] leading-none text-white/50 transition-colors hover:text-white"
+          className="ml-auto font-mono leading-none transition-opacity hover:opacity-60"
+          style={{ fontSize: '1.1rem', color: GAME_BOARD_COLORS.muted }}
         >
           ✕
         </button>
       </div>
 
-      {/* Properties — horizontal scroll of deed cards */}
-      <div className="flex min-h-0 flex-1 overflow-x-auto p-4" style={{ fontSize: '1.2em' }}>
+      {/* Property cards — horizontal scroll */}
+      <div
+        className="flex min-h-0 flex-1 overflow-x-auto p-4"
+        style={{ fontSize: '1.15em' }}
+      >
         {properties.length === 0 ? (
           <div className="flex flex-1 items-center justify-center px-8 py-6">
-            <span className="font-sans text-[0.78em] italic text-muted">
+            <span
+              className="font-sans italic"
+              style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.muted }}
+            >
               {t('empty')}
             </span>
           </div>
@@ -98,48 +132,104 @@ export function ManagePropertiesOverlay({
               return (
                 <div key={p.position} className="flex shrink-0 flex-col gap-2">
                   {space ? (
-                    <DeedWindow space={space} viewOnly />
+                    // 1:2 portrait — matches the physical deed card proportions
+                    <div style={{ width: '9.5em', aspectRatio: '1 / 2' }}>
+                      <DeedWindow
+                        space={space}
+                        viewOnly
+                        ownership={{ houses: p.houses, hotel: p.hotel }}
+                      />
+                    </div>
                   ) : (
-                    <div className="flex w-[12em] items-center justify-center rounded-xl border-2 border-ink bg-white px-3 py-6">
-                      <span className="text-center font-display text-[0.8em] font-bold text-ink">{p.name}</span>
+                    <div
+                      className="flex w-[12em] items-center justify-center rounded-[12px] px-3 py-6"
+                      style={{
+                        border: `1.5px solid ${GAME_BOARD_COLORS.border}`,
+                        backgroundColor: GAME_BOARD_COLORS.panel,
+                      }}
+                    >
+                      <span
+                        className="text-center font-display font-bold"
+                        style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.text }}
+                      >
+                        {p.name}
+                      </span>
                     </div>
                   )}
 
                   {/* Status badge */}
-                  <div className="flex items-center justify-center gap-1 font-mono text-[0.58em] text-muted">
-                    {p.isMortgaged
-                      ? <span className="text-red">{t('mortgaged')}</span>
-                      : p.hotel
-                      ? <span>🏨 Hotel</span>
-                      : p.houses > 0
-                      ? <span>{'🏠'.repeat(p.houses)}</span>
-                      : <span>{t('noBuildings')}</span>}
-                    <span className="ml-auto font-bold text-ink">M{p.rent}</span>
+                  <div
+                    className="flex items-center gap-1 font-mono"
+                    style={{ fontSize: '0.6rem', color: GAME_BOARD_COLORS.muted }}
+                  >
+                    {p.isMortgaged ? (
+                      <span style={{ color: BOARD_TILE_COLORS.propertyRed }}>{t('mortgaged')}</span>
+                    ) : p.hotel ? (
+                      <span>🏨 Hotel</span>
+                    ) : p.houses > 0 ? (
+                      <span>{'🏠'.repeat(p.houses)}</span>
+                    ) : (
+                      <span>{t('noBuildings')}</span>
+                    )}
+                    <span
+                      className="ml-auto font-bold"
+                      style={{ color: GAME_BOARD_COLORS.text }}
+                    >
+                      M{p.rent}
+                    </span>
                   </div>
 
                   {/* Action buttons */}
                   <div className="flex flex-col gap-1">
                     {p.isMortgaged ? (
-                      <ActionBtn label={t('unmortgage')} onClick={() => onUnmortgage(p.position)} disabled={!canUnmortgage} primary />
+                      <ActionBtn
+                        label={t('unmortgage')}
+                        onClick={() => onUnmortgage(p.position)}
+                        disabled={!canUnmortgage}
+                        primary
+                      />
                     ) : (
                       <>
                         {p.inMonopoly && !p.hotel && p.houses < 4 && (
-                          <ActionBtn label={t('buildHouse')} onClick={() => onBuildHouse(p.position)} disabled={!canBuildHouse} primary />
+                          <ActionBtn
+                            label={t('buildHouse')}
+                            onClick={() => onBuildHouse(p.position)}
+                            disabled={!canBuildHouse}
+                            primary
+                          />
                         )}
                         {p.inMonopoly && p.houses === 4 && (
-                          <ActionBtn label={t('buildHotel')} onClick={() => onBuildHotel(p.position)} disabled={!canBuildHotel} primary />
+                          <ActionBtn
+                            label={t('buildHotel')}
+                            onClick={() => onBuildHotel(p.position)}
+                            disabled={!canBuildHotel}
+                            primary
+                          />
                         )}
                         {p.color && p.houses > 0 && (
-                          <ActionBtn label={t('sellHouse')} onClick={() => onSellHouse(p.position)} />
+                          <ActionBtn
+                            label={t('sellHouse')}
+                            onClick={() => onSellHouse(p.position)}
+                          />
                         )}
                         {p.hotel && (
-                          <ActionBtn label={t('sellHotel')} onClick={() => onSellHotel(p.position)} />
+                          <ActionBtn
+                            label={t('sellHotel')}
+                            onClick={() => onSellHotel(p.position)}
+                          />
                         )}
                         {!p.hotel && p.houses === 0 && (
-                          <ActionBtn label={t('mortgage')} onClick={() => onMortgage(p.position)} disabled={!canMortgage} />
+                          <ActionBtn
+                            label={t('mortgage')}
+                            onClick={() => onMortgage(p.position)}
+                            disabled={!canMortgage}
+                          />
                         )}
                         {onSellProperty && !p.hotel && p.houses === 0 && (
-                          <ActionBtn label={t('sellToBank')} onClick={() => onSellProperty(p.position)} />
+                          <ActionBtn
+                            label={t('sellToBank')}
+                            onClick={() => onSellProperty(p.position)}
+                          />
                         )}
                       </>
                     )}
@@ -152,11 +242,24 @@ export function ManagePropertiesOverlay({
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center justify-end border-t-2 border-ink/20 bg-line/30 px-4 py-2.5">
+      <div
+        className="flex shrink-0 items-center justify-end px-4 py-3"
+        style={{
+          borderTop: `1px solid ${GAME_BOARD_COLORS.border}`,
+          backgroundColor: GAME_BOARD_COLORS.panel,
+        }}
+      >
         <button
+          type="button"
           onClick={onClose}
-          className="rounded border border-line-2 bg-surface font-display text-[1em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"
-          style={{ padding: '0.55em 1em' }}
+          className="rounded-[10px] border px-4 py-2 font-display font-bold uppercase tracking-wide transition-opacity hover:opacity-80"
+          style={{
+            fontSize: '0.72rem',
+            letterSpacing: '0.08em',
+            backgroundColor: GAME_BOARD_COLORS.surface,
+            borderColor: GAME_BOARD_COLORS.border,
+            color: GAME_BOARD_COLORS.text,
+          }}
         >
           {t('close')}
         </button>

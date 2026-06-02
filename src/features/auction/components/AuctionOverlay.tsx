@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { cn } from '@/shared/lib/cn';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
 import type { AuctionPanelProps } from '../auction.types';
 
 function formatTime(ms: number): string {
@@ -10,18 +10,18 @@ function formatTime(ms: number): string {
   return `0:${String(s).padStart(2, '0')}`;
 }
 
-export function AuctionOverlay({ auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid }: AuctionPanelProps) {
+export function AuctionOverlay({
+  auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid,
+}: AuctionPanelProps) {
   const t = useTranslations('Auction');
   const [bidInput, setBidInput] = useState('');
-  // Client-side countdown — re-syncs to server value on each new snapshot.
   const [displayMs, setDisplayMs] = useState(auctionState.timeRemainingMs);
 
   useEffect(() => {
     setDisplayMs(auctionState.timeRemainingMs);
   }, [auctionState.timeRemainingMs]);
 
-  // Single stable interval — functional setState always sees the current value,
-  // so this doesn't need displayMs as a dep (which would restart the clock every tick).
+  // Single stable interval — functional setState sees current value without needing dep.
   useEffect(() => {
     const iv = setInterval(() => setDisplayMs((ms) => Math.max(0, ms - 1000)), 1000);
     return () => clearInterval(iv);
@@ -31,8 +31,6 @@ export function AuctionOverlay({ auctionState, propertyName, viewerId, players, 
   const highestBidder = players.find((p) => p.id === auctionState.highestBidderId);
   const minBid = auctionState.highestBid + 1;
   const parsedBid = parseInt(bidInput, 10);
-  // canBidPermission: server says we're allowed to bid at all
-  // input validity: the entered amount is a valid number >= minimum
   const canBid = canBidPermission && !isNaN(parsedBid) && parsedBid >= minBid;
   const isUrgent = displayMs <= 4000;
 
@@ -43,63 +41,94 @@ export function AuctionOverlay({ auctionState, propertyName, viewerId, players, 
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div
+      className="flex h-full flex-col overflow-hidden"
+      style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
+    >
+      {/* Accent strip — yellow = value/auction */}
+      <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyYellow, flexShrink: 0 }} />
+
       {/* Header */}
-      <div className="shrink-0 border-b border-line bg-ink px-3 py-2 text-center">
-        <div
-          className="font-mono font-bold uppercase tracking-widest text-white/60"
-          style={{ fontSize: '0.6em' }}
+      <div
+        className="shrink-0 px-5 py-3"
+        style={{
+          backgroundColor: GAME_BOARD_COLORS.panel,
+          borderBottom: `1px solid ${GAME_BOARD_COLORS.border}`,
+        }}
+      >
+        <p
+          className="font-mono font-semibold uppercase"
+          style={{ fontSize: '0.58rem', letterSpacing: '0.2em', color: GAME_BOARD_COLORS.muted }}
         >
           {t('header')}
-        </div>
-        <div className="font-display font-black uppercase text-white" style={{ fontSize: '0.85em' }}>
+        </p>
+        <h2
+          className="font-display font-black uppercase leading-tight"
+          style={{ fontSize: '1.1rem', color: GAME_BOARD_COLORS.text }}
+        >
           {propertyName}
-        </div>
+        </h2>
       </div>
 
-      {/* Timer + current bid */}
-      <div className="shrink-0 flex items-center justify-around border-b border-line bg-line/30 px-3 py-2">
-        <div className="text-center">
-          <div
-            className={cn(
-              'font-mono font-bold tabular-nums transition-colors',
-              isUrgent ? 'text-red' : 'text-ink',
-            )}
-            style={{ fontSize: '1.4em' }}
+      {/* Stats row — timer and current bid */}
+      <div
+        className="flex shrink-0 items-center px-5 py-3"
+        style={{
+          gap: '1.25rem',
+          borderBottom: `1px solid ${GAME_BOARD_COLORS.border}`,
+        }}
+      >
+        <div className="flex flex-col items-center gap-0.5">
+          <span
+            className="font-mono font-black tabular-nums"
+            style={{
+              fontSize: '1.7rem',
+              lineHeight: 1,
+              color: isUrgent ? BOARD_TILE_COLORS.propertyRed : GAME_BOARD_COLORS.text,
+              transition: 'color 0.2s',
+            }}
           >
             {formatTime(displayMs)}
-          </div>
-          <div
-            className="font-sans uppercase tracking-wide text-muted"
-            style={{ fontSize: '0.55em' }}
+          </span>
+          <span
+            className="font-mono font-semibold uppercase"
+            style={{ fontSize: '0.55rem', letterSpacing: '0.14em', color: GAME_BOARD_COLORS.muted }}
           >
             {t('timeLeft')}
-          </div>
+          </span>
         </div>
 
-        <div className="h-8 w-px bg-line" />
+        <div
+          style={{ width: '1px', height: '38px', backgroundColor: GAME_BOARD_COLORS.border, flexShrink: 0 }}
+        />
 
-        <div className="text-center">
-          <div className="font-display font-black text-ink" style={{ fontSize: '1.1em' }}>
+        <div className="flex flex-col items-center gap-0.5">
+          <span
+            className="font-display font-black"
+            style={{ fontSize: '1.5rem', lineHeight: 1, color: GAME_BOARD_COLORS.text }}
+          >
             {auctionState.highestBid > 0 ? `M${auctionState.highestBid}` : '—'}
-          </div>
-          <div
-            className="font-sans uppercase tracking-wide text-muted"
-            style={{ fontSize: '0.55em' }}
+          </span>
+          <span
+            className="font-mono font-semibold uppercase truncate max-w-[8rem]"
+            style={{ fontSize: '0.55rem', letterSpacing: '0.14em', color: GAME_BOARD_COLORS.muted }}
           >
             {highestBidder?.name ?? t('noBids')}
-          </div>
+          </span>
         </div>
       </div>
 
       {/* Bid history */}
       <div
-        className="flex flex-1 flex-col-reverse gap-px overflow-y-auto px-2 py-1.5"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: '#d4d0c4 transparent' }}
+        className="flex flex-1 flex-col-reverse gap-px overflow-y-auto px-3 py-2"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: `${GAME_BOARD_COLORS.border} transparent` }}
       >
         {auctionState.bids.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
-            <span className="font-sans italic text-muted" style={{ fontSize: '0.68em' }}>
+            <span
+              className="font-sans italic"
+              style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.muted }}
+            >
               {t('noBidsYet')}
             </span>
           </div>
@@ -110,18 +139,27 @@ export function AuctionOverlay({ auctionState, propertyName, viewerId, players, 
             return (
               <div
                 key={i}
-                className="flex items-center justify-between rounded px-2 py-0.5 hover:bg-line/30"
+                className="flex items-center justify-between rounded-[8px] px-3 py-1.5"
+                style={{
+                  backgroundColor: isViewer
+                    ? `${BOARD_TILE_COLORS.propertyBlue}1a`
+                    : 'transparent',
+                }}
               >
                 <span
-                  className={cn(
-                    'font-sans',
-                    isViewer ? 'font-semibold text-blue' : 'text-ink',
-                  )}
-                  style={{ fontSize: '0.68em' }}
+                  className="font-sans"
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: isViewer ? 700 : 500,
+                    color: isViewer ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.text,
+                  }}
                 >
                   {bidder?.name ?? bid.playerId}
                 </span>
-                <span className="font-mono text-ink" style={{ fontSize: '0.68em' }}>
+                <span
+                  className="font-mono font-semibold"
+                  style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.text }}
+                >
                   M{bid.amount}
                 </span>
               </div>
@@ -131,12 +169,18 @@ export function AuctionOverlay({ auctionState, propertyName, viewerId, players, 
       </div>
 
       {/* Bid input */}
-      <div className="shrink-0 border-t border-line bg-line/30 p-2">
-        <div className="flex gap-1.5">
+      <div
+        className="shrink-0 px-4 py-3"
+        style={{
+          borderTop: `1px solid ${GAME_BOARD_COLORS.border}`,
+          backgroundColor: GAME_BOARD_COLORS.panel,
+        }}
+      >
+        <div className="flex gap-2">
           <div className="relative flex-1">
             <span
-              className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 font-mono text-muted"
-              style={{ fontSize: '0.7em' }}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono font-semibold select-none"
+              style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.muted }}
             >
               M
             </span>
@@ -147,20 +191,35 @@ export function AuctionOverlay({ auctionState, propertyName, viewerId, players, 
               onChange={(e) => setBidInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submitBid()}
               placeholder={String(minBid)}
-              className="h-8 w-full rounded border border-line-2 bg-surface pl-5 pr-2 font-mono text-ink placeholder:text-muted focus:border-blue focus:outline-none focus:ring-1 focus:ring-blue"
-              style={{ fontSize: '0.78em' }}
+              className="h-9 w-full rounded-[8px] border pl-7 pr-3 font-mono focus:outline-none"
+              style={{
+                fontSize: '0.82rem',
+                backgroundColor: GAME_BOARD_COLORS.surface,
+                borderColor: GAME_BOARD_COLORS.border,
+                color: GAME_BOARD_COLORS.text,
+              }}
             />
           </div>
           <button
+            type="button"
             onClick={submitBid}
             disabled={!canBid}
-            className="rounded border border-blue bg-blue px-3 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-            style={{ fontSize: '0.62em' }}
+            className="rounded-[8px] border px-4 font-display font-bold uppercase transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            style={{
+              fontSize: '0.72rem',
+              letterSpacing: '0.08em',
+              backgroundColor: BOARD_TILE_COLORS.propertyYellow,
+              borderColor: BOARD_TILE_COLORS.propertyYellow,
+              color: BOARD_TILE_COLORS.altText,
+            }}
           >
             {t('bid')}
           </button>
         </div>
-        <p className="mt-0.5 font-sans text-muted" style={{ fontSize: '0.55em' }}>
+        <p
+          className="mt-1 font-sans"
+          style={{ fontSize: '0.62rem', color: GAME_BOARD_COLORS.muted }}
+        >
           {t('minimumBid', { min: minBid })}
         </p>
       </div>

@@ -8,75 +8,89 @@ import {
   CARD_FLIP_DURATION_MS,
   CARD_PROCEED_APPEAR_DELAY_MS,
 } from '@/shared/config/constants';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
 import { CardFlipState, CardKind } from '../card.enums';
 import type { CardFlipOverlayProps } from '../card.types';
 
-// ─── Static theme (colors/glyphs only — labels are translated) ────────────────
-
-const CARD_STYLE = {
+// ─── Card theme — colors match board tile palette ─────────────────────────────
+const CARD_THEME = {
   [CardKind.CHANCE]: {
-    bandBg:    'bg-band-orange',
-    backBg:    'bg-band-orange',
-    backGlyph: '?',
+    accentColor: BOARD_TILE_COLORS.propertyYellow,
+    backGlyph:   '🎲',
   },
   [CardKind.COMMUNITY_CHEST]: {
-    bandBg:    'bg-band-cyan',
-    backBg:    'bg-band-cyan',
-    backGlyph: '📦',
+    accentColor: BOARD_TILE_COLORS.propertyCyan,
+    backGlyph:   '🎁',
   },
 } as const;
 
-// ─── Card face (front) ────────────────────────────────────────────────────────
+// ─── Card faces ───────────────────────────────────────────────────────────────
 
 function CardFront({ card, label }: { card: CardFlipOverlayProps['card']; label: string }) {
-  const style = CARD_STYLE[card.kind as CardKind] ?? CARD_STYLE[CardKind.CHANCE];
+  const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border-2 border-ink/20 bg-white shadow-xl">
+    <div
+      className="flex h-full w-full flex-col overflow-hidden rounded-[14px] shadow-lg"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.surface,
+        border: `1.5px solid ${GAME_BOARD_COLORS.border}`,
+      }}
+    >
       {/* Color band header */}
-      <div className={cn('flex shrink-0 items-center justify-center py-3', style.bandBg)}>
-        <span className="font-display text-[0.65em] font-bold uppercase tracking-widest text-white">
+      <div
+        className="flex shrink-0 items-center justify-center py-3"
+        style={{ backgroundColor: theme.accentColor }}
+      >
+        <span
+          className="font-display font-black uppercase"
+          style={{ fontSize: '0.65rem', letterSpacing: '0.22em', color: BOARD_TILE_COLORS.altText }}
+        >
           {label}
         </span>
       </div>
 
-      {/* Card body */}
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-4">
-        <p className="text-center font-sans text-[0.78em] font-medium leading-snug text-ink">
+      {/* Card text */}
+      <div className="flex flex-1 flex-col items-center justify-center px-4 py-4">
+        <p
+          className="text-center font-sans font-medium leading-snug"
+          style={{ fontSize: '0.88rem', color: GAME_BOARD_COLORS.text }}
+        >
           {card.text}
         </p>
       </div>
 
       {/* Footer stripe */}
-      <div className={cn('h-1.5 shrink-0', style.bandBg)} />
+      <div style={{ height: '6px', flexShrink: 0, backgroundColor: theme.accentColor }} />
     </div>
   );
 }
 
-// ─── Card back ────────────────────────────────────────────────────────────────
-
 function CardBack({ card, label }: { card: CardFlipOverlayProps['card']; label: string }) {
-  const style = CARD_STYLE[card.kind as CardKind] ?? CARD_STYLE[CardKind.CHANCE];
+  const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
 
   return (
     <div
-      className={cn(
-        'flex h-full w-full flex-col items-center justify-center gap-3',
-        'rounded-xl border-2 border-white/30 shadow-xl',
-        style.backBg,
-      )}
+      className="flex h-full w-full flex-col items-center justify-center gap-3 rounded-[14px] shadow-lg"
+      style={{
+        backgroundColor: theme.accentColor,
+        border: '2px solid rgba(255,255,255,0.25)',
+      }}
     >
-      <span className="font-display text-[2.5em] font-black leading-none text-white/90">
-        {style.backGlyph}
+      <span style={{ fontSize: '2.8rem', lineHeight: 1 }}>
+        {theme.backGlyph}
       </span>
-      <span className="font-display text-[0.55em] font-bold uppercase tracking-widest text-white/70">
+      <span
+        className="font-display font-black uppercase"
+        style={{ fontSize: '0.6rem', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.82)' }}
+      >
         {label}
       </span>
     </div>
   );
 }
 
-// ─── Main overlay ─────────────────────────────────────────────────────────────
+// ─── CardFlipOverlay ──────────────────────────────────────────────────────────
 
 export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlipOverlayProps) {
   const t = useTranslations('Card');
@@ -97,19 +111,19 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
 
   useEffect(() => {
     if (flipState !== CardFlipState.REVEALED) return;
-    const proceedTimer = setTimeout(() => setShowProceed(true), CARD_PROCEED_APPEAR_DELAY_MS - CARD_FLIP_DURATION_MS);
+    const proceedTimer = setTimeout(
+      () => setShowProceed(true),
+      CARD_PROCEED_APPEAR_DELAY_MS - CARD_FLIP_DURATION_MS,
+    );
     return () => clearTimeout(proceedTimer);
   }, [flipState]);
 
   const isFlipped = flipState === CardFlipState.FLIPPING || flipState === CardFlipState.REVEALED;
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-5">
       {/* 3-D flip card */}
-      <div
-        style={{ perspective: '700px' }}
-        className="h-[13.5em] w-[9em]"
-      >
+      <div style={{ perspective: '700px', height: '14em', width: '9.5em' }}>
         <div
           style={{
             transformStyle:  'preserve-3d',
@@ -121,9 +135,7 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
           }}
         >
           {/* Back face */}
-          <div
-            style={{ backfaceVisibility: 'hidden', position: 'absolute', inset: 0 }}
-          >
+          <div style={{ backfaceVisibility: 'hidden', position: 'absolute', inset: 0 }}>
             <CardBack card={card} label={label} />
           </div>
 
@@ -141,30 +153,25 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
         </div>
       </div>
 
-      {/* Proceed button — only the affected player gets it; others see a waiting hint. */}
-      {canProceed ? (
-        <button
-          onClick={onProceed}
-          className={cn(
-            'rounded border border-gold-600 bg-gold px-5 font-display font-semibold uppercase tracking-wide text-white',
-            'transition-all duration-300 hover:bg-gold-600',
-            'text-[0.68em]',
-            showProceed ? 'opacity-100 translate-y-0' : 'pointer-events-none opacity-0 translate-y-1',
-          )}
-          style={{ padding: '0.55em 1.2em' }}
-        >
-          {t('proceed')}
-        </button>
-      ) : (
-        <span
-          className={cn(
-            'font-display text-[0.6em] uppercase tracking-wide text-white/60 transition-opacity duration-300',
-            showProceed ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          {t('waiting')}
-        </span>
-      )}
+      {/* Proceed button */}
+      <button
+        type="button"
+        onClick={onProceed}
+        className={cn(
+          'rounded-[10px] border px-6 py-2.5 font-display font-bold uppercase tracking-wide',
+          'transition-all duration-300',
+          showProceed ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0',
+        )}
+        style={{
+          fontSize: '0.72rem',
+          letterSpacing: '0.1em',
+          backgroundColor: BOARD_TILE_COLORS.propertyBlue,
+          borderColor: BOARD_TILE_COLORS.propertyBlue,
+          color: BOARD_TILE_COLORS.altText,
+        }}
+      >
+        {t('proceed')}
+      </button>
     </div>
   );
 }

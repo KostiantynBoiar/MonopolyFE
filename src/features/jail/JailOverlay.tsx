@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { DiceRoll } from '@/shared/protocol/game-state';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
+
+// ─── Sub-component ────────────────────────────────────────────────────────────
 
 function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
   const [displayed, setDisplayed] = useState(value);
@@ -11,24 +14,41 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
     const iv = setInterval(() => setDisplayed(Math.ceil(Math.random() * 6)), 80);
     return () => clearInterval(iv);
   }, [rolling, value]);
+
   return (
-    <div className="flex h-7 w-7 items-center justify-center rounded border-2 border-ink bg-white shadow-sm">
-      <span className="font-display text-[1em] font-bold leading-none text-ink">{displayed}</span>
+    <div
+      className="flex h-10 w-10 items-center justify-center rounded-[8px]"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.surface,
+        border: `1.5px solid ${GAME_BOARD_COLORS.border}`,
+        boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+      }}
+    >
+      <span
+        className="font-display font-black leading-none"
+        style={{ fontSize: '1.1rem', color: GAME_BOARD_COLORS.text }}
+      >
+        {displayed}
+      </span>
     </div>
   );
 }
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 export interface JailOverlayProps {
-  attempts:    number;       // failed escape rolls so far (0–2)
-  canPayFine:  boolean;
-  canUseCard:  boolean;
-  canRoll:     boolean;
-  diceRoll?:   DiceRoll | null;
-  isRolling?:  boolean;
-  onPayFine:   () => void;
-  onUseCard:   () => void;
-  onRoll:      () => void;
+  attempts:   number;
+  canPayFine: boolean;
+  canUseCard: boolean;
+  canRoll:    boolean;
+  diceRoll?:  DiceRoll | null;
+  isRolling?: boolean;
+  onPayFine:  () => void;
+  onUseCard:  () => void;
+  onRoll:     () => void;
 }
+
+// ─── JailOverlay ─────────────────────────────────────────────────────────────
 
 export function JailOverlay({
   attempts, canPayFine, canUseCard, canRoll,
@@ -38,71 +58,118 @@ export function JailOverlay({
   const t = useTranslations('Jail');
   const triesLeft = Math.max(0, 3 - attempts);
   const showDice = isRolling || diceRoll !== null;
+  const accentColor = triesLeft > 0 ? BOARD_TILE_COLORS.propertyOrange : BOARD_TILE_COLORS.propertyRed;
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-xl border-2 border-ink bg-white shadow-2xl"
-      style={{ width: '12em' }}
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
     >
+      {/* Accent strip — matches jail corner tile color */}
+      <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyOrange, flexShrink: 0 }} />
+
       {/* Header */}
-      <div className="flex shrink-0 flex-col items-center justify-end bg-ink px-2 pb-1.5 pt-2">
-        <span className="mb-0.5 leading-none" style={{ fontSize: '1.1em' }}>🔒</span>
-        <span className="font-mono font-bold uppercase tracking-widest text-white/70" style={{ fontSize: '0.55em' }}>
-          {t('inJail')}
-        </span>
-        <span className="text-center font-display font-black uppercase leading-tight text-white" style={{ fontSize: '0.78em' }}>
-          {t('getOut')}
+      <div
+        className="flex shrink-0 items-center gap-3 px-5 py-4"
+        style={{
+          backgroundColor: GAME_BOARD_COLORS.panel,
+          borderBottom: `1px solid ${GAME_BOARD_COLORS.border}`,
+        }}
+      >
+        <span style={{ fontSize: '1.65rem', lineHeight: 1 }}>🔒</span>
+        <div className="min-w-0">
+          <p
+            className="font-mono font-semibold uppercase"
+            style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: GAME_BOARD_COLORS.muted }}
+          >
+            {t('inJail')}
+          </p>
+          <h2
+            className="font-display font-black uppercase leading-tight"
+            style={{ fontSize: '1.05rem', color: GAME_BOARD_COLORS.text }}
+          >
+            {t('getOut')}
+          </h2>
+        </div>
+        <span
+          className="ml-auto shrink-0 rounded-full px-2.5 py-1 font-mono font-semibold uppercase"
+          style={{
+            fontSize: '0.58rem',
+            letterSpacing: '0.1em',
+            backgroundColor: accentColor,
+            color: BOARD_TILE_COLORS.altText,
+          }}
+        >
+          {triesLeft > 0 ? t('triesLeft', { count: triesLeft }) : t('noTriesLeft')}
         </span>
       </div>
 
       {/* Dice result */}
       {showDice && (
-        <div className="flex flex-col items-center gap-1 border-b border-ink/20 px-3 py-2">
-          <div className="flex items-center gap-2">
+        <div
+          className="flex shrink-0 flex-col items-center gap-2 px-5 py-4"
+          style={{ borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}
+        >
+          <div className="flex items-center gap-3">
             <DiceFace value={isRolling ? 1 : (diceRoll?.die1 ?? 1)} rolling={isRolling} />
             <DiceFace value={isRolling ? 1 : (diceRoll?.die2 ?? 1)} rolling={isRolling} />
           </div>
           {!isRolling && diceRoll && (
-            <span className="font-mono text-muted" style={{ fontSize: '0.58em' }}>
+            <p
+              className="font-mono font-semibold"
+              style={{ fontSize: '0.7rem', color: GAME_BOARD_COLORS.muted }}
+            >
               {diceRoll.die1 + diceRoll.die2}
-              {diceRoll.isDoubles ? t('doubles') : t('noDoubles')}
-            </span>
+              {' — '}{diceRoll.isDoubles ? t('doubles') : t('noDoubles')}
+            </p>
           )}
         </div>
       )}
 
-      {/* Status */}
-      <div className="border-b border-ink/20 px-3 py-1.5 text-center">
-        <span className="font-sans text-muted" style={{ fontSize: '0.6em' }}>
-          {triesLeft > 0
-            ? t('triesLeft', { count: triesLeft })
-            : t('noTriesLeft')}
-        </span>
-      </div>
-
       {/* Actions */}
-      <div className="flex flex-col gap-1 px-2 py-2">
+      <div className="flex flex-1 flex-col gap-2 px-5 py-4">
         <button
+          type="button"
           onClick={onRoll}
           disabled={!canRoll}
-          className="rounded bg-green py-1 font-display font-bold uppercase tracking-wide text-white transition-colors hover:bg-[#186444] active:scale-95 disabled:cursor-not-allowed disabled:bg-line disabled:text-muted"
-          style={{ fontSize: '0.6em' }}
+          className="w-full rounded-[10px] border py-2.5 font-display font-bold uppercase tracking-wide transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+          style={{
+            fontSize: '0.75rem',
+            letterSpacing: '0.08em',
+            backgroundColor: BOARD_TILE_COLORS.propertyGreen,
+            borderColor: BOARD_TILE_COLORS.propertyGreen,
+            color: BOARD_TILE_COLORS.altText,
+          }}
         >
           {t('rollForDoubles')}
         </button>
         <button
+          type="button"
           onClick={onPayFine}
           disabled={!canPayFine}
-          className="rounded border border-ink bg-surface py-1 font-display font-bold uppercase tracking-wide text-ink transition-colors hover:bg-paper active:scale-95 disabled:cursor-not-allowed disabled:border-line disabled:text-muted"
-          style={{ fontSize: '0.6em' }}
+          className="w-full rounded-[10px] border py-2.5 font-display font-bold uppercase tracking-wide transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{
+            fontSize: '0.75rem',
+            letterSpacing: '0.08em',
+            backgroundColor: GAME_BOARD_COLORS.panel,
+            borderColor: GAME_BOARD_COLORS.border,
+            color: GAME_BOARD_COLORS.text,
+          }}
         >
           {t('payFine')}
         </button>
         <button
+          type="button"
           onClick={onUseCard}
           disabled={!canUseCard}
-          className="rounded border border-ink bg-surface py-1 font-display font-bold uppercase tracking-wide text-ink transition-colors hover:bg-paper active:scale-95 disabled:cursor-not-allowed disabled:border-line disabled:text-muted"
-          style={{ fontSize: '0.6em' }}
+          className="w-full rounded-[10px] border py-2.5 font-display font-bold uppercase tracking-wide transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{
+            fontSize: '0.75rem',
+            letterSpacing: '0.08em',
+            backgroundColor: GAME_BOARD_COLORS.panel,
+            borderColor: GAME_BOARD_COLORS.border,
+            color: GAME_BOARD_COLORS.text,
+          }}
         >
           {t('useCard')}
         </button>

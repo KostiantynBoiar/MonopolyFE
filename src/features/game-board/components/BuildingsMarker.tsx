@@ -13,11 +13,12 @@ const HOUSE_BG = '#1A6B3A';
 const HOTEL_BG = '#8B2020';
 
 // ─── Sizing ────────────────────────────────────────────────────────────────────
-// vmin sidesteps the CSS custom-property percentage-context issue.
-const W_HOUSE = 'clamp(15px, 0.80vmin, 15px)';
-const H_HOUSE = 'clamp(15px, 1.10vmin, 16px)';
-const W_HOTEL = 'clamp(15px, 1.20vmin, 17px)';
-const H_HOTEL = 'clamp(15px, 1.20vmin, 17px)';
+// vmin ≈ board size at typical aspect ratios; tile height ≈ vmin/13, band ≈ tile*0.19.
+// Houses must fit inside the band (≈1.3vmin deep), so stay well under that.
+const W_HOUSE = 'clamp(5px, 0.9vmin, 14px)';
+const H_HOUSE = 'clamp(5px, 0.9vmin, 14px)';
+const W_HOTEL = 'clamp(7px, 1.15vmin, 18px)';
+const H_HOTEL = 'clamp(7px, 1.15vmin, 18px)';
 
 // ─── Band geometry ─────────────────────────────────────────────────────────────
 // Must match BoardTile's PROPERTY_HEADER_RATIO (1.25).

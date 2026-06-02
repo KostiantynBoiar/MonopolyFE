@@ -9,12 +9,18 @@ import { getDeedInfo } from '../deed.utils';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
+interface BuildingState {
+  houses: number;
+  hotel:  boolean;
+}
+
 interface DeedWindowProps {
   space: BoardSpace;              // tile selected by the user (browse mode)
   decisionSpace?: BoardSpace | null; // when set: player just landed here — forces buy/auction UI
   onBuy?: () => void;
   onAuction?: () => void;
   viewOnly?: boolean;
+  ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -66,7 +72,7 @@ function getSpecialText(space: BoardSpace) {
 
 // ─── DeedWindow ───────────────────────────────────────────────────────────────
 
-export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false }: DeedWindowProps) {
+export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false, ownership }: DeedWindowProps) {
   const isDecisionMode = Boolean(decisionSpace);
   // In decision mode show the landed-on space; otherwise show the browsed space.
   const activeSpace = decisionSpace ?? space;
@@ -79,6 +85,8 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
   const isSpecialCard  = Boolean(specialText);
   // Actions: always visible in decision mode (player MUST choose); hidden in viewOnly browse mode.
   const showActions    = (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
+  // Buildings strip: only in viewOnly when ownership data is supplied and there's something to show.
+  const showBuildings  = viewOnly && isDeed && ownership != null && (ownership.hotel || ownership.houses > 0);
   const nonDeedTitle   = cornerText?.title ?? specialText ?? 'Board space information.';
   const headerColor    = getSpaceHeaderColor(activeSpace);
   const headerTextColor = getSpaceHeaderTextColor(activeSpace);
@@ -91,7 +99,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
       className="grid h-full min-h-0 gap-[3px] overflow-hidden rounded-[16px] border p-[6px]"
       style={{
         gridTemplateRows: isDeed
-          ? (showActions ? 'auto auto minmax(0,1fr) auto' : 'auto auto minmax(0,1fr)')
+          ? (showActions || showBuildings ? 'auto auto minmax(0,1fr) auto' : 'auto auto minmax(0,1fr)')
           : (isDecisionMode ? 'auto auto minmax(0,1fr)' : 'auto minmax(0,1fr)'),
         backgroundColor: GAME_BOARD_COLORS.panel,
         borderColor:     outerBorder,
@@ -155,11 +163,11 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
         )}
 
         {isDeed && deed ? (
-          <div className="grid min-h-0 content-center gap-[4px]" style={{ color: GAME_BOARD_COLORS.tileText }}>
+          <div className="grid min-h-0 content-center gap-[5px]" style={{ color: GAME_BOARD_COLORS.tileText }}>
             {deed.rentRows.slice(1).map((row) => (
               <div
                 key={row.labelKey}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 text-[12px]"
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 text-sm"
               >
                 <span className="font-medium leading-[1.2] tracking-[0.01em]">
                   {formatLabel(row.labelKey)}
@@ -192,7 +200,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
           <button
             type="button"
             onClick={onBuy}
-            className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
+            className="rounded-[6px] border px-1.5 py-0.5 text-sm font-black uppercase tracking-[0.04em]"
             style={{
               backgroundColor: BOARD_TILE_COLORS.propertyGreen,
               borderColor:     BOARD_TILE_COLORS.propertyGreen,
@@ -204,7 +212,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
           <button
             type="button"
             onClick={onAuction}
-            className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
+            className="rounded-[6px] border px-1.5 py-0.5 text-sm font-black uppercase tracking-[0.04em]"
             style={{
               backgroundColor: GAME_BOARD_COLORS.tile,
               borderColor:     GAME_BOARD_COLORS.border,
@@ -213,6 +221,41 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
           >
             Auction
           </button>
+        </div>
+      )}
+
+      {/* Buildings strip — shown in viewOnly mode when ownership data is provided */}
+      {showBuildings && ownership && (
+        <div
+          className="flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
+          style={{ backgroundColor: headerColor }}
+        >
+          {ownership.hotel ? (
+            <div
+              title="Hotel"
+              style={{
+                width: 16, height: 16,
+                backgroundColor: '#8B2020',
+                borderRadius: 3,
+                border: '1.5px solid rgba(255,255,255,0.88)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+              }}
+            />
+          ) : (
+            Array.from({ length: ownership.houses }).map((_, i) => (
+              <div
+                key={i}
+                title={`House ${i + 1}`}
+                style={{
+                  width: 12, height: 12,
+                  backgroundColor: '#1A6B3A',
+                  borderRadius: 2,
+                  border: '1.5px solid rgba(255,255,255,0.88)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                }}
+              />
+            ))
+          )}
         </div>
       )}
     </section>
