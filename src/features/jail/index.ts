@@ -1,2 +1,2 @@
-export { JailModal } from './JailModal';
-export type { JailModalProps } from './JailModal';
+export { JailOverlay } from './JailOverlay';
+export type { JailOverlayProps } from './JailOverlay';

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BoardContainer } from '@/features/game-board';
 import { FloatingPlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
-import { BoardCenterPanel } from '@/features/chat/components/BoardCenterPanel';
 import type {
   LogAndActionsProps,
   CardOverlayProps,
@@ -31,18 +30,17 @@ import { useGameStore, useUiStore, useSocketStore } from '@/stores';
 import { resolveAnimationGate } from '@/shared/socket/timeline-executor';
 import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
-import { AuctionPanel } from '@/features/auction';
+import { AuctionOverlay } from '@/features/auction';
 import { CardFlipOverlay } from '@/features/card';
-import { DeedCard } from '@/features/deed';
-import { JailModal } from '@/features/jail';
-import { DebtModal } from '@/features/bankruptcy';
-import { ManagePropertiesModal } from '@/features/manage';
-import { TradeBuilder, TradeWindow } from '@/features/trade';
-import { MobileGamePanel } from '@/features/chat/components/MobileGamePanel';
+import { JailOverlay } from '@/features/jail';
+import { DebtOverlay } from '@/features/bankruptcy';
+import { ManagePropertiesOverlay } from '@/features/manage';
+import { TradeBuilder, TradeOverlay } from '@/features/trade';
 import { BOARD_W, BOARD_PX } from '@/shared/config/constants';
 import { useGameDispatch } from './useGameDispatch';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { playSfx } from '@/shared/lib/sfx';
+import { BoardCenterPanel, MobileGamePanel } from '@/features/chat/components';
 
 // ─── Adapters ─────────────────────────────────────────────────────────────────
 
@@ -469,7 +467,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         {/* Bottom panel: auction / trade / normal game controls */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line">
           {isAuctionActive ? (
-            <AuctionPanel
+            <AuctionOverlay
               auctionState={gameState.auction!}
               propertyName={auctionPropertyName}
               viewerId={gameState.viewerId}
@@ -478,7 +476,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
               onBid={handleBid}
             />
           ) : isTradeActive ? (
-            <TradeWindow
+            <TradeOverlay
               trade={gameState.trade!}
               proposer={tradeProposer!}
               target={tradeTarget!}
@@ -526,7 +524,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         )}
         {jailDecision && !gameState.activeCard && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
-            <JailModal
+            <JailOverlay
               attempts={viewer?.jailStatus?.attempts ?? 0}
               canPayFine={permissions.canPayJailFine}
               canUseCard={permissions.canUseJailCard}
@@ -541,7 +539,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         )}
         {debtPending && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
-            <DebtModal
+            <DebtOverlay
               amount={debtAmount}
               canPay={permissions.canPayDebt}
               onPay={handlePayDebt}
@@ -552,7 +550,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         )}
         {openedModal === 'manage' && (
           <div className="fixed inset-0 z-50">
-            <ManagePropertiesModal
+            <ManagePropertiesOverlay
               properties={manageProperties}
               canBuildHouse={permissions.canBuildHouse}
               canBuildHotel={permissions.canBuildHotel}

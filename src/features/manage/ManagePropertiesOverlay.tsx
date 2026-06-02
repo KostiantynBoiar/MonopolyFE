@@ -3,7 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import type { PropertyColor } from '@/features/game-board';
-import { DeedCard, getDeedInfo } from '@/features/deed';
+import { BOARD } from '@/features/game-board';
+import { DeedWindow } from '@/features/deed';
 
 export interface ManageProperty {
   position:    number;
@@ -16,7 +17,7 @@ export interface ManageProperty {
   rent:        number;
 }
 
-export interface ManagePropertiesModalProps {
+export interface ManagePropertiesOverlayProps {
   properties:     ManageProperty[];
   canBuildHouse:  boolean;
   canBuildHotel:  boolean;
@@ -58,17 +59,17 @@ function ActionBtn({ label, onClick, disabled, primary }: ActionBtnProps) {
   );
 }
 
-export function ManagePropertiesModal({
+export function ManagePropertiesOverlay({
   properties,
   canBuildHouse, canBuildHotel, canMortgage, canUnmortgage,
   onBuildHouse, onBuildHotel, onSellHouse, onSellHotel,
   onMortgage, onUnmortgage, onSellProperty, onClose,
-}: ManagePropertiesModalProps) {
+}: ManagePropertiesOverlayProps) {
   const t = useTranslations('Manage');
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100">
-      {/* Header — matches TradeWindow */}
+    <div className="flex h-full w-full flex-col overflow-hidden bg-paper">
+      {/* Header — matches TradeOverlay */}
       <div className="flex shrink-0 items-center gap-3 border-b-2 border-ink/20 bg-ink px-4 py-2.5">
         <span className="font-mono text-[0.72em] font-bold uppercase tracking-widest text-white/70">
           {t('title')}
@@ -93,19 +94,11 @@ export function ManagePropertiesModal({
         ) : (
           <div className="flex gap-3">
             {properties.map((p) => {
-              const deed = getDeedInfo(p.position);
+              const space = BOARD[p.position];
               return (
                 <div key={p.position} className="flex shrink-0 flex-col gap-2">
-                  {deed ? (
-                    <DeedCard
-                      deed={deed}
-                      canBuy={false}
-                      canManage={false}
-                      onBuy={() => {}}
-                      onAuction={() => {}}
-                      onManage={() => {}}
-                      viewOnly
-                    />
+                  {space ? (
+                    <DeedWindow space={space} viewOnly />
                   ) : (
                     <div className="flex w-[12em] items-center justify-center rounded-xl border-2 border-ink bg-white px-3 py-6">
                       <span className="text-center font-display text-[0.8em] font-bold text-ink">{p.name}</span>
@@ -159,7 +152,7 @@ export function ManagePropertiesModal({
       </div>
 
       {/* Footer */}
-      <div className="flex shrink-0 items-center justify-end border-t-2 border-ink/20 bg-gray-200 px-4 py-2.5">
+      <div className="flex shrink-0 items-center justify-end border-t-2 border-ink/20 bg-line/30 px-4 py-2.5">
         <button
           onClick={onClose}
           className="rounded border border-line-2 bg-surface font-display text-[1em] font-semibold uppercase tracking-wide text-ink transition-colors hover:bg-paper"

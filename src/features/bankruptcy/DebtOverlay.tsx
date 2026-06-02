@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 
-export interface DebtModalProps {
+export interface DebtOverlayProps {
   amount:     number;
   canPay:     boolean;
   onPay:      () => void;
@@ -10,7 +10,7 @@ export interface DebtModalProps {
   onBankrupt: () => void;
 }
 
-export function DebtModal({ amount, canPay, onPay, onManage, onBankrupt }: DebtModalProps) {
+export function DebtOverlay({ amount, canPay, onPay, onManage, onBankrupt }: DebtOverlayProps) {
   const t = useTranslations('Debt');
 
   return (

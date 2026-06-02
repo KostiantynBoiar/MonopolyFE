@@ -1,2 +1,2 @@
-export { DebtModal } from './DebtModal';
-export type { DebtModalProps } from './DebtModal';
+export { DebtOverlay } from './DebtOverlay';
+export type { DebtOverlayProps } from './DebtOverlay';

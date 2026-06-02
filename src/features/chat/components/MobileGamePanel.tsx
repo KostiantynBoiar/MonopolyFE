@@ -1,0 +1,66 @@
+'use client';
+
+import { ChatWindow } from './ChatWindow';
+import type { LogAndActionsProps } from '../chat.types';
+
+export function MobileGamePanel({
+  log,
+  diceRoll,
+  isRolling,
+  canRoll,
+  canEndTurn,
+  canManage,
+  canTrade,
+  onRoll,
+  onEndTurn,
+  onManage,
+  onTrade,
+  onSendMessage,
+}: LogAndActionsProps) {
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col bg-paper">
+      {/* Game log and chat */}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <ChatWindow
+          log={log}
+          onSendMessage={onSendMessage}
+        />
+      </div>
+
+      {/* Action buttons for mobile */}
+      <div className="flex shrink-0 flex-wrap gap-2 border-t border-line bg-surface p-2.5 text-xs">
+        <button
+          onClick={onRoll}
+          disabled={!canRoll || isRolling}
+          className="rounded bg-green px-3 py-1.5 font-bold text-white transition-colors hover:bg-green-600 disabled:bg-line disabled:text-muted"
+        >
+          Roll
+        </button>
+        {canManage && (
+          <button
+            onClick={onManage}
+            className="rounded bg-gold px-3 py-1.5 font-bold text-white transition-colors hover:bg-gold-600"
+          >
+            Manage
+          </button>
+        )}
+        {canTrade && (
+          <button
+            onClick={onTrade}
+            className="rounded bg-purple px-3 py-1.5 font-bold text-white transition-colors hover:bg-purple-600"
+          >
+            Trade
+          </button>
+        )}
+        {canEndTurn && (
+          <button
+            onClick={onEndTurn}
+            className="ml-auto rounded bg-red px-3 py-1.5 font-bold text-white transition-colors hover:bg-red-600"
+          >
+            End Turn
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}

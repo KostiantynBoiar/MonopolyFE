@@ -4,3 +4,5 @@ export { BOARD, getGridPos, getTileEdge, getWalkSteps, getTileCenter } from './b
 export { BoardContainer } from './components/BoardContainer';
 export { BoardTile } from './components/BoardTile';
 export { GAME_BOARD_COLORS, PROPERTY_COLOR_MAP } from './game-board.colors';
+export { useActionButtons } from './hooks';
+export type { OverlayId } from './hooks';

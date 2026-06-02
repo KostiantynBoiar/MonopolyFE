@@ -1,7 +1,6 @@
 'use client';
 
 import { cn } from '@/shared/lib/cn';
-import { BOARD_TILE_COLORS } from '../game-board.colors';
 import { TileEdge } from '../game-board.enums';
 import type { BoardPlayer } from '../game-board.types';
 
@@ -10,65 +9,112 @@ interface PlayerMarkerProps {
   players?: BoardPlayer[];
 }
 
-function getPlayerTokenClass(edge: TileEdge) {
-  switch (edge) {
-    case TileEdge.BOTTOM:
-      return 'bottom-1 left-1/2 -translate-x-1/2';
-    case TileEdge.TOP:
-      return 'left-1/2 top-1 -translate-x-1/2';
-    case TileEdge.LEFT:
-      return 'left-1 top-1/2 -translate-y-1/2';
-    case TileEdge.RIGHT:
-      return 'right-1 top-1/2 -translate-y-1/2';
-    default:
-      return 'bottom-2 right-2';
-  }
+// ─── Sizing ────────────────────────────────────────────────────────────────────
+// vmin scales with the viewport's smaller dimension, which approximates the
+// board size at typical screen ratios without the % / CSS-variable nesting issue.
+//
+// Single token: ~38px on a 1080p screen, ~30px on a small laptop.
+// Multi token:  scale to ~65% so two tokens still fit across a single tile.
+const DIAMETER_SINGLE = 'clamp(28px, 3.2vmin, 46px)';
+const DIAMETER_MULTI  = 'clamp(20px, 2.2vmin, 32px)';
+const FONT_SINGLE     = 'clamp(10px, 1.1vmin, 16px)';
+const FONT_MULTI      = 'clamp(7px,  0.8vmin, 11px)';
+
+// ─── Anchor positions ──────────────────────────────────────────────────────────
+// Each anchor puts tokens on the OPPOSITE side from the color-band header,
+// so they never fight for visual space with the property indicator.
+//
+//  BOTTOM tile → band at top   → tokens at bottom
+//  TOP    tile → band at bottom → tokens at top
+//  LEFT   tile → band at right  → tokens at left
+//  RIGHT  tile → band at left   → tokens at right
+//  CORNER      → no band        → bottom-right corner
+const ANCHOR: Record<TileEdge, string> = {
+  [TileEdge.BOTTOM]: 'bottom-[4px] left-1/2 -translate-x-1/2 flex-row',
+  [TileEdge.TOP]:    'top-[4px]    left-1/2 -translate-x-1/2 flex-row',
+  [TileEdge.LEFT]:   'left-[4px]   top-1/2  -translate-y-1/2 flex-col',
+  [TileEdge.RIGHT]:  'right-[4px]  top-1/2  -translate-y-1/2 flex-col',
+  [TileEdge.CORNER]: 'bottom-[8px] right-[8px]               flex-row',
+};
+
+// ─── Token ─────────────────────────────────────────────────────────────────────
+// aspectRatio: '1 / 1' + explicit width only → perfect circle no matter how
+// the flex or stacking context resolves height.
+interface TokenProps {
+  player: BoardPlayer;
+  diameter: string;
+  fontSize: string;
 }
 
-export function PlayerMarker({ players, edge }: PlayerMarkerProps) {
-  if (!players?.length) {
-    return null;
+function Token({ player, diameter, fontSize }: TokenProps) {
+  const label = player.id.replace(/\D/g, '') || player.id.slice(0, 1).toUpperCase();
+
+  const ring: React.CSSProperties = {
+    width:           diameter,
+    aspectRatio:     '1 / 1',
+    borderRadius:    '50%',
+    flexShrink:      0,
+    // White inner ring + dark outer ring + drop-shadow.
+    // Two-layer approach works on every tile background color.
+    outline:         '2px solid rgba(255,255,255,0.96)',
+    outlineOffset:   '0px',
+    boxShadow:       '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 9px rgba(0,0,0,0.65)',
+  };
+
+  if (player.avatarUrl) {
+    return (
+      <img
+        src={player.avatarUrl}
+        alt={label}
+        style={{ ...ring, objectFit: 'cover', display: 'block', backgroundColor: player.tokenColor }}
+      />
+    );
   }
 
-  const isCorner = edge === TileEdge.CORNER;
-  const hasMultiple = players.length > 1;
-  
-  // Scale down when multiple markers are present
-  const sizeScale = hasMultiple ? 0.65 : 1;
+  return (
+    <span
+      style={{
+        ...ring,
+        display:         'flex',
+        alignItems:      'center',
+        justifyContent:  'center',
+        backgroundColor: player.tokenColor,
+        color:           'rgba(255,255,255,0.97)',
+        fontSize,
+        fontFamily:      'var(--font-dm-mono, monospace)',
+        fontWeight:      900,
+        lineHeight:      1,
+        textShadow:      '0 1px 3px rgba(0,0,0,0.70)',
+        letterSpacing:   '-0.02em',
+        userSelect:      'none',
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+// ─── PlayerMarker ─────────────────────────────────────────────────────────────
+
+export function PlayerMarker({ players, edge }: PlayerMarkerProps) {
+  if (!players?.length) return null;
+
+  const many      = players.length > 1;
+  const diameter  = many ? DIAMETER_MULTI  : DIAMETER_SINGLE;
+  const fontSize  = many ? FONT_MULTI      : FONT_SINGLE;
 
   return (
     <div
       className={cn(
-        'absolute z-30 flex max-w-[86%] flex-wrap items-center justify-center',
-        hasMultiple ? 'gap-[2px]' : 'gap-[3px]',
-        getPlayerTokenClass(edge),
+        'absolute z-30 flex flex-wrap items-center justify-center',
+        many ? 'gap-[3px]' : '',
+        ANCHOR[edge],
       )}
+      style={{ maxWidth: '92%', maxHeight: '92%' }}
       aria-label={`${players.length} player token${players.length === 1 ? '' : 's'}`}
     >
       {players.slice(0, 6).map((player) => (
-        <span
-          key={player.id}
-          className="flex items-center justify-center rounded-full border-2 font-mono font-black leading-none"
-          style={{
-            width: isCorner
-              ? `clamp(${72 * sizeScale}px, calc(var(--board-corner-size) * ${0.6 * sizeScale}), ${120 * sizeScale}px)`
-              : `clamp(${66 * sizeScale}px, calc(var(--board-tile-width) * ${1.02 * sizeScale}), ${108 * sizeScale}px)`,
-            height: isCorner
-              ? `clamp(${72 * sizeScale}px, calc(var(--board-corner-size) * ${0.6 * sizeScale}), ${120 * sizeScale}px)`
-              : `clamp(${66 * sizeScale}px, calc(var(--board-tile-width) * ${1.02 * sizeScale}), ${108 * sizeScale}px)`,
-            backgroundColor: player.tokenColor,
-            borderColor: BOARD_TILE_COLORS.altText,
-            color: BOARD_TILE_COLORS.altText,
-            fontSize: isCorner
-              ? `clamp(${36 * sizeScale}px, calc(var(--board-corner-size) * ${0.27 * sizeScale}), ${54 * sizeScale}px)`
-              : `clamp(${33 * sizeScale}px, calc(var(--board-tile-width) * ${0.48 * sizeScale}), ${48 * sizeScale}px)`,
-            boxShadow: '0 3px 8px rgba(0,0,0,.55), 0 0 0 2px rgba(0,0,0,.25)',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.5))',
-            textShadow: '0 -1px 1px rgba(0,0,0,.3)',
-          }}
-        >
-          {player.id.replace(/\D/g, '') || player.id.slice(0, 1).toUpperCase()}
-        </span>
+        <Token key={player.id} player={player} diameter={diameter} fontSize={fontSize} />
       ))}
     </div>
   );

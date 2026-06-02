@@ -18,7 +18,7 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
   );
 }
 
-export interface JailModalProps {
+export interface JailOverlayProps {
   attempts:    number;       // failed escape rolls so far (0–2)
   canPayFine:  boolean;
   canUseCard:  boolean;
@@ -30,11 +30,11 @@ export interface JailModalProps {
   onRoll:      () => void;
 }
 
-export function JailModal({
+export function JailOverlay({
   attempts, canPayFine, canUseCard, canRoll,
   diceRoll = null, isRolling = false,
   onPayFine, onUseCard, onRoll,
-}: JailModalProps) {
+}: JailOverlayProps) {
   const t = useTranslations('Jail');
   const triesLeft = Math.max(0, 3 - attempts);
   const showDice = isRolling || diceRoll !== null;

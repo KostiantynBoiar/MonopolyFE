@@ -81,6 +81,7 @@ export interface BoardPlayer {
   position: number;
   tokenColor: string; // resolved hex, e.g. '#2B57C6'
   isBankrupt: boolean;
+  avatarUrl?: string | null; // PNG / WebP / SVG / any <img>-renderable URL
 }
 
 export interface BoardSpace {

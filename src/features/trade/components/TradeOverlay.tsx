@@ -6,8 +6,8 @@ import { cn } from '@/shared/lib/cn';
 import { TradeParty } from '../trade.enums';
 import type { TradeWindowProps } from '../trade.types';
 import type { TradeOffer } from '@/shared/protocol/game-state.schema';
-import { DeedCard } from '@/features/deed';
-import { getDeedInfo } from '@/features/deed';
+import { DeedWindow } from '@/features/deed';
+import { BOARD } from '@/features/game-board';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ function OfferSide({
 }) {
   const tokenHex = TOKEN_COLORS[token as keyof typeof TOKEN_COLORS] ?? '#888';
   const isEmpty = offer.money === 0 && offer.positions.length === 0 && offer.getOutOfJailCards === 0;
-  const deeds = offer.positions.map((pos) => getDeedInfo(pos)).filter(Boolean);
+  const spaces = offer.positions.map((pos) => BOARD[pos]).filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   return (
     <div className={cn('flex min-w-0 flex-1 flex-col gap-3 p-4', dimmed && 'opacity-50')}>
@@ -85,19 +85,11 @@ function OfferSide({
       </div>
 
       {/* Deed cards */}
-      {deeds.length > 0 && (
+      {spaces.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ fontSize: '0.72em' }}>
-          {deeds.map((deed) => (
-            <div key={deed!.position} className="shrink-0">
-              <DeedCard
-                deed={deed!}
-                canBuy={false}
-                canManage={false}
-                onBuy={() => {}}
-                onAuction={() => {}}
-                onManage={() => {}}
-                viewOnly
-              />
+          {spaces.map((space) => (
+            <div key={space.pos} className="shrink-0">
+              <DeedWindow space={space} viewOnly />
             </div>
           ))}
         </div>
@@ -112,7 +104,7 @@ function OfferSide({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function TradeWindow({
+export function TradeOverlay({
   trade,
   proposer,
   target,

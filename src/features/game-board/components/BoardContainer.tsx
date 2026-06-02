@@ -5,14 +5,28 @@ import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
 import { TOKEN_COLORS } from '@/features/player-panel';
+import { ManagePropertiesOverlay } from '@/features/manage/ManagePropertiesOverlay';
+import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
+import { JailOverlay } from '@/features/jail/JailOverlay';
+import { DebtOverlay } from '@/features/bankruptcy/DebtOverlay';
+import { AuctionOverlay } from '@/features/auction/components/AuctionOverlay';
+import { CardFlipOverlay } from '@/features/card/components/CardFlipOverlay';
 import { createMockGameRoomSnapshot } from '@/shared/mocks/game-room.mock';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
+import {
+  AuctionTargetKind,
+  CardKind,
+  CardEffectType,
+  TradeStatus,
+  PropertyColor as GamePropertyColor,
+} from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { BOARD, getGridPos, getTileEdge } from '../board-data';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
+import { useActionButtons } from '../hooks';
 import { BoardTile } from './BoardTile';
 
 const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
@@ -26,6 +40,7 @@ const MOCK_PLAYERS = MOCK_SNAPSHOT.game.players.map((player) => ({
   position: player.position,
   tokenColor: TOKEN_COLORS[player.token],
   isBankrupt: player.isBankrupt,
+  avatarUrl: player.avatarUrl,
 }));
 const MOCK_PANEL_PLAYERS = MOCK_SNAPSHOT.game.players;
 const MOCK_CHAT_MESSAGES = [
@@ -33,12 +48,69 @@ const MOCK_CHAT_MESSAGES = [
   { id: 'c2', kind: 'chat' as const, author: 'Carol', token: TokenColor.GREEN, text: 'Auction that if you skip it.', ts: Date.now() - 1000 * 60 * 4 },
   { id: 'c3', kind: 'chat' as const, author: 'Dave', token: TokenColor.GOLD, text: 'No mercy on Boardwalk.', ts: Date.now() - 1000 * 60 * 2 },
 ];
+
 const ACTION_ITEMS = [
   { id: 'end-turn', label: 'End Turn' },
-  { id: 'manage', label: 'Manage' },
-  { id: 'trade', label: 'Trade' },
+  { id: 'manage',   label: 'Manage' },
+  { id: 'trade',    label: 'Trade' },
   { id: 'view-properties', label: 'Properties' },
 ] as const;
+
+// ─── Mock overlay data ────────────────────────────────────────────────────────
+
+const MOCK_MANAGE_PROPERTIES = [
+  {
+    position: 1,
+    name: 'Mediterranean Avenue',
+    color: GamePropertyColor.BROWN,
+    houses: 1 as const,
+    hotel: false,
+    isMortgaged: false,
+    inMonopoly: true,
+    rent: 10,
+  },
+  {
+    position: 3,
+    name: 'Baltic Avenue',
+    color: GamePropertyColor.BROWN,
+    houses: 0 as const,
+    hotel: false,
+    isMortgaged: false,
+    inMonopoly: true,
+    rent: 6,
+  },
+];
+
+const MOCK_TRADE = {
+  id: 'trade-mock-1',
+  proposerId: 'p1',
+  targetId: 'p2',
+  proposerOffer: { money: 200, positions: [1], getOutOfJailCards: 1 },
+  targetRequest: { money: 0, positions: [5], getOutOfJailCards: 0 },
+  status: TradeStatus.PENDING,
+  expiresAt: new Date(Date.now() + 60_000).toISOString(),
+};
+
+const MOCK_AUCTION_STATE = {
+  target: { kind: AuctionTargetKind.PROPERTY, position: 6 } as const,
+  bids: [
+    { playerId: 'p1', amount: 120 },
+    { playerId: 'p2', amount: 150 },
+  ],
+  highestBid: 150,
+  highestBidderId: 'p2',
+  timeRemainingMs: 18_000,
+};
+
+const MOCK_ACTIVE_CARD = {
+  id: 'card-mock-1',
+  kind: CardKind.CHANCE,
+  text: 'Advance to Boardwalk.',
+  effect: { type: CardEffectType.ADVANCE_TO, position: 39, collectGoBonus: false } as const,
+  drawerId: 'p1',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getTileFlavor(type: SpaceType): BoardTileFlavor {
   switch (type) {
@@ -52,11 +124,15 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
   }
 }
 
+// ─── ActionPanel ─────────────────────────────────────────────────────────────
+
 interface ActionPanelProps {
   onRollDice: () => void;
+  onAction: (id: string) => void;
+  activeAction: string | null;
 }
 
-function ActionPanel({ onRollDice }: ActionPanelProps) {
+function ActionPanel({ onRollDice, onAction, activeAction }: ActionPanelProps) {
   return (
     <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.15fr_1fr_1fr] gap-[3px]">
       <button
@@ -72,23 +148,29 @@ function ActionPanel({ onRollDice }: ActionPanelProps) {
         Roll Dice
       </button>
 
-      {ACTION_ITEMS.map((action) => (
-        <button
-          key={action.id}
-          type="button"
-          className="rounded-[12px] border px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.08em]"
-          style={{
-            backgroundColor: GAME_BOARD_COLORS.tile,
-            borderColor: GAME_BOARD_COLORS.border,
-            color: GAME_BOARD_COLORS.tileText,
-          }}
-        >
-          {action.label}
-        </button>
-      ))}
+      {ACTION_ITEMS.map((action) => {
+        const isActive = activeAction === action.id;
+        return (
+          <button
+            key={action.id}
+            type="button"
+            onClick={() => onAction(action.id)}
+            className="rounded-[12px] border px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] transition-colors"
+            style={{
+              backgroundColor: isActive ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.tile,
+              borderColor: isActive ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.border,
+              color: isActive ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.tileText,
+            }}
+          >
+            {action.label}
+          </button>
+        );
+      })}
     </section>
   );
 }
+
+// ─── PlayerPanel ─────────────────────────────────────────────────────────────
 
 function rollDie() {
   return Math.floor(Math.random() * 6) + 1;
@@ -184,22 +266,22 @@ function PlayerPanel({ currentPlayerId, spaces }: PlayerPanelProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-6 gap-1" aria-label={`${player.displayName} owned properties`}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(14, 1fr)', gap: '0.125rem' }} aria-label={`${player.displayName} owned properties`}>
                 {ownedProperties.length > 0 ? (
-                  ownedProperties.slice(0, 12).map((property) => (
+                  ownedProperties.slice(0, 28).map((property) => (
                     <span
                       key={property.pos}
-                      className="aspect-square rounded-[5px] border"
+                      className="aspect-square rounded-[3px] border"
                       style={{
                         backgroundColor: getSpaceHeaderColor(property),
                         borderColor: BOARD_TILE_COLORS.altText,
-                        boxShadow: '0 1px 3px rgba(0,0,0,.22)',
+                        boxShadow: '0 0.5px 1.5px rgba(0,0,0,.22)',
                       }}
                       title={property.name}
                     />
                   ))
                 ) : (
-                  <span className="col-span-6 text-[11px] font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
+                  <span className="text-[11px] font-semibold" style={{ gridColumn: '1 / -1', color: GAME_BOARD_COLORS.muted }}>
                     No properties
                   </span>
                 )}
@@ -224,6 +306,8 @@ function PlayerPanel({ currentPlayerId, spaces }: PlayerPanelProps) {
   );
 }
 
+// ─── BoardContainer ───────────────────────────────────────────────────────────
+
 export function BoardContainer({ centerContent, spaces, players }: BoardContainerProps) {
   const [selectedPos, setSelectedPos] = useState(37);
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(MOCK_DICE_ROLL);
@@ -232,6 +316,7 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
   const boardPlayers = players ?? MOCK_PLAYERS;
   const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
   const playersByPosition = new Map<number, typeof boardPlayers>();
+  const { activeOverlay, handleAction, closeOverlay } = useActionButtons();
 
   for (const player of boardPlayers) {
     if (player.isBankrupt) {
@@ -241,6 +326,11 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
     playersByPosition.set(player.position, [...(playersByPosition.get(player.position) ?? []), player]);
   }
   const selectedSpace = BOARD[selectedPos] ?? BOARD[0];
+
+  // Decision mode: viewer is current player and there's a property to buy/auction.
+  const isCurrentViewer = MOCK_SNAPSHOT.game.viewerId === MOCK_SNAPSHOT.game.turn.currentPlayerId;
+  const pendingBuyPos   = MOCK_SNAPSHOT.game.turn.pendingBuyPosition;
+  const decisionSpace   = (isCurrentViewer && pendingBuyPos !== null) ? (BOARD[pendingBuyPos] ?? null) : null;
 
   useEffect(() => {
     preloadSfx('dice_roll');
@@ -258,6 +348,105 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
     });
     setDiceRollId((value) => value + 1);
   }
+
+  // ─── Overlay rendering ──────────────────────────────────────────────────────
+
+  const p1 = MOCK_PANEL_PLAYERS[0];
+  const p2 = MOCK_PANEL_PLAYERS[1];
+  const auctionPlayers = MOCK_PANEL_PLAYERS.map((p) => ({ id: p.id, name: p.displayName }));
+
+  function renderOverlay() {
+    switch (activeOverlay) {
+      case 'manage':
+        return (
+          <ManagePropertiesOverlay
+            properties={MOCK_MANAGE_PROPERTIES}
+            canBuildHouse={true}
+            canBuildHotel={false}
+            canMortgage={true}
+            canUnmortgage={true}
+            onBuildHouse={() => {}}
+            onBuildHotel={() => {}}
+            onSellHouse={() => {}}
+            onSellHotel={() => {}}
+            onMortgage={() => {}}
+            onUnmortgage={() => {}}
+            onClose={closeOverlay}
+          />
+        );
+
+      case 'trade':
+        return (
+          <TradeOverlay
+            trade={MOCK_TRADE}
+            proposer={{ id: p1.id, name: p1.displayName, token: p1.token, balance: p1.balance, ownedPositions: [1, 3] }}
+            target={{ id: p2.id, name: p2.displayName, token: p2.token, balance: p2.balance, ownedPositions: [5] }}
+            viewerId={MOCK_SNAPSHOT.game.viewerId}
+            onAccept={closeOverlay}
+            onReject={closeOverlay}
+            onCounter={() => {}}
+            onCancel={closeOverlay}
+          />
+        );
+
+      case 'auction':
+        return (
+          <AuctionOverlay
+            auctionState={MOCK_AUCTION_STATE}
+            propertyName="Oriental Avenue"
+            viewerId={MOCK_SNAPSHOT.game.viewerId}
+            players={auctionPlayers}
+            canBid={true}
+            onBid={() => {}}
+          />
+        );
+
+      case 'jail':
+        return (
+          <div className="flex h-full w-full items-center justify-center">
+            <JailOverlay
+              attempts={1}
+              canPayFine={true}
+              canUseCard={true}
+              canRoll={true}
+              diceRoll={null}
+              isRolling={false}
+              onPayFine={closeOverlay}
+              onUseCard={closeOverlay}
+              onRoll={() => {}}
+            />
+          </div>
+        );
+
+      case 'debt':
+        return (
+          <div className="flex h-full w-full items-center justify-center">
+            <DebtOverlay
+              amount={450}
+              canPay={true}
+              onPay={closeOverlay}
+              onManage={() => {}}
+              onBankrupt={closeOverlay}
+            />
+          </div>
+        );
+
+      case 'card':
+        return (
+          <CardFlipOverlay
+            card={MOCK_ACTIVE_CARD}
+            onProceed={closeOverlay}
+          />
+        );
+
+      default:
+        return null;
+    }
+  }
+
+  const centerOverlay = renderOverlay();
+
+  // ─── Layout ─────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -320,22 +509,39 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
                   className="absolute inset-[8px] rounded-[12px]"
                   style={{ backgroundColor: GAME_BOARD_COLORS.center }}
                 />
-                <div className="relative z-10 grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[10px]">
-                  <div className="col-span-2 row-span-2 min-h-0">
-                    <DiceWindow diceRoll={diceRoll} rollId={diceRollId} />
-                  </div>
+                <div className="relative z-10 h-full w-full p-[10px]">
+                  {centerOverlay ? (
+                    <div className="h-full w-full overflow-hidden rounded-[12px]">
+                      {centerOverlay}
+                    </div>
+                  ) : (
+                    <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px]">
+                      <div className="col-span-2 row-span-2 min-h-0">
+                        <DiceWindow diceRoll={diceRoll} rollId={diceRollId} />
+                      </div>
 
-                  <div className="col-span-4 col-start-3 row-span-2 min-h-0">
-                    <ActionPanel onRollDice={handleRollDice} />
-                  </div>
+                      <div className="col-span-4 col-start-3 row-span-2 min-h-0">
+                        <ActionPanel
+                          onRollDice={handleRollDice}
+                          onAction={handleAction}
+                          activeAction={activeOverlay}
+                        />
+                      </div>
 
-                  <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0">
-                    <ChatWindow log={MOCK_LOG} initialMessages={MOCK_CHAT_MESSAGES} />
-                  </div>
+                      <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0">
+                        <ChatWindow log={MOCK_LOG} initialMessages={MOCK_CHAT_MESSAGES} />
+                      </div>
 
-                  <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0">
-                    <DeedWindow space={selectedSpace} />
-                  </div>
+                      <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0">
+                        <DeedWindow
+                          space={selectedSpace}
+                          decisionSpace={decisionSpace}
+                          onBuy={() => {}}
+                          onAuction={() => {}}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
