@@ -1,5 +1,1 @@
-export enum DeedSpaceType {
-  PROPERTY = 'property',
-  RAILROAD = 'railroad',
-  UTILITY  = 'utility',
-}
+export { BoardSpaceType as DeedSpaceType } from '@/shared/protocol/game-state.enums';

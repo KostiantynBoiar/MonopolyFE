@@ -1,2 +1,2 @@
-export { ManagePropertiesModal } from './ManagePropertiesModal';
-export type { ManageProperty, ManagePropertiesModalProps } from './ManagePropertiesModal';
+export { ManagePropertiesOverlay } from './ManagePropertiesOverlay';
+export type { ManageProperty, ManagePropertiesOverlayProps } from './ManagePropertiesOverlay';

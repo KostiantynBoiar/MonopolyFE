@@ -52,6 +52,14 @@ export function getPlayer(state: GameState, id: string): PlayerState | null {
   return state.players.find((p) => p.id === id) ?? null;
 }
 
+export function getViewerPlayer(state: GameState, authUserId?: string | null): PlayerState | null {
+  return (
+    state.players.find((player) => player.id === state.viewerId) ??
+    state.players.find((player) => player.userId === authUserId) ??
+    null
+  );
+}
+
 export function getActivePlayers(state: GameState): PlayerState[] {
   return state.players.filter((p) => !p.isBankrupt);
 }

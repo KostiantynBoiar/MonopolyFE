@@ -1,3 +1,5 @@
+export { PropertyColor } from '@/shared/protocol/game-state.enums';
+
 export enum SpaceType {
   CORNER = 'corner',
   PROPERTY = 'property',
@@ -29,22 +31,17 @@ export enum TileTopText {
   CHEST = 'COMMUNITY CHEST',
 }
 
-export enum PropertyColor {
-  BROWN = 'brown',
-  CYAN = 'cyan',
-  PINK = 'pink',
-  ORANGE = 'orange',
-  RED = 'red',
-  YELLOW = 'yellow',
-  GREEN = 'green',
-  BLUE = 'blue',
-}
-
 export enum CornerVariant {
   GO = 'go',
   JAIL = 'jail',
   PARKING = 'parking',
   GOTO_JAIL = 'gotojail',
+}
+
+export enum BoardTileFlavor {
+  PROPERTY = 'property',
+  CORNER = 'corner',
+  SPECIAL = 'special',
 }
 
 export enum TileEdge {

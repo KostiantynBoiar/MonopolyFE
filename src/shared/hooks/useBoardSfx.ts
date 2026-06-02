@@ -2,12 +2,21 @@
 
 import { useEffect, useRef } from 'react';
 import type { GameState } from '@/shared/protocol/game-state';
+import { LogKind } from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
+import { onAnimation } from '@/shared/socket/timeline-executor';
 
 export function useBoardSfx(gameState: GameState) {
   // Preload all sounds once on mount (dice_roll/auction_bid preloaded for handler use too)
   useEffect(() => {
     preloadSfx('dice_roll', 'notification', 'auction_bid', 'passed_go');
+  }, []);
+
+  // Play sounds driven by the animation timeline so all players hear them together.
+  useEffect(() => {
+    return onAnimation((instr) => {
+      if (instr.type === 'roll_dice') playSfx('dice_roll');
+    });
   }, []);
 
   const prevAuctionRef = useRef(false);
@@ -29,13 +38,23 @@ export function useBoardSfx(gameState: GameState) {
     }
     prevTradeIdRef.current = tradeId;
 
-    // ── Passed Go ─────────────────────────────────────────────────────────────
-    // The BE log entry text contains "passed GO" when a player collects the bonus.
+    // ── New log entries ───────────────────────────────────────────────────────
     const logLen = gameState.log.length;
     if (logLen > prevLogLenRef.current) {
       const newEntries = gameState.log.slice(prevLogLenRef.current);
+
+      // Passed Go
       if (newEntries.some((e) => /passed GO/i.test(e.text))) {
         playSfx('passed_go');
+      }
+
+      // Incoming chat or sticker from another player
+      if (newEntries.some(
+        (e) =>
+          (e.kind === LogKind.CHAT || e.kind === LogKind.STICKER) &&
+          e.playerId !== gameState.viewerId,
+      )) {
+        playSfx('notification');
       }
     }
     prevLogLenRef.current = logLen;

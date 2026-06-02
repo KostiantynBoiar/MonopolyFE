@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
-import type { PropertyColor } from '@/features/game-board';
+import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import type { TradeOffer } from '@/shared/protocol/game-state';
 
 export type TradePlayer = { id: string; name: string; balance: number };

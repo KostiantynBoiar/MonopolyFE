@@ -156,6 +156,45 @@ interface BeLogEntry {
   sticker_url?: string | null;
 }
 
+interface BeRollDiceAnimation {
+  type: 'roll_dice';
+  player_id: string;
+  die1: number;
+  die2: number;
+  is_doubles: boolean;
+}
+
+interface BeMoveAnimation {
+  type: 'move';
+  player_id: string;
+  from_position: number;
+  to_position: number;
+  speed: 'normal' | 'fast';
+  reason: 'dice' | 'card' | 'teleport' | 'jail';
+}
+
+interface BeShowCardAnimation {
+  type: 'show_card';
+  card: BeActiveCard;
+}
+
+interface BeWaitForPlayerAnimation {
+  type: 'wait_for_player';
+  interaction_id: string;
+}
+
+interface BeOpenDeedAnimation {
+  type: 'open_deed';
+  position: number;
+}
+
+type BeAnimationInstruction =
+  | BeRollDiceAnimation
+  | BeMoveAnimation
+  | BeShowCardAnimation
+  | BeWaitForPlayerAnimation
+  | BeOpenDeedAnimation;
+
 export interface BeGameState {
   game_id: string;
   session_code: string;
@@ -178,12 +217,6 @@ export interface BeGameState {
   animation_timeline?: BeAnimationInstruction[];
 }
 
-// Wire (snake_case) animation instructions; mapped to the camelCase union.
-type BeAnimationInstruction =
-  | { type: 'roll_dice'; player_id: string; die1: number; die2: number; is_doubles: boolean }
-  | { type: 'move'; player_id: string; from_position: number; to_position: number; speed: 'normal' | 'fast'; reason: 'dice' | 'card' | 'teleport' | 'jail' }
-  | { type: 'show_card'; card: BeActiveCard }
-  | { type: 'wait_for_player'; interaction_id: string };
 
 // ─── Field mappers ────────────────────────────────────────────────────────────
 
@@ -288,6 +321,8 @@ function mapTimeline(raw: BeAnimationInstruction[] | undefined): AnimationInstru
         return { type: 'show_card', card: mapActiveCard(i.card)! };
       case 'wait_for_player':
         return { type: 'wait_for_player', interactionId: i.interaction_id };
+      case 'open_deed':
+        return { type: 'open_deed', position: i.position };
     }
   });
 }
@@ -350,27 +385,16 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
     canRoll: !!a.can_roll && !inJail,
     canEndTurn: !!a.can_end_turn,
     canBuyProperty: !!a.can_buy,
-    // BE exposes a single `can_build`; FE distinguishes house vs hotel buttons but
-    // both route to game.build_house, so both gate on the same flag.
     canBuildHouse: !!a.can_build,
     canBuildHotel: !!a.can_build,
     canMortgage: !!a.can_mortgage,
     canUnmortgage: !!a.can_unmortgage,
-    // No backend "sell property to bank" command exists.
     canSellProperty: false,
     canTrade: !!a.can_trade,
-    // Bidding is open to every solvent viewer while an auction is running.
-    // `rawA.can_bid` reads from the unfiltered broadcast action set (same frame for
-    // all viewers); `state.auction != null` is the fallback for BEs that omit can_bid.
-    // Never use `a.can_bid` here — `a` is `{}` for non-current-turn players.
-    // Bankrupt players cannot bid even when the auction is live.
     canBidAuction: (!!rawA.can_bid || state.auction != null) && !isViewerBankrupt,
     canPayJailFine: !!a.can_pay_jail_fine,
     canUseJailCard: !!a.can_use_jail_card,
-    // In jail, rolling for doubles is the normal roll action.
     canRollInJail: !!a.can_roll && inJail,
-    // When in MUST_PAY_RENT, can_end_turn means the player has raised enough cash
-    // and the backend will auto-deduct on EndTurn — that IS the "pay debt" action.
     canPayDebt: !!a.can_end_turn && state.turn.phase === TurnPhase.MUST_PAY_RENT,
     canDeclareBankruptcy: !!a.can_declare_bankruptcy,
   };

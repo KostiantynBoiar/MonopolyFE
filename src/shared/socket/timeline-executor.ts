@@ -13,6 +13,7 @@
  */
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
+import type { AnimationInstruction } from '@/shared/protocol/animation';
 import type { ActiveCard } from '@/shared/protocol/game-state';
 import { getWalkSteps } from '@/shared/config/board-layout';
 import { getDeedInfo } from '@/features/deed';
@@ -20,9 +21,29 @@ import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/conf
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 
+// How long each phase of the dice animation lasts (ms).
+// DICE_SPIN_MS must match DiceWindow's own spin timeout (760 ms).
+const DICE_SPIN_MS    = 760;
+const DICE_LINGER_MS  = 900; // pause on the result before token moves
+
+// ─── Animation event listeners ────────────────────────────────────────────────
+
+type AnimationListener = (instr: AnimationInstruction) => void;
+const listeners = new Set<AnimationListener>();
+
+/** Subscribe to animation instructions as they begin executing. Returns an unsubscribe fn. */
+export function onAnimation(fn: AnimationListener): () => void {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function emit(instr: AnimationInstruction): void {
+  listeners.forEach((fn) => fn(instr));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const BOARD_SIZE = 40;
-const DICE_SPIN_MS = 1000;
-// Forward path length above which a move is treated as backward (e.g. "go back 3").
 const MAX_FORWARD_STEPS = 20;
 // Safety auto-release for a wait gate if Continue never arrives.
 const GATE_TIMEOUT_MS = 60_000;
@@ -38,8 +59,10 @@ let generation = 0;
 let gate: { id: string; resolve: () => void } | null = null;
 let gateTimer: ReturnType<typeof setTimeout> | null = null;
 
-function openGate(id: string): Promise<void> {
-  useUiStore.getState().setPendingInteractionId(id);
+function openGate(id: string, affectedPlayerId: string): Promise<void> {
+  const ui = useUiStore.getState();
+  ui.setPendingInteractionId(id);
+  ui.setPendingAnimationInteraction({ interactionId: id, affectedPlayerId });
   return new Promise<void>((resolve) => {
     gate = { id, resolve };
     gateTimer = setTimeout(() => closeGate(id), GATE_TIMEOUT_MS);
@@ -51,7 +74,9 @@ function closeGate(id: string): void {
   if (gateTimer !== null) { clearTimeout(gateTimer); gateTimer = null; }
   const { resolve } = gate;
   gate = null;
-  useUiStore.getState().setPendingInteractionId(null);
+  const ui = useUiStore.getState();
+  ui.setPendingInteractionId(null);
+  ui.setPendingAnimationInteraction(null);
   resolve();
 }
 
@@ -96,9 +121,10 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
     return;
   }
 
+  ui.setIsTimelineRunning(true);
+
   const hasCard = timeline.some((i) => i.type === 'show_card');
-  // Track the moving player's last position so show_card can be committed spatially
-  // (player standing on the card square, not the final destination).
+  // Track the moving player's last position so show_card can be committed spatially.
   let lastMover = next.game.turn.currentPlayerId;
   let lastPos: number | null = null;
 
@@ -107,32 +133,45 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
     switch (instr.type) {
       case 'roll_dice':
+        emit(instr);
+        ui.setAnimatedDiceRoll({ die1: instr.die1, die2: instr.die2, isDoubles: instr.isDoubles });
+        ui.bumpAnimatedDiceRollId();
         ui.setIsRolling(true);
-        await delay(DICE_SPIN_MS);
+        await delay(DICE_SPIN_MS + DICE_LINGER_MS);
+        ui.setAnimatedDiceRoll(null);
         ui.setIsRolling(false);
         break;
 
       case 'move': {
+        emit(instr);
         const steps = walkPath(instr.fromPosition, instr.toPosition);
         const fast = instr.speed === 'fast';
         const stepMs = fast ? CARD_WALK_STEP_DURATION_MS : WALK_STEP_DURATION_MS;
         ui.setWalkState({ playerId: instr.playerId, currentPos: instr.fromPosition, fast });
         await walkSteps(instr.playerId, steps, stepMs, fast);
         ui.setWalkState(null);
-        ui.setIsRolling(false); // clear optimistic lock if dice spin was skipped
+        ui.setIsRolling(false);
         lastMover = instr.playerId;
         lastPos = instr.toPosition;
         break;
       }
 
       case 'show_card':
+        emit(instr);
+        ui.setActiveAnimationCard(instr.card);
         // Commit a patched snapshot: the mover stands on the card square with the card
         // visible, so the overlay makes spatial sense while we wait.
         commit(patchForCard(next, lastMover, lastPos, instr.card));
         break;
 
       case 'wait_for_player':
-        await openGate(instr.interactionId);
+        emit(instr);
+        await openGate(instr.interactionId, lastMover);
+        ui.setActiveAnimationCard(null);
+        break;
+
+      case 'open_deed':
+        emit(instr);
         break;
     }
   }
@@ -145,6 +184,7 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
     ? { ...next, game: { ...next.game, activeCard: null } }
     : next;
   commit(finalSnapshot);
+  ui.setIsTimelineRunning(false);
   maybeSurfaceDeed(next);
 }
 

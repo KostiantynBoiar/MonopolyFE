@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { TOKEN_COLORS } from '@/features/player-panel';
+import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import type { ChatLogProps } from '../chat.types';
 
@@ -13,32 +14,47 @@ export function ChatLog({ log }: ChatLogProps) {
   }, [log]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden" style={{ fontSize: '0.7em' }}>
-      {/* header */}
-      <div className="shrink-0 border-b border-ink/20 px-[1em] py-[0.5em]">
-        <span className="font-display font-semibold uppercase tracking-widest text-ink/60" style={{ fontSize: '0.75em' }}>
-          Game Log
+    <section
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-[12px] border"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.tile,
+        borderColor: GAME_BOARD_COLORS.tileBorder,
+        color: GAME_BOARD_COLORS.tileText,
+      }}
+    >
+      <div
+        className="shrink-0 border-b px-4 py-3"
+        style={{ borderColor: GAME_BOARD_COLORS.tileBorder }}
+      >
+        <span
+          className="font-display font-semibold uppercase tracking-[0.28em]"
+          style={{ color: GAME_BOARD_COLORS.muted, fontSize: '0.78rem' }}
+        >
+          Table Chat
         </span>
       </div>
 
-      {/* entries */}
-      <div className="flex flex-1 flex-col gap-[0.4em] overflow-y-auto px-[1em] py-[0.6em]">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3">
         {log.map((entry) =>
           entry.kind === LogKind.EVENT ? (
-            <p key={entry.id} className="font-sans italic text-ink/50" style={{ fontSize: '0.85em' }}>
+            <p
+              key={entry.id}
+              className="font-sans italic"
+              style={{ color: GAME_BOARD_COLORS.muted, fontSize: '0.82rem' }}
+            >
               {entry.text}
             </p>
           ) : (
-            <div key={entry.id} className="flex items-start gap-[0.5em]">
+            <div key={entry.id} className="flex items-start gap-2">
               {entry.playerToken && (
                 <span
-                  className="mt-[0.15em] h-[1em] w-[1em] shrink-0 rounded-full border border-ink/20"
+                  className="mt-1 h-3 w-3 shrink-0 rounded-full border"
                   style={{ background: TOKEN_COLORS[entry.playerToken] }}
                 />
               )}
-              <p className="min-w-0 font-sans text-ink" style={{ fontSize: '0.9em' }}>
+              <p className="min-w-0 font-sans" style={{ color: GAME_BOARD_COLORS.tileText, fontSize: '0.9rem' }}>
                 <span
-                  className="mr-[0.35em] font-semibold"
+                  className="mr-1.5 font-semibold"
                   style={{ color: entry.playerToken ? TOKEN_COLORS[entry.playerToken] : '#10182E' }}
                 >
                   {entry.playerName}
@@ -50,6 +66,6 @@ export function ChatLog({ log }: ChatLogProps) {
         )}
         <div ref={bottomRef} />
       </div>
-    </div>
+    </section>
   );
 }

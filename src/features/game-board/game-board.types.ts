@@ -1,6 +1,8 @@
 import { type ReactNode } from 'react';
+import type { Player } from '@/features/player-panel';
 import type { PropertyState } from '@/shared/protocol/game-state';
-import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, PropertyColor } from './game-board.enums';
+import type { PropertyColor } from '@/shared/protocol/game-state.enums';
+import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor } from './game-board.enums';
 
 export interface WalkingPlayer {
   id: string;
@@ -11,9 +13,18 @@ export interface WalkingPlayer {
 
 export interface BoardContainerProps {
   centerContent?: ReactNode;
+  centerSlots?: BoardCenterSlots;
   spaces?: PropertyState[];
   players?: BoardPlayer[];
   walkingPlayers?: WalkingPlayer[];
+  sidebarPlayers?: Player[];
+}
+
+export interface BoardCenterSlots {
+  dice?: ReactNode;
+  actions?: ReactNode;
+  chat?: ReactNode;
+  deed?: ReactNode;
 }
 
 export interface CornerTileProps {
@@ -68,11 +79,21 @@ export interface TileStyleConfig {
   topText: TileTopText;
 }
 
+export interface BoardTileProps {
+  space: BoardSpace;
+  edge: TileEdge;
+  flavor: BoardTileFlavor;
+  ownership?: PropertyState | null;
+  players?: BoardPlayer[];
+  walkingPlayerIds?: Set<string>;
+}
+
 export interface BoardPlayer {
   id: string;
   position: number;
   tokenColor: string; // resolved hex, e.g. '#2B57C6'
   isBankrupt: boolean;
+  avatarUrl?: string | null; // PNG / WebP / SVG / any <img>-renderable URL
 }
 
 export interface BoardSpace {

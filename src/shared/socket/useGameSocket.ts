@@ -5,7 +5,6 @@ import { env } from '@/shared/config/env';
 import { useSessionStore } from '@/stores/session-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
-import { MemberRole } from '@/features/lobby';
 import { WsInboundType } from '@/shared/protocol/messages.schema';
 import type {
   WsInbound,
@@ -14,6 +13,7 @@ import type {
   WsWelcomePayload,
   WsErrorPayload,
 } from '@/shared/protocol/messages.schema';
+import type { MemberRole } from '@/features/lobby';
 import type { ClientCommand } from '@/shared/protocol/commands';
 import { adaptGameStateFrame, type BeGameState } from '@/shared/transport/state-adapter';
 import { serializeCommand } from '@/shared/transport/command-serializer';
@@ -108,6 +108,8 @@ export function useGameSocket(sessionId: string | null) {
           // Server-authoritative full snapshot + the animation timeline describing how
           // it was reached. The executor replays the timeline, then commits the state.
           const snapshot = adaptGameStateFrame(msg.payload as unknown as BeGameState);
+          console.log('[WS] GAME_STATE raw', msg.payload);
+          console.log('[WS] GAME_STATE adapted', snapshot);
           enqueueSnapshot(snapshot);
           break;
         }
