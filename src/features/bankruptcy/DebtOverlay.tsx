@@ -16,7 +16,7 @@ export function DebtOverlay({ amount, canPay, onPay, onManage, onBankrupt }: Deb
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden"
+      className="flex h-full w-full flex-col overflow-y-auto"
       style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
     >
       {/* Accent strip */}
@@ -24,22 +24,22 @@ export function DebtOverlay({ amount, canPay, onPay, onManage, onBankrupt }: Deb
 
       {/* Header */}
       <div
-        className="flex shrink-0 flex-col items-center gap-1 px-5 py-5"
+        className="flex shrink-0 flex-col items-center gap-1 px-5 py-3"
         style={{
           backgroundColor: GAME_BOARD_COLORS.panel,
           borderBottom: `1px solid ${GAME_BOARD_COLORS.border}`,
         }}
       >
-        <span style={{ fontSize: '2rem', lineHeight: 1 }}>⚠️</span>
+        <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>⚠️</span>
         <p
           className="font-mono font-semibold uppercase"
-          style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: GAME_BOARD_COLORS.muted, marginTop: '6px' }}
+          style={{ fontSize: '0.6rem', letterSpacing: '0.2em', color: GAME_BOARD_COLORS.muted, marginTop: '4px' }}
         >
           {t('paymentDue')}
         </p>
         <p
           className="font-display font-black"
-          style={{ fontSize: '2.2rem', color: BOARD_TILE_COLORS.propertyRed, lineHeight: 1.1 }}
+          style={{ fontSize: '1.8rem', color: BOARD_TILE_COLORS.propertyRed, lineHeight: 1.1 }}
         >
           M{amount}
         </p>
@@ -47,7 +47,7 @@ export function DebtOverlay({ amount, canPay, onPay, onManage, onBankrupt }: Deb
 
       {/* Status message */}
       <div
-        className="shrink-0 px-5 py-3 text-center"
+        className="shrink-0 px-5 py-2 text-center"
         style={{ borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}
       >
         <p
@@ -59,7 +59,7 @@ export function DebtOverlay({ amount, canPay, onPay, onManage, onBankrupt }: Deb
       </div>
 
       {/* Actions */}
-      <div className="flex flex-1 flex-col gap-2 px-5 py-4">
+      <div className="flex shrink-0 flex-col gap-2 px-5 py-4">
         <button
           type="button"
           onClick={onPay}

@@ -62,7 +62,7 @@ export function JailOverlay({
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden"
+      className="flex h-full w-full flex-col overflow-y-auto"
       style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
     >
       {/* Accent strip — matches jail corner tile color */}
@@ -70,13 +70,13 @@ export function JailOverlay({
 
       {/* Header */}
       <div
-        className="flex shrink-0 items-center gap-3 px-5 py-4"
+        className="flex shrink-0 items-center gap-3 px-5 py-3"
         style={{
           backgroundColor: GAME_BOARD_COLORS.panel,
           borderBottom: `1px solid ${GAME_BOARD_COLORS.border}`,
         }}
       >
-        <span style={{ fontSize: '1.65rem', lineHeight: 1 }}>🔒</span>
+        <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>🔒</span>
         <div className="min-w-0">
           <p
             className="font-mono font-semibold uppercase"
@@ -107,7 +107,7 @@ export function JailOverlay({
       {/* Dice result */}
       {showDice && (
         <div
-          className="flex shrink-0 flex-col items-center gap-2 px-5 py-4"
+          className="flex shrink-0 flex-col items-center gap-2 px-5 py-3"
           style={{ borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}
         >
           <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ export function JailOverlay({
       )}
 
       {/* Actions */}
-      <div className="flex flex-1 flex-col gap-2 px-5 py-4">
+      <div className="flex shrink-0 flex-col gap-2 px-5 py-4">
         <button
           type="button"
           onClick={onRoll}
