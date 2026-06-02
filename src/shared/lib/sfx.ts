@@ -2,7 +2,15 @@ const cache = new Map<string, HTMLAudioElement>();
 
 const VOLUME = 0.55;
 
-export type SfxName = 'dice_roll' | 'notification' | 'auction_bid' | 'passed_go' | 'paid';
+export enum Sfx {
+  DiceRoll   = 'dice_roll',
+  Notification = 'notification',
+  AuctionBid = 'auction_bid',
+  PassedGo   = 'passed_go',
+  Paid       = 'paid',
+}
+
+export type SfxName = `${Sfx}`;
 
 export function preloadSfx(...names: SfxName[]) {
   if (typeof window === 'undefined') return;

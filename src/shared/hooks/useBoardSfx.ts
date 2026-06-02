@@ -3,43 +3,66 @@
 import { useEffect, useRef } from 'react';
 import type { GameState } from '@/shared/protocol/game-state';
 import { LogKind } from '@/shared/protocol/game-state.enums';
-import { playSfx, preloadSfx } from '@/shared/lib/sfx';
+import { Sfx, playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { onAnimation } from '@/shared/socket/timeline-executor';
 import { useBalanceChange } from './useBalanceChange';
 import { useCurrentTurn } from './useCurrentTurn';
 
+// event → sound
+const SFX_MAP = {
+  diceRoll:       Sfx.DiceRoll,
+  balanceChanged: Sfx.Paid,
+  myTurnStarted:  Sfx.Notification,
+  auctionStarted: Sfx.Notification,
+  newBidLanded:   Sfx.AuctionBid,
+  tradeProposed:  Sfx.Notification,
+  passedGo:       Sfx.PassedGo,
+  incomingChat:   Sfx.Notification,
+} as const;
+
 export function useBoardSfx(gameState: GameState) {
-  // Preload all sounds once on mount
   useEffect(() => {
-    preloadSfx('dice_roll', 'notification', 'auction_bid', 'passed_go', 'paid');
+    preloadSfx(...(Object.values(SFX_MAP) as Array<typeof SFX_MAP[keyof typeof SFX_MAP]>));
   }, []);
 
-  // Play sounds driven by the animation timeline so all players hear them together.
   useEffect(() => {
     return onAnimation((instr) => {
-      if (instr.type === 'roll_dice') playSfx('dice_roll');
+      if (instr.type === 'roll_dice') playSfx(SFX_MAP.diceRoll);
     });
   }, []);
 
-  useBalanceChange(gameState.players, () => playSfx('paid'));
-  useCurrentTurn(gameState.turn.currentPlayerId, gameState.viewerId, () => playSfx('notification'));
+  useBalanceChange(gameState.players, () => playSfx(SFX_MAP.balanceChanged));
+  useCurrentTurn(gameState.turn.currentPlayerId, gameState.viewerId, () => playSfx(SFX_MAP.myTurnStarted));
 
-  const prevAuctionRef = useRef(false);
-  const prevTradeIdRef = useRef<string | null>(null);
-  const prevLogLenRef  = useRef(0);
+  const prevAuctionRef    = useRef(false);
+  const prevHighestBidRef = useRef<number>(-1);
+  const prevTradeIdRef    = useRef<string | null>(null);
+  const prevLogLenRef     = useRef(0);
 
   useEffect(() => {
     // ── Auction start ─────────────────────────────────────────────────────────
     const hasAuction = gameState.auction !== null;
     if (hasAuction && !prevAuctionRef.current) {
-      playSfx('notification');
+      playSfx(SFX_MAP.auctionStarted);
+      prevHighestBidRef.current = gameState.auction!.highestBid;
     }
     prevAuctionRef.current = hasAuction;
+
+    // ── New bid landed ────────────────────────────────────────────────────────
+    if (hasAuction) {
+      const currentBid = gameState.auction!.highestBid;
+      if (currentBid > prevHighestBidRef.current) {
+        playSfx(SFX_MAP.newBidLanded);
+      }
+      prevHighestBidRef.current = currentBid;
+    } else {
+      prevHighestBidRef.current = -1;
+    }
 
     // ── Trade proposed ────────────────────────────────────────────────────────
     const tradeId = gameState.trade?.id ?? null;
     if (tradeId && tradeId !== prevTradeIdRef.current && gameState.trade?.status === 'pending') {
-      playSfx('notification');
+      playSfx(SFX_MAP.tradeProposed);
     }
     prevTradeIdRef.current = tradeId;
 
@@ -48,18 +71,16 @@ export function useBoardSfx(gameState: GameState) {
     if (logLen > prevLogLenRef.current) {
       const newEntries = gameState.log.slice(prevLogLenRef.current);
 
-      // Passed Go
       if (newEntries.some((e) => /passed GO/i.test(e.text))) {
-        playSfx('passed_go');
+        playSfx(SFX_MAP.passedGo);
       }
 
-      // Incoming chat or sticker from another player
       if (newEntries.some(
         (e) =>
           (e.kind === LogKind.CHAT || e.kind === LogKind.STICKER) &&
           e.playerId !== gameState.viewerId,
       )) {
-        playSfx('notification');
+        playSfx(SFX_MAP.incomingChat);
       }
     }
     prevLogLenRef.current = logLen;
