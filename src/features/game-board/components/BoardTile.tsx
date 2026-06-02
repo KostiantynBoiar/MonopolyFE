@@ -120,7 +120,7 @@ function SelectionRing({ selected }: { selected: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-30"
+      className="pointer-events-none absolute inset-0 z-[50]"
       style={{
         borderRadius: 'inherit',
         boxShadow: `inset 0 0 0 clamp(2px, 0.45vmin, 5px) ${BOARD_TILE_COLORS.propertyYellow}, 0 0 0 1px rgba(16,24,46,0.55)`,
