@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
 import { createMockGameRoomSnapshot } from '@/shared/mocks/game-room.mock';
+import type { DiceRoll } from '@/shared/protocol/game-state';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
+import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { BOARD, getGridPos, getTileEdge } from '../board-data';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
@@ -41,11 +43,16 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
   }
 }
 
-function ActionPanel() {
+interface ActionPanelProps {
+  onRollDice: () => void;
+}
+
+function ActionPanel({ onRollDice }: ActionPanelProps) {
   return (
     <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.15fr_1fr_1fr] gap-[3px]">
       <button
         type="button"
+        onClick={onRollDice}
         className="col-span-2 rounded-[12px] border px-3 py-3 text-sm font-black uppercase tracking-[0.12em]"
         style={{
           backgroundColor: BOARD_TILE_COLORS.propertyYellow,
@@ -74,9 +81,32 @@ function ActionPanel() {
   );
 }
 
+function rollDie() {
+  return Math.floor(Math.random() * 6) + 1;
+}
+
 export function BoardContainer({ centerContent }: BoardContainerProps) {
   const [selectedPos, setSelectedPos] = useState(37);
+  const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(MOCK_DICE_ROLL);
+  const [diceRollId, setDiceRollId] = useState(0);
   const selectedSpace = BOARD[selectedPos] ?? BOARD[0];
+
+  useEffect(() => {
+    preloadSfx('dice_roll');
+  }, []);
+
+  function handleRollDice() {
+    const die1 = rollDie();
+    const die2 = rollDie();
+
+    playSfx('dice_roll');
+    setDiceRoll({
+      die1,
+      die2,
+      isDoubles: die1 === die2,
+    });
+    setDiceRollId((value) => value + 1);
+  }
 
   return (
     <div
@@ -139,11 +169,11 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
                 />
                 <div className="relative z-10 grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[10px]">
                   <div className="col-span-2 row-span-2 min-h-0">
-                    <DiceWindow diceRoll={MOCK_DICE_ROLL} />
+                    <DiceWindow diceRoll={diceRoll} rollId={diceRollId} />
                   </div>
 
                   <div className="col-span-4 col-start-3 row-span-2 min-h-0">
-                    <ActionPanel />
+                    <ActionPanel onRollDice={handleRollDice} />
                   </div>
 
                   <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0">

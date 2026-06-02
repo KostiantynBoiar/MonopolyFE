@@ -59,8 +59,8 @@ export const SPACE_SURFACE_MAP: Partial<Record<SpaceType, string>> = {
   [SpaceType.CHANCE]: GAME_BOARD_COLORS.special,
   [SpaceType.CHEST]: GAME_BOARD_COLORS.special,
   [SpaceType.RAILROAD]: BOARD_TILE_COLORS.railroad,
-  [SpaceType.UTILITY]: GAME_BOARD_COLORS.special,
-  [SpaceType.TAX]: GAME_BOARD_COLORS.special,
+  [SpaceType.UTILITY]: BOARD_TILE_COLORS.utility,
+  [SpaceType.TAX]: BOARD_TILE_COLORS.propertyRed,
 };
 
 export function getSpaceHeaderColor(space: BoardSpace) {

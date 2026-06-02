@@ -31,9 +31,13 @@ const CORNER_SYMBOL_MAP: Record<CornerVariant, string> = {
 };
 
 function getTileTextColor(type: SpaceType) {
-  return type === SpaceType.RAILROAD || type === SpaceType.TAX
+  return type === SpaceType.RAILROAD || type === SpaceType.UTILITY || type === SpaceType.TAX
     ? BOARD_TILE_COLORS.altText
     : GAME_BOARD_COLORS.tileText;
+}
+
+function isVerticalEdge(edge: TileEdge) {
+  return edge === TileEdge.LEFT || edge === TileEdge.RIGHT;
 }
 
 function getHeaderStyle(edge: TileEdge, color: string) {
@@ -99,24 +103,25 @@ function getContentPadding(edge: TileEdge, hasHeader: boolean) {
 
 export function BoardTile({ space, edge, flavor }: BoardTileProps) {
   if (flavor === BoardTileFlavor.CORNER && space.corner) {
+    const cornerColor = CORNER_COLOR_MAP[space.corner];
+
     return (
       <article
         className="flex h-full w-full flex-col items-center justify-center rounded-[16px] border shadow-sm text-center"
         style={{
-          backgroundColor: GAME_BOARD_COLORS.tile,
-          borderColor: GAME_BOARD_COLORS.tileBorder,
-          color: GAME_BOARD_COLORS.tileText,
+          backgroundColor: cornerColor,
+          borderColor: cornerColor,
+          color: BOARD_TILE_COLORS.altText,
           padding: getTilePadding(),
         }}
       >
         <div
-          className="flex flex-col items-center justify-center gap-2 rounded-[12px] px-3 py-2"
-          style={{ backgroundColor: CORNER_COLOR_MAP[space.corner] }}
+          className="flex flex-col items-center justify-center gap-2 px-3 py-2"
         >
           <span
             className="leading-none"
             style={{
-              fontSize: 'clamp(24px, calc(var(--board-corner-size) * 0.34), 48px)',
+              fontSize: 'clamp(48px, calc(var(--board-corner-size) * 0.68), 96px)',
               color: BOARD_TILE_COLORS.altText,
             }}
           >
@@ -160,7 +165,7 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
       >
         <span
           className="leading-none"
-          style={{ fontSize: 'clamp(18px, calc(var(--board-tile-width) * 0.34), 28px)' }}
+          style={{ fontSize: 'clamp(36px, calc(var(--board-tile-width) * 0.68), 56px)' }}
         >
           {SPACE_SYMBOL_MAP[space.type]}
         </span>
@@ -191,6 +196,8 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
   const symbol = SPACE_SYMBOL_MAP[space.type];
   const surface = SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.tile;
   const textColor = getTileTextColor(space.type);
+  const isVertical = isVerticalEdge(edge);
+  const hasSideSymbol = isVertical && space.type !== SpaceType.PROPERTY && Boolean(symbol);
 
   return (
     <article
@@ -210,7 +217,11 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
         />
       )}
       <div
-        className={cn('flex min-w-0 flex-1 justify-between', EDGE_CONTENT[edge])}
+        className={cn(
+          'flex min-w-0 flex-1 justify-between',
+          EDGE_CONTENT[edge],
+          hasSideSymbol && 'flex-row items-center',
+        )}
         style={getContentPadding(edge, !!propertyColor)}
       >
         <div className={cn('min-w-0 px-1 py-1', edge === TileEdge.BOTTOM && 'translate-y-[3px]')}>
@@ -237,12 +248,12 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
           <span
             className="shrink-0 leading-none"
             style={{
-              fontSize: 'clamp(14px, calc(var(--board-tile-width) * 0.28), 22px)',
+              fontSize: 'clamp(28px, calc(var(--board-tile-width) * 0.56), 44px)',
               color:
                 space.type === SpaceType.TAX
                   ? BOARD_TILE_COLORS.propertyRed
                   : space.type === SpaceType.UTILITY
-                    ? BOARD_TILE_COLORS.utility
+                    ? BOARD_TILE_COLORS.altText
                     : BOARD_TILE_COLORS.altText,
             }}
           >
