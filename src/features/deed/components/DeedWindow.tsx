@@ -94,10 +94,10 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
 
   return (
     <section
-      className="grid h-full min-h-0 overflow-hidden rounded-[16px] border p-[6px]"
+      className="grid h-full min-h-0 gap-[3px] overflow-hidden rounded-[16px] border p-[6px]"
       style={{
         gridTemplateRows: isDeed
-          ? (showActions ? 'auto auto minmax(0,1fr) auto' : 'auto auto minmax(0,1fr)')
+          ? (showActions ? 'auto minmax(0,1fr) auto' : 'auto minmax(0,1fr)')
           : 'auto minmax(0,1fr)',
         backgroundColor: GAME_BOARD_COLORS.deedShell,
         borderColor: GAME_BOARD_COLORS.deedShellBorder,
@@ -118,74 +118,65 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
       </div>
 
       <div
-        className="rounded-[10px] border px-3 py-2 text-center"
+        className="grid min-h-0 rounded-[10px] border px-3 py-3"
         style={{
+          gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : 'auto 1fr',
           backgroundColor: GAME_BOARD_COLORS.deedBody,
           borderColor: GAME_BOARD_COLORS.deedRule,
         }}
       >
-        <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.widgetText }}>
-          {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? specialText?.eyebrow ?? 'Status'}
-        </p>
-        <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
-          {isDeed && headlineRent
-            ? `$${headlineRent.replace(/^M/, '')}`
-            : cornerText?.value ?? specialText?.value ?? '--'}
-        </p>
-      </div>
+        <div className="text-center">
+          <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.widgetText }}>
+            {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? specialText?.eyebrow ?? 'Status'}
+          </p>
+          <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
+            {isDeed && headlineRent
+              ? `$${headlineRent.replace(/^M/, '')}`
+              : cornerText?.value ?? specialText?.value ?? '--'}
+          </p>
+        </div>
 
-      {isDeed && deed ? (
-        <div
-          className="min-h-0 overflow-hidden rounded-[10px] border px-3 py-2"
-          style={{
-            backgroundColor: GAME_BOARD_COLORS.deedBody,
-            borderColor: GAME_BOARD_COLORS.deedRule,
-          }}
-        >
-          <div className="grid gap-1.5">
+        {isDeed && deed ? (
+          <div
+            className="my-[3px] h-px"
+            style={{ backgroundColor: GAME_BOARD_COLORS.deedRule }}
+          />
+        ) : null}
+
+        {isDeed && deed ? (
+          <div className="grid min-h-0 content-center gap-[3px] text-[12px]" style={{ color: '#1e1e1e' }}>
             {deed.rentRows.slice(1).map((row) => (
               <div
                 key={row.labelKey}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-[12px]"
-                style={{ color: '#1e1e1e' }}
+                className="grid grid-cols-[minmax(0,1fr)_minmax(28px,1fr)_auto] items-center gap-2"
               >
-                <span className="truncate font-medium">
+                <span className="text-right font-medium leading-tight">
                   {formatLabel(row.labelKey)}
                 </span>
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className="block h-px min-w-8 flex-1"
-                    style={{
-                      backgroundColor: GAME_BOARD_COLORS.deedRule,
-                    }}
-                  />
-                  <span className="shrink-0 font-bold">
-                    ${row.amount.replace(/^M/, '')}
-                  </span>
-                </div>
+                <span
+                  className="block h-px w-full"
+                  style={{
+                    backgroundColor: GAME_BOARD_COLORS.deedRule,
+                  }}
+                />
+                <span className="shrink-0 text-left font-bold">
+                  ${row.amount.replace(/^M/, '')}
+                </span>
               </div>
             ))}
           </div>
-        </div>
-      ) : (
-        <div
-          className="flex h-full min-h-0 items-center justify-center rounded-[10px] border px-4 py-3 text-center"
-          style={{
-            backgroundColor: GAME_BOARD_COLORS.deedBody,
-            borderColor: GAME_BOARD_COLORS.deedRule,
-            color: GAME_BOARD_COLORS.priceText,
-          }}
-        >
-          <p className="max-w-[16ch] text-sm font-medium leading-snug">{nonDeedTitle}</p>
-        </div>
-      )}
+        ) : (
+          <div className="flex h-full items-center justify-center text-center">
+            <p className="max-w-[16ch] text-sm font-medium leading-snug">{nonDeedTitle}</p>
+          </div>
+        )}
+      </div>
 
       {showActions && (
         <div
-          className="grid grid-cols-2 gap-3 rounded-[10px] border p-2"
+          className="grid grid-cols-2 gap-[3px]"
           style={{
-            backgroundColor: GAME_BOARD_COLORS.deedBody,
-            borderColor: GAME_BOARD_COLORS.deedRule,
+            color: GAME_BOARD_COLORS.widgetText,
           }}
         >
           <button

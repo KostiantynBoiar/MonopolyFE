@@ -23,10 +23,10 @@ const MOCK_CHAT_MESSAGES = [
   { id: 'c3', kind: 'chat' as const, author: 'Dave', token: TokenColor.GOLD, text: 'No mercy on Boardwalk.', ts: Date.now() - 1000 * 60 * 2 },
 ];
 const ACTION_ITEMS = [
-  { id: 'end-turn', label: 'End Turn', icon: '↻' },
-  { id: 'manage', label: 'Manage', icon: '⚙' },
-  { id: 'trade', label: 'Trade', icon: '🤝' },
-  { id: 'view-properties', label: 'View Properties', icon: '⌂' },
+  { id: 'end-turn', label: 'End Turn' },
+  { id: 'manage', label: 'Manage' },
+  { id: 'trade', label: 'Trade' },
+  { id: 'view-properties', label: 'Properties' },
 ] as const;
 
 function getTileFlavor(type: SpaceType): BoardTileFlavor {
@@ -44,42 +44,45 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
 function ActionPanel() {
   return (
     <section
-      className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.15fr_1fr_1fr] gap-[6px] rounded-[16px] border p-[6px]"
+      className="grid h-full min-h-0 grid-cols-2 grid-rows-[auto_1fr_1fr] gap-[6px] rounded-[16px] border p-[8px]"
       style={{
         backgroundColor: GAME_BOARD_COLORS.widgetSurface,
         borderColor: GAME_BOARD_COLORS.widgetBorder,
       }}
     >
+      <div className="col-span-2 px-1 pb-1 text-left">
+        <p
+          className="font-display text-[11px] font-semibold uppercase tracking-[0.22em]"
+          style={{ color: GAME_BOARD_COLORS.widgetMuted }}
+        >
+          Actions
+        </p>
+      </div>
+
       <button
         type="button"
-        className="col-span-2 rounded-[12px] border px-3 py-2 text-base font-black uppercase tracking-[0.04em]"
+        className="col-span-2 rounded-[12px] border px-3 py-3 text-sm font-black uppercase tracking-[0.12em]"
         style={{
           backgroundColor: GAME_BOARD_COLORS.actionPrimary,
           borderColor: GAME_BOARD_COLORS.actionPrimaryBorder,
           color: GAME_BOARD_COLORS.widgetAccentText,
         }}
       >
-        <span className="flex items-center justify-center gap-2">
-          <span className="text-lg">🎲</span>
-          <span>Roll Dice</span>
-        </span>
+        Roll Dice
       </button>
 
       {ACTION_ITEMS.map((action) => (
         <button
           key={action.id}
           type="button"
-          className="rounded-[12px] border px-2 py-2 text-[13px] font-bold"
+          className="rounded-[12px] border px-2 py-2 text-[12px] font-semibold uppercase tracking-[0.08em]"
           style={{
             backgroundColor: GAME_BOARD_COLORS.actionSecondary,
             borderColor: GAME_BOARD_COLORS.actionSecondaryBorder,
             color: GAME_BOARD_COLORS.actionSecondaryText,
           }}
         >
-          <span className="flex items-center justify-center gap-1.5">
-            <span className="text-sm">{action.icon}</span>
-            <span>{action.label}</span>
-          </span>
+          {action.label}
         </button>
       ))}
     </section>
@@ -139,12 +142,17 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
                   gridColumn: '2 / 11',
                   gridRow: '2 / 11',
                   margin: '4px',
-                  borderRadius: '12px',
-                  backgroundColor: '#211c2f',
-                  color: GAME_BOARD_COLORS.boardCenterText,
+                  borderRadius: '16px',
+                  border: `1px solid ${GAME_BOARD_COLORS.boardCenterBorder}`,
+                  backgroundColor: GAME_BOARD_COLORS.boardCenterSurface,
+                  color: GAME_BOARD_COLORS.widgetText,
                 }}
               >
-                <div className="relative z-10 grid h-full w-full grid-cols-6 grid-rows-5 gap-[4px] p-[4px]">
+                <div
+                  className="absolute inset-[8px] rounded-[12px]"
+                  style={{ backgroundColor: GAME_BOARD_COLORS.boardCenterInset }}
+                />
+                <div className="relative z-10 grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[10px]">
                   <div className="col-span-2 row-span-2 min-h-0">
                     <DiceWindow diceRoll={MOCK_DICE_ROLL} />
                   </div>
