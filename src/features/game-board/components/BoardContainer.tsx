@@ -34,6 +34,9 @@ export function BoardContainer({
   selectedPosition,
   onSelectPosition,
   focusPosition,
+  viewerId,
+  createdAt,
+  onSurrender,
 }: BoardContainerProps) {
   const boardSpaces = spaces ?? [];
   const boardPlayers = players ?? [];
@@ -167,7 +170,12 @@ export function BoardContainer({
 
         {hasSidebar && (
           <div className="hidden min-h-0 md:block">
-            <PlayerPanel players={sidebarPlayers} />
+            <PlayerPanel
+              players={sidebarPlayers}
+              viewerId={viewerId}
+              createdAt={createdAt}
+              onSurrender={onSurrender}
+            />
           </div>
         )}
       </section>

@@ -569,6 +569,9 @@ export default function GameRoomPage() {
           selectedPosition={highlightedBoardPosition}
           onSelectPosition={handleSelectBoardPosition}
           focusPosition={isBuyDecisionForViewer ? pendingBuyPosition : null}
+          viewerId={viewerPlayerId ?? undefined}
+          createdAt={game.createdAt}
+          onSurrender={() => dispatchCommand(CommandType.Surrender)}
         />
       )}
     </main>

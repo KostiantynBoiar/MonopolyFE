@@ -22,6 +22,9 @@ export interface BoardContainerProps {
   onSelectPosition?: (position: number) => void;
   /** When set, all tiles except this position are dimmed. */
   focusPosition?: number | null;
+  viewerId?: string;
+  createdAt?: string;
+  onSurrender?: () => void;
 }
 
 export interface BoardCenterSlots {

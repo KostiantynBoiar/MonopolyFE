@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
@@ -7,7 +7,33 @@ import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
 
 interface PlayerPanelProps {
-  players: Player[];
+  players:     Player[];
+  viewerId?:   string;
+  createdAt?:  string;
+  onSurrender?: () => void;
+}
+
+function useSessionTimer(createdAt: string | undefined) {
+  const [elapsed, setElapsed] = useState(() =>
+    createdAt ? Date.now() - new Date(createdAt).getTime() : 0,
+  );
+
+  useEffect(() => {
+    if (!createdAt) return;
+    const id = setInterval(
+      () => setElapsed(Date.now() - new Date(createdAt).getTime()),
+      1000,
+    );
+    return () => clearInterval(id);
+  }, [createdAt]);
+
+  const s = Math.floor(elapsed / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+    : `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
 interface BalanceDeltaEntry {
@@ -97,8 +123,9 @@ function BalanceDelta({
 
 // ─── PlayerPanel ──────────────────────────────────────────────────────────────
 
-export function PlayerPanel({ players }: PlayerPanelProps) {
+export function PlayerPanel({ players, viewerId, createdAt, onSurrender }: PlayerPanelProps) {
   const currentPlayer = players.find((player) => player.isActive);
+  const sessionTimer  = useSessionTimer(createdAt);
   const jailSpace = BOARD.find((space) => space.corner === CornerVariant.JAIL);
   const jailColor = jailSpace ? getSpaceHeaderColor(jailSpace) : BOARD_TILE_COLORS.propertyOrange;
 
@@ -132,6 +159,23 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
         color: GAME_BOARD_COLORS.text,
       }}
     >
+      {createdAt && (
+        <div className="flex items-center justify-between">
+          <span
+            className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em]"
+            style={{ color: GAME_BOARD_COLORS.muted }}
+          >
+            Session
+          </span>
+          <span
+            className="font-mono text-[10px] font-black tabular-nums"
+            style={{ color: GAME_BOARD_COLORS.muted }}
+          >
+            {sessionTimer}
+          </span>
+        </div>
+      )}
+
       <div
         className="rounded-[14px] border px-3 py-3"
         style={{
@@ -243,6 +287,21 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
           );
         })}
       </div>
+
+      {onSurrender && (
+        <button
+          type="button"
+          onClick={onSurrender}
+          className="mt-auto w-full shrink-0 rounded-[10px] border py-2 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-opacity hover:opacity-70"
+          style={{
+            backgroundColor: 'transparent',
+            borderColor: BOARD_TILE_COLORS.propertyRed,
+            color: BOARD_TILE_COLORS.propertyRed,
+          }}
+        >
+          Surrender
+        </button>
+      )}
     </aside>
   );
 }

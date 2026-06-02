@@ -442,8 +442,9 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
       </div>
       {showStickers && (
         <div
-          className="absolute bottom-[57px] left-[calc(100%-51px)] z-10 w-[324px] -translate-x-full overflow-hidden rounded-[10px] border"
+          className="absolute inset-x-0 bottom-[54px] z-10 overflow-hidden rounded-[10px] border"
           style={{
+            maxHeight: 'calc(100% - 108px)',
             backgroundColor: GAME_BOARD_COLORS.surface,
             borderColor: GAME_BOARD_COLORS.border,
           }}
@@ -466,7 +467,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
               ))}
             </div>
           )}
-          <div className="grid max-h-[280px] grid-cols-5 gap-[4px] overflow-y-auto p-2">
+          <div className="grid grid-cols-5 gap-[4px] overflow-y-auto p-2" style={{ maxHeight: '240px' }}>
             {activePack?.stickers.map((file, index) => {
               const url = `/stickers/${activePack.id}/${file}`;
               return (
