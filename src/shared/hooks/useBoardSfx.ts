@@ -10,19 +10,20 @@ import { useCurrentTurn } from './useCurrentTurn';
 
 // event → sound
 const SFX_MAP = {
-  diceRoll:       Sfx.DiceRoll,
-  balanceChanged: Sfx.Paid,
-  myTurnStarted:  Sfx.Notification,
-  auctionStarted: Sfx.Notification,
-  newBidLanded:   Sfx.AuctionBid,
-  tradeProposed:  Sfx.Notification,
-  passedGo:       Sfx.PassedGo,
-  incomingChat:   Sfx.Notification,
+  diceRoll:       Sfx.DICE_ROLL,
+  balanceChanged: Sfx.PAID,
+  myTurnStarted:  Sfx.YOUR_TURN,
+  auctionStarted: Sfx.NOTIFICATION,
+  newBidLanded:   Sfx.AUCTION_BID,
+  tradeProposed:  Sfx.NOTIFICATION,
+  passedGo:       Sfx.PASSED_GO,
+  incomingChat:   Sfx.CHAT_MESSAGE,
 } as const;
 
 export function useBoardSfx(gameState: GameState) {
   useEffect(() => {
-    preloadSfx(...(Object.values(SFX_MAP) as Array<typeof SFX_MAP[keyof typeof SFX_MAP]>));
+    // Only preload files that exist on disk; omit PAID / CHAT_MESSAGE until added.
+    preloadSfx(Sfx.DICE_ROLL, Sfx.NOTIFICATION, Sfx.AUCTION_BID, Sfx.PASSED_GO, Sfx.YOUR_TURN);
   }, []);
 
   useEffect(() => {

@@ -199,7 +199,7 @@ function DimOverlay() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-40 transition-opacity duration-300"
+      className="pointer-events-none absolute inset-0 z-[46] transition-opacity duration-300"
       style={{ borderRadius: 'inherit', backgroundColor: 'rgba(0,0,0,0.55)' }}
     />
   );

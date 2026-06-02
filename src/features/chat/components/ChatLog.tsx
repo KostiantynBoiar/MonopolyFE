@@ -6,6 +6,17 @@ import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import type { ChatLogProps } from '../chat.types';
 
+function StickerImage({ url }: { url: string }) {
+  return (
+    <img
+      src={url}
+      alt="sticker"
+      className="mt-1 block rounded object-contain"
+      style={{ width: 80, height: 80 }}
+    />
+  );
+}
+
 export function ChatLog({ log }: ChatLogProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -52,15 +63,18 @@ export function ChatLog({ log }: ChatLogProps) {
                   style={{ background: TOKEN_COLORS[entry.playerToken] }}
                 />
               )}
-              <p className="min-w-0 font-sans" style={{ color: GAME_BOARD_COLORS.tileText, fontSize: '0.9rem' }}>
+              <div className="min-w-0">
                 <span
-                  className="mr-1.5 font-semibold"
-                  style={{ color: entry.playerToken ? TOKEN_COLORS[entry.playerToken] : '#10182E' }}
+                  className="mr-1.5 font-sans font-semibold"
+                  style={{ color: entry.playerToken ? TOKEN_COLORS[entry.playerToken] : '#10182E', fontSize: '0.9rem' }}
                 >
                   {entry.playerName}
                 </span>
-                {entry.text}
-              </p>
+                {entry.kind === LogKind.STICKER && entry.stickerUrl
+                  ? <StickerImage url={entry.stickerUrl} />
+                  : <span className="font-sans" style={{ color: GAME_BOARD_COLORS.tileText, fontSize: '0.9rem' }}>{entry.text}</span>
+                }
+              </div>
             </div>
           ),
         )}

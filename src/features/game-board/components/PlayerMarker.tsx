@@ -88,7 +88,7 @@ export function PlayerMarker({ players, edge, walkingPlayerIds }: PlayerMarkerPr
   return (
     <div
       className={cn(
-        'absolute z-30 flex flex-wrap items-center justify-center',
+        'absolute z-[47] flex flex-wrap items-center justify-center',
         many ? 'gap-[3px]' : '',
         ANCHOR[edge],
       )}
