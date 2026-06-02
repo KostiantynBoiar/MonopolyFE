@@ -46,6 +46,20 @@ export interface FullOverlayProps {
   onTradePropose: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
 }
 
+function OverlayShell({ children }: { children: ReactElement }) {
+  return (
+    <div
+      className="absolute inset-[6px] z-10 overflow-hidden rounded-[12px] border"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.surface,
+        borderColor: GAME_BOARD_COLORS.border,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function FullOverlay({
   trade,
   tradeProposer,
@@ -73,69 +87,61 @@ export function FullOverlay({
 }: FullOverlayProps): ReactElement | null {
   if (trade && trade.status === TradeStatus.PENDING && tradeProposer && tradeTarget) {
     return (
-      <TradeOverlay
-        trade={trade}
-        proposer={tradeProposer}
-        target={tradeTarget}
-        viewerId={viewerPlayerId ?? ''}
-        onAccept={onTradeAccept}
-        onReject={onTradeReject}
-        onCancel={onTradeCancel}
-      />
+      <OverlayShell>
+        <TradeOverlay
+          trade={trade}
+          proposer={tradeProposer}
+          target={tradeTarget}
+          viewerId={viewerPlayerId ?? ''}
+          onAccept={onTradeAccept}
+          onReject={onTradeReject}
+          onCancel={onTradeCancel}
+        />
+      </OverlayShell>
     );
   }
 
   if (activeOverlay === 'manage') {
     return (
-      <ManagePropertiesOverlay
-        properties={manageProperties}
-        canBuildHouse={canBuildHouse}
-        canBuildHotel={canBuildHotel}
-        canMortgage={canMortgage}
-        canUnmortgage={canUnmortgage}
-        onBuildHouse={onBuildHouse}
-        onBuildHotel={onBuildHotel}
-        onSellHouse={onSellHouse}
-        onSellHotel={onSellHotel}
-        onMortgage={onMortgage}
-        onUnmortgage={onUnmortgage}
-        onSellProperty={onSellProperty}
-        onClose={onCloseOverlay}
-      />
+      <OverlayShell>
+        <ManagePropertiesOverlay
+          properties={manageProperties}
+          canBuildHouse={canBuildHouse}
+          canBuildHotel={canBuildHotel}
+          canMortgage={canMortgage}
+          canUnmortgage={canUnmortgage}
+          onBuildHouse={onBuildHouse}
+          onBuildHotel={onBuildHotel}
+          onSellHouse={onSellHouse}
+          onSellHotel={onSellHotel}
+          onMortgage={onMortgage}
+          onUnmortgage={onUnmortgage}
+          onSellProperty={onSellProperty}
+          onClose={onCloseOverlay}
+        />
+      </OverlayShell>
     );
   }
 
   if (activeOverlay === 'trade-builder' && tradeBuilderData) {
     return (
-      <TradeBuilder
-        me={tradeBuilderData.me}
-        others={tradeBuilderData.others}
-        myProperties={tradeBuilderData.myProperties}
-        myJailCards={tradeBuilderData.myJailCards}
-        propertiesOf={tradeBuilderData.propertiesOf}
-        jailCardsOf={tradeBuilderData.jailCardsOf}
-        onPropose={(targetId, offer, request) => {
-          onTradePropose(targetId, offer, request);
-          onCloseOverlay();
-        }}
-        onClose={onCloseOverlay}
-      />
+      <OverlayShell>
+        <TradeBuilder
+          me={tradeBuilderData.me}
+          others={tradeBuilderData.others}
+          myProperties={tradeBuilderData.myProperties}
+          myJailCards={tradeBuilderData.myJailCards}
+          propertiesOf={tradeBuilderData.propertiesOf}
+          jailCardsOf={tradeBuilderData.jailCardsOf}
+          onPropose={(targetId, offer, request) => {
+            onTradePropose(targetId, offer, request);
+            onCloseOverlay();
+          }}
+          onClose={onCloseOverlay}
+        />
+      </OverlayShell>
     );
   }
 
   return null;
-}
-
-export function FullOverlayWrapper({ children }: { children: ReactElement }) {
-  return (
-    <div
-      className="absolute inset-[6px] z-10 overflow-hidden rounded-[12px] border"
-      style={{
-        backgroundColor: GAME_BOARD_COLORS.surface,
-        borderColor: GAME_BOARD_COLORS.border,
-      }}
-    >
-      {children}
-    </div>
-  );
 }

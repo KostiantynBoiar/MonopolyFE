@@ -6,7 +6,7 @@ import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { CenterPanel, type CenterPanelProps } from './CenterPanel';
-import { FullOverlay, FullOverlayWrapper, type FullOverlayProps } from './FullOverlay';
+import { FullOverlay, type FullOverlayProps } from './FullOverlay';
 
 interface GameCenterGridProps extends CenterPanelProps, FullOverlayProps {
   isBuyDecisionForViewer: boolean;
@@ -114,33 +114,6 @@ export function GameCenterGrid({
     transition: 'opacity 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms cubic-bezier(0.22, 1, 0.36, 1)',
   };
 
-  const fullOverlay = (
-    <FullOverlay
-      trade={trade}
-      tradeProposer={tradeProposer}
-      tradeTarget={tradeTarget}
-      viewerPlayerId={viewerPlayerId}
-      activeOverlay={activeOverlay}
-      manageProperties={manageProperties}
-      canBuildHouse={canBuildHouse}
-      canBuildHotel={canBuildHotel}
-      canMortgage={canMortgage}
-      canUnmortgage={canUnmortgage}
-      tradeBuilderData={tradeBuilderData}
-      onTradeAccept={onTradeAccept}
-      onTradeReject={onTradeReject}
-      onTradeCancel={onTradeCancel}
-      onBuildHouse={onBuildHouse}
-      onBuildHotel={onBuildHotel}
-      onSellHouse={onSellHouse}
-      onSellHotel={onSellHotel}
-      onMortgage={onMortgage}
-      onUnmortgage={onUnmortgage}
-      onSellProperty={onSellProperty}
-      onCloseOverlay={onCloseOverlay}
-      onTradePropose={onTradePropose}
-    />
-  );
 
   return (
     <div className="relative h-full w-full">
@@ -278,7 +251,31 @@ export function GameCenterGrid({
         </div>
       </div>
 
-      {fullOverlay && <FullOverlayWrapper>{fullOverlay}</FullOverlayWrapper>}
+      <FullOverlay
+        trade={trade}
+        tradeProposer={tradeProposer}
+        tradeTarget={tradeTarget}
+        viewerPlayerId={viewerPlayerId}
+        activeOverlay={activeOverlay}
+        manageProperties={manageProperties}
+        canBuildHouse={canBuildHouse}
+        canBuildHotel={canBuildHotel}
+        canMortgage={canMortgage}
+        canUnmortgage={canUnmortgage}
+        tradeBuilderData={tradeBuilderData}
+        onTradeAccept={onTradeAccept}
+        onTradeReject={onTradeReject}
+        onTradeCancel={onTradeCancel}
+        onBuildHouse={onBuildHouse}
+        onBuildHotel={onBuildHotel}
+        onSellHouse={onSellHouse}
+        onSellHotel={onSellHotel}
+        onMortgage={onMortgage}
+        onUnmortgage={onUnmortgage}
+        onSellProperty={onSellProperty}
+        onCloseOverlay={onCloseOverlay}
+        onTradePropose={onTradePropose}
+      />
     </div>
   );
 }
