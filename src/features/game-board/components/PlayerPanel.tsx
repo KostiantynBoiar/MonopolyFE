@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
@@ -7,6 +7,11 @@ import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../ga
 
 interface PlayerPanelProps {
   players: Player[];
+}
+
+interface BalanceDeltaEntry {
+  id: number;
+  amount: number;
 }
 
 function getOwnedProperties(player: Player) {
@@ -20,6 +25,8 @@ function getPositionPillColor(position: number) {
   return space ? getSpaceHeaderColor(space) : BOARD_TILE_COLORS.propertyBlue;
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
 function PlayerAvatar({ player }: { player: Player }) {
   const tokenColor = TOKEN_COLORS[player.token];
 
@@ -27,16 +34,9 @@ function PlayerAvatar({ player }: { player: Player }) {
     return (
       <span
         className="block h-10 w-10 shrink-0 overflow-hidden rounded-full border-2"
-        style={{
-          borderColor: tokenColor,
-          boxShadow: '0 2px 6px rgba(0,0,0,.22)',
-        }}
+        style={{ borderColor: tokenColor, boxShadow: '0 2px 6px rgba(0,0,0,.22)' }}
       >
-        <img
-          src={player.avatarUrl}
-          alt={`${player.name} avatar`}
-          className="h-full w-full object-cover"
-        />
+        <img src={player.avatarUrl} alt={`${player.name} avatar`} className="h-full w-full object-cover" />
       </span>
     );
   }
@@ -75,10 +75,64 @@ function StatusPill({
   );
 }
 
+function BalanceDelta({
+  entry,
+  onDone,
+}: {
+  entry: BalanceDeltaEntry;
+  onDone: () => void;
+}) {
+  const isGain = entry.amount > 0;
+  return (
+    <span
+      key={entry.id}
+      className="pointer-events-none absolute left-0 top-0 animate-[balance-delta_2.2s_cubic-bezier(0.22,1,0.36,1)_forwards] whitespace-nowrap font-mono text-xs font-black"
+      style={{ color: isGain ? BOARD_TILE_COLORS.propertyGreen : BOARD_TILE_COLORS.propertyRed }}
+      onAnimationEnd={onDone}
+    >
+      {isGain ? '+' : ''}{entry.amount.toLocaleString()} {isGain ? '▲' : '▼'}
+    </span>
+  );
+}
+
+// ─── PlayerPanel ──────────────────────────────────────────────────────────────
+
 export function PlayerPanel({ players }: PlayerPanelProps) {
   const currentPlayer = players.find((player) => player.isActive);
   const jailSpace = BOARD.find((space) => space.corner === CornerVariant.JAIL);
   const jailColor = jailSpace ? getSpaceHeaderColor(jailSpace) : BOARD_TILE_COLORS.propertyOrange;
+
+  const prevBalancesRef = useRef<Map<string, number>>(new Map());
+  const [deltas, setDeltas] = useState<Map<string, BalanceDeltaEntry>>(new Map());
+  const deltaCounterRef = useRef(0);
+
+  useEffect(() => {
+    const updates: [string, BalanceDeltaEntry][] = [];
+
+    for (const player of players) {
+      const prev = prevBalancesRef.current.get(player.id);
+      if (prev !== undefined && prev !== player.balance) {
+        updates.push([player.id, { id: ++deltaCounterRef.current, amount: player.balance - prev }]);
+      }
+      prevBalancesRef.current.set(player.id, player.balance);
+    }
+
+    if (updates.length > 0) {
+      setDeltas((prev) => {
+        const next = new Map(prev);
+        for (const [id, entry] of updates) next.set(id, entry);
+        return next;
+      });
+    }
+  }, [players]);
+
+  function clearDelta(playerId: string) {
+    setDeltas((prev) => {
+      const next = new Map(prev);
+      next.delete(playerId);
+      return next;
+    });
+  }
 
   return (
     <aside
@@ -108,6 +162,11 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
       <div className="grid min-h-0 gap-3">
         {players.map((player) => {
           const ownedProperties = getOwnedProperties(player);
+          const delta = deltas.get(player.id);
+          const netWorth = player.balance + ownedProperties.reduce((sum, prop) => {
+            const priceGuess = (prop as { price?: number }).price ?? 0;
+            return sum + priceGuess;
+          }, 0);
 
           return (
             <article
@@ -130,9 +189,7 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
                       Pos {player.position}
                     </StatusPill>
                     {player.isActive && (
-                      <StatusPill backgroundColor={BOARD_TILE_COLORS.propertyBlue}>
-                        Turn
-                      </StatusPill>
+                      <StatusPill backgroundColor={BOARD_TILE_COLORS.propertyBlue}>Turn</StatusPill>
                     )}
                     {player.inJail && (
                       <StatusPill backgroundColor={jailColor}>
@@ -140,14 +197,25 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
                       </StatusPill>
                     )}
                     {player.isBankrupt && (
-                      <StatusPill backgroundColor={BOARD_TILE_COLORS.railroad}>
-                        Bankrupt
-                      </StatusPill>
+                      <StatusPill backgroundColor={BOARD_TILE_COLORS.railroad}>Bankrupt</StatusPill>
                     )}
                   </div>
-                  <p className="mt-1 font-mono text-xs font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
-                    ${player.balance.toLocaleString()}
-                  </p>
+
+                  {/* Balance row with animated delta */}
+                  <div className="relative mt-1 flex items-baseline gap-2">
+                    <p
+                      className="font-mono text-sm font-bold tabular-nums"
+                      style={{ color: GAME_BOARD_COLORS.text }}
+                    >
+                      ${player.balance.toLocaleString()}
+                    </p>
+                    <p className="font-mono text-[10px] tabular-nums" style={{ color: GAME_BOARD_COLORS.muted }}>
+                      net ~${netWorth.toLocaleString()}
+                    </p>
+                    {delta && (
+                      <BalanceDelta entry={delta} onDone={() => clearDelta(player.id)} />
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -169,7 +237,10 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
                     />
                   ))
                 ) : (
-                  <span className="text-[11px] font-semibold" style={{ gridColumn: '1 / -1', color: GAME_BOARD_COLORS.muted }}>
+                  <span
+                    className="text-[11px] font-semibold"
+                    style={{ gridColumn: '1 / -1', color: GAME_BOARD_COLORS.muted }}
+                  >
                     No properties
                   </span>
                 )}
