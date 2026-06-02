@@ -10,6 +10,7 @@ import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
 import {
   BoardContainer,
+  BOARD_TILE_COLORS,
   deriveBoardPlayers,
   deriveSidebarPlayers,
   GAME_BOARD_COLORS,
@@ -176,6 +177,8 @@ export default function GameRoomPage() {
   const animatedDiceRollId = useUiStore((state) => state.animatedDiceRollId);
   const activeAnimationCard = useUiStore((state) => state.activeAnimationCard);
   const setPendingAnimationInteraction = useUiStore((state) => state.setPendingAnimationInteraction);
+  const selectedTile = useUiStore((state) => state.selectedTile);
+  const setSelectedTile = useUiStore((state) => state.setSelectedTile);
 
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoiningByCode, setIsJoiningByCode] = useState(false);
@@ -395,6 +398,16 @@ export default function GameRoomPage() {
   const pendingBuyPosition = game.turn.pendingBuyPosition;
   const pendingBuySpace = pendingBuyPosition != null ? (BOARD[pendingBuyPosition] ?? null) : null;
   const isViewerTurn = Boolean(viewerPlayerId && game.turn.currentPlayerId === viewerPlayerId);
+  const isBuyDecisionForViewer = Boolean(pendingBuySpace && isViewerTurn && permissions.canBuyProperty);
+  const selectedBoardPosition = selectedTile != null && BOARD[selectedTile] ? selectedTile : null;
+  const deedBrowsePosition = selectedBoardPosition ?? pendingBuyPosition ?? viewerPlayer?.position ?? 0;
+  const deedBrowseSpace = BOARD[deedBrowsePosition] ?? BOARD[0];
+  const highlightedBoardPosition = isBuyDecisionForViewer
+    ? pendingBuyPosition
+    : deedBrowsePosition;
+  const deedPanelSpace = isBuyDecisionForViewer && pendingBuySpace
+    ? pendingBuySpace
+    : deedBrowseSpace;
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling;
   const canManage =
     permissions.canBuildHouse ||
@@ -414,13 +427,18 @@ export default function GameRoomPage() {
   }, [dispatch, permissions.canRollInJail]);
 
   const handleBuy = useCallback(() => {
-    if (pendingBuyPosition == null) return;
+    if (!permissions.canBuyProperty || pendingBuyPosition == null) return;
     dispatch({ type: CommandType.BuyProperty, position: pendingBuyPosition });
-  }, [dispatch, pendingBuyPosition]);
+  }, [dispatch, pendingBuyPosition, permissions.canBuyProperty]);
 
   const handlePassBuy = useCallback(() => {
+    if (!permissions.canBuyProperty) return;
     dispatch({ type: CommandType.PassBuy });
-  }, [dispatch]);
+  }, [dispatch, permissions.canBuyProperty]);
+
+  const handleSelectBoardPosition = useCallback((position: number) => {
+    setSelectedTile(position);
+  }, [setSelectedTile]);
 
   const handleStartGame = useCallback(async () => {
     if (!sessionId || isStarting) return;
@@ -593,20 +611,42 @@ export default function GameRoomPage() {
 
   function renderGameCenter() {
     const fullOverlay = renderFullCenterOverlay();
+    const dimmedCenterStyle = {
+      opacity: isBuyDecisionForViewer ? 0.15 : 1,
+      filter: isBuyDecisionForViewer ? 'saturate(0.82)' : 'saturate(1)',
+      transition: 'opacity 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms cubic-bezier(0.22, 1, 0.36, 1)',
+    };
+    const disabledButtonStyle = {
+      backgroundColor: GAME_BOARD_COLORS.surface,
+      borderColor: GAME_BOARD_COLORS.border,
+      color: GAME_BOARD_COLORS.muted,
+    };
 
     return (
       <div className="relative h-full w-full">
         <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[6px]">
-          <div className="col-span-2 row-span-2 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
+          <div
+            className="col-span-2 row-span-2 min-h-0 overflow-hidden rounded-[12px]"
+            style={dimmedCenterStyle}
+          >
             <DiceWindow diceRoll={diceRoll} rollId={animatedDiceRollId} />
           </div>
 
-          <section className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-cols-3 gap-[6px]">
+          <section
+            className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-cols-3 gap-[6px]"
+            style={dimmedCenterStyle}
+          >
             <button
               type="button"
               onClick={handleRoll}
               disabled={!canRoll}
-              className="col-span-2 rounded-[12px] border border-green bg-green px-3 py-2 font-display text-xl font-black uppercase tracking-[0.12em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+              className="col-span-2 rounded-[12px] border px-3 py-2 font-display text-xl font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed"
+              style={canRoll ? {
+                backgroundColor: BOARD_TILE_COLORS.propertyGreen,
+                borderColor: BOARD_TILE_COLORS.propertyGreen,
+                color: BOARD_TILE_COLORS.altText,
+                transition: 'background-color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+              } : disabledButtonStyle}
             >
               {isRolling ? 'Rolling' : 'Roll'}
             </button>
@@ -614,7 +654,13 @@ export default function GameRoomPage() {
               type="button"
               onClick={() => dispatchCommand(CommandType.EndTurn)}
               disabled={!permissions.canEndTurn}
-              className="rounded-[12px] border border-red bg-red px-3 py-2 font-display text-sm font-black uppercase tracking-[0.1em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+              className="rounded-[12px] border px-3 py-2 font-display text-sm font-black uppercase tracking-[0.1em] disabled:cursor-not-allowed"
+              style={permissions.canEndTurn ? {
+                backgroundColor: BOARD_TILE_COLORS.propertyRed,
+                borderColor: BOARD_TILE_COLORS.propertyRed,
+                color: BOARD_TILE_COLORS.altText,
+                transition: 'background-color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+              } : disabledButtonStyle}
             >
               End turn
             </button>
@@ -622,7 +668,13 @@ export default function GameRoomPage() {
               type="button"
               onClick={() => setCenterOverlay('manage')}
               disabled={!canManage}
-              className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
+              className="rounded-[12px] border px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed"
+              style={canManage ? {
+                backgroundColor: GAME_BOARD_COLORS.surface,
+                borderColor: GAME_BOARD_COLORS.border,
+                color: GAME_BOARD_COLORS.text,
+                transition: 'background-color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+              } : disabledButtonStyle}
             >
               Manage
             </button>
@@ -630,35 +682,55 @@ export default function GameRoomPage() {
               type="button"
               onClick={() => setCenterOverlay('trade-builder')}
               disabled={!permissions.canTrade || !tradeBuilderData?.others.length}
-              className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
+              className="rounded-[12px] border px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed"
+              style={(permissions.canTrade && Boolean(tradeBuilderData?.others.length)) ? {
+                backgroundColor: GAME_BOARD_COLORS.surface,
+                borderColor: GAME_BOARD_COLORS.border,
+                color: GAME_BOARD_COLORS.text,
+                transition: 'background-color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1)',
+              } : disabledButtonStyle}
             >
               Trade
             </button>
-            <div className="flex min-w-0 items-center justify-center rounded-[12px] border border-line bg-surface px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+            <div
+              className="flex min-w-0 items-center justify-center rounded-[12px] border px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{
+                backgroundColor: GAME_BOARD_COLORS.surface,
+                borderColor: GAME_BOARD_COLORS.border,
+                color: GAME_BOARD_COLORS.muted,
+              }}
+            >
               {isViewerTurn ? 'Your turn' : `Round ${game.turn.roundNumber}`}
             </div>
           </section>
 
-          <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
+          <div
+            className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0 overflow-hidden rounded-[12px]"
+            style={dimmedCenterStyle}
+          >
             {renderCenterPanel()}
           </div>
 
           <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0 overflow-hidden">
-            {pendingBuySpace ? (
-              <DeedWindow
-                space={pendingBuySpace}
-                decisionSpace={pendingBuySpace}
-                onBuy={handleBuy}
-                onAuction={handlePassBuy}
-              />
-            ) : (
-              <DeedWindow space={BOARD[viewerPlayer?.position ?? 0] ?? BOARD[0]} viewOnly />
-            )}
+            <DeedWindow
+              space={deedPanelSpace}
+              decisionSpace={isBuyDecisionForViewer ? pendingBuySpace : null}
+              canAct={isBuyDecisionForViewer}
+              onBuy={handleBuy}
+              onAuction={handlePassBuy}
+              viewOnly={!isBuyDecisionForViewer}
+            />
           </div>
         </div>
 
         {fullOverlay && (
-          <div className="absolute inset-[6px] z-10 overflow-hidden rounded-[12px] border border-line bg-surface">
+          <div
+            className="absolute inset-[6px] z-10 overflow-hidden rounded-[12px] border"
+            style={{
+              backgroundColor: GAME_BOARD_COLORS.surface,
+              borderColor: GAME_BOARD_COLORS.border,
+            }}
+          >
             {fullOverlay}
           </div>
         )}
@@ -749,6 +821,8 @@ export default function GameRoomPage() {
           players={boardPlayers}
           walkingPlayers={walkingPlayers}
           sidebarPlayers={sidebarPlayers}
+          selectedPosition={highlightedBoardPosition}
+          onSelectPosition={handleSelectBoardPosition}
         />
       )}
     </main>

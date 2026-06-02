@@ -172,6 +172,7 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
       case 'open_deed':
         emit(instr);
+        ui.setSelectedTile(instr.position);
         break;
     }
   }

@@ -151,6 +151,7 @@ async function runInstruction(
       break;
 
     case 'open_deed':
+      useUiStore.getState().setSelectedTile(instruction.position);
       break;
 
     default:

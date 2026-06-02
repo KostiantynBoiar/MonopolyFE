@@ -18,6 +18,8 @@ export interface BoardContainerProps {
   players?: BoardPlayer[];
   walkingPlayers?: WalkingPlayer[];
   sidebarPlayers?: Player[];
+  selectedPosition?: number | null;
+  onSelectPosition?: (position: number) => void;
 }
 
 export interface BoardCenterSlots {
@@ -86,6 +88,8 @@ export interface BoardTileProps {
   ownership?: PropertyState | null;
   players?: BoardPlayer[];
   walkingPlayerIds?: Set<string>;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 export interface BoardPlayer {

@@ -31,6 +31,8 @@ export function BoardContainer({
   players,
   walkingPlayers,
   sidebarPlayers,
+  selectedPosition,
+  onSelectPosition,
 }: BoardContainerProps) {
   const boardSpaces = spaces ?? [];
   const boardPlayers = players ?? [];
@@ -103,6 +105,8 @@ export function BoardContainer({
                       ownership={ownershipByPosition.get(space.pos) ?? null}
                       players={playersByPosition.get(space.pos) ?? []}
                       walkingPlayerIds={walkingIds}
+                      isSelected={selectedPosition === space.pos}
+                      onSelect={onSelectPosition ? () => onSelectPosition(space.pos) : undefined}
                     />
                   </div>
                 );

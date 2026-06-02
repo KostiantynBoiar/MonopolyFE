@@ -20,6 +20,7 @@ interface DeedWindowProps {
   decisionSpace?: BoardSpace | null; // when set: player just landed here — forces buy/auction UI
   onBuy?: () => void;
   onAuction?: () => void;
+  canAct?: boolean;              // true only for the viewer who may answer a buy decision
   viewOnly?: boolean;
   compact?: boolean;              // smaller typography to fit constrained height containers
   ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
@@ -74,7 +75,16 @@ function getSpecialText(space: BoardSpace) {
 
 // ─── DeedWindow ───────────────────────────────────────────────────────────────
 
-export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false, compact = false, ownership }: DeedWindowProps) {
+export function DeedWindow({
+  space,
+  decisionSpace,
+  onBuy,
+  onAuction,
+  canAct = true,
+  viewOnly = false,
+  compact = false,
+  ownership,
+}: DeedWindowProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
 
@@ -89,8 +99,8 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
   const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner) : null;
   const specialText    = !isDeed && !cornerText ? getSpecialText(activeSpace) : null;
   const isSpecialCard  = Boolean(specialText);
-  // Actions: always visible in decision mode (player MUST choose); hidden in viewOnly browse mode.
-  const showActions    = (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
+  // Actions are visible only when this viewer can answer the active buy decision.
+  const showActions    = canAct && (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
   // Buildings strip: only in viewOnly when ownership data is supplied and there's something to show.
   const showBuildings  = viewOnly && isDeed && ownership != null && (ownership.hotel || ownership.houses > 0);
   const nonDeedTitle   = cornerText?.title ?? specialText ?? 'Board space information.';
