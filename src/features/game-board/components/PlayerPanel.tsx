@@ -86,7 +86,7 @@ function BalanceDelta({
   const isGain = entry.amount > 0;
   return (
     <span
-      className="pointer-events-none animate-balance-delta whitespace-nowrap font-mono text-xs font-black"
+      className="pointer-events-none animate-balance-delta whitespace-nowrap font-mono text-sm font-black"
       style={{ color: isGain ? BOARD_TILE_COLORS.propertyGreen : BOARD_TILE_COLORS.propertyRed }}
       onAnimationEnd={onDone}
     >
@@ -157,13 +157,17 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
             return sum + priceGuess;
           }, 0);
 
+          const tokenColor = TOKEN_COLORS[player.token];
+
           return (
             <article
               key={player.id}
-              className="grid gap-3 rounded-[14px] border px-3 py-3"
+              className="grid gap-3 rounded-[14px] px-3 py-3"
               style={{
-                backgroundColor: player.isActive ? GAME_BOARD_COLORS.center : GAME_BOARD_COLORS.surface,
-                borderColor: player.isActive ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.border,
+                backgroundColor: player.isActive ? `${tokenColor}18` : GAME_BOARD_COLORS.surface,
+                border: player.isActive
+                  ? `2px solid ${tokenColor}`
+                  : `1px solid ${GAME_BOARD_COLORS.border}`,
                 color: GAME_BOARD_COLORS.text,
               }}
             >
@@ -193,7 +197,7 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
                   {/* Balance row */}
                   <div className="mt-1 flex items-baseline gap-1.5">
                     <p
-                      className="font-mono text-sm font-bold tabular-nums"
+                      className="font-mono text-base font-black tabular-nums"
                       style={{ color: GAME_BOARD_COLORS.text }}
                     >
                       ${player.balance.toLocaleString()}
