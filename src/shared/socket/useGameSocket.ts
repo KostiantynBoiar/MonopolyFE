@@ -5,7 +5,6 @@ import { env } from '@/shared/config/env';
 import { useSessionStore } from '@/stores/session-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
-import { MemberRole } from '@/features/lobby';
 import { WsInboundType } from '@/shared/protocol/messages.schema';
 import type {
   WsInbound,

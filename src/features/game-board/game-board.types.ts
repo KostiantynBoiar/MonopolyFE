@@ -12,10 +12,18 @@ export interface WalkingPlayer {
 
 export interface BoardContainerProps {
   centerContent?: ReactNode;
+  centerSlots?: BoardCenterSlots;
   spaces?: PropertyState[];
   players?: BoardPlayer[];
   walkingPlayers?: WalkingPlayer[];
   sidebarPlayers?: Player[];
+}
+
+export interface BoardCenterSlots {
+  dice?: ReactNode;
+  actions?: ReactNode;
+  chat?: ReactNode;
+  deed?: ReactNode;
 }
 
 export interface CornerTileProps {

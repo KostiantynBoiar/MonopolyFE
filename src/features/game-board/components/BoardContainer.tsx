@@ -179,7 +179,7 @@ function rollDie() {
 
 // ─── BoardContainer ───────────────────────────────────────────────────────────
 
-export function BoardContainer({ centerContent, spaces, players, sidebarPlayers }: BoardContainerProps) {
+export function BoardContainer({ centerContent, centerSlots, spaces, players, sidebarPlayers }: BoardContainerProps) {
   const [selectedPos, setSelectedPos] = useState(37);
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(MOCK_DICE_ROLL);
   const [diceRollId, setDiceRollId] = useState(0);
@@ -386,31 +386,39 @@ export function BoardContainer({ centerContent, spaces, players, sidebarPlayers 
                     <div className="h-full w-full overflow-hidden rounded-[12px]">
                       {centerOverlay}
                     </div>
+                  ) : centerContent ? (
+                    <div className="h-full w-full overflow-hidden rounded-[12px]">
+                      {centerContent}
+                    </div>
                   ) : (
                     <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px]">
                       <div className="col-span-2 row-span-2 min-h-0">
-                        <DiceWindow diceRoll={diceRoll} rollId={diceRollId} />
+                        {centerSlots?.dice ?? <DiceWindow diceRoll={diceRoll} rollId={diceRollId} />}
                       </div>
 
                       <div className="col-span-4 col-start-3 row-span-2 min-h-0">
-                        <ActionPanel
-                          onRollDice={handleRollDice}
-                          onAction={handleAction}
-                          activeAction={activeOverlay}
-                        />
+                        {centerSlots?.actions ?? (
+                          <ActionPanel
+                            onRollDice={handleRollDice}
+                            onAction={handleAction}
+                            activeAction={activeOverlay}
+                          />
+                        )}
                       </div>
 
                       <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0">
-                        <ChatWindow log={MOCK_LOG} initialMessages={MOCK_CHAT_MESSAGES} />
+                        {centerSlots?.chat ?? <ChatWindow log={MOCK_LOG} initialMessages={MOCK_CHAT_MESSAGES} />}
                       </div>
 
                       <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0">
-                        <DeedWindow
-                          space={selectedSpace}
-                          decisionSpace={decisionSpace}
-                          onBuy={() => {}}
-                          onAuction={() => {}}
-                        />
+                        {centerSlots?.deed ?? (
+                          <DeedWindow
+                            space={selectedSpace}
+                            decisionSpace={decisionSpace}
+                            onBuy={() => {}}
+                            onAuction={() => {}}
+                          />
+                        )}
                       </div>
                     </div>
                   )}

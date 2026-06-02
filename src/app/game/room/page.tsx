@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BoardContainer } from '@/features/game-board';
-import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
+import { WaitingActionsPanel, WaitingChatPanel, WaitingInviteCodePanel, SessionStatus } from '@/features/lobby';
 import { joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import type { SessionMember } from '@/features/lobby';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
@@ -135,18 +135,29 @@ export default function GameRoomPage() {
         <div className="flex-1 overflow-hidden">
           <BoardContainer
             sidebarPlayers={sidebarPlayers}
-            centerContent={
-              <WaitingCenterPanel
-                session={currentSession}
-                messages={waitingMessages}
-                onSendMessage={handleWaitingMessage}
-                onLeave={handleLeave}
-                onStart={handleStart}
-                isLeaving={isLeaving}
-                isStarting={isStarting}
-                socketStatus={socketStatus}
-              />
-            }
+            centerSlots={{
+              actions: (
+                <WaitingActionsPanel
+                  session={currentSession}
+                  onLeave={handleLeave}
+                  onStart={handleStart}
+                  isLeaving={isLeaving}
+                  isStarting={isStarting}
+                />
+              ),
+              chat: (
+                <WaitingChatPanel
+                  messages={waitingMessages}
+                  onSendMessage={handleWaitingMessage}
+                  socketStatus={socketStatus}
+                />
+              ),
+              deed: (
+                <WaitingInviteCodePanel
+                  session={currentSession}
+                />
+              ),
+            }}
           />
         </div>
       </div>

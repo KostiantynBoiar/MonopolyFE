@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { BoardContainer } from '@/features/game-board';
 import { TOKEN_COLORS } from '@/features/player-panel';
-import { WaitingCenterPanel, SessionStatus, SessionVisibility, MemberRole } from '@/features/lobby';
+import { WaitingActionsPanel, WaitingChatPanel, WaitingInviteCodePanel, SessionStatus, SessionVisibility, MemberRole } from '@/features/lobby';
 import type { SessionDetail } from '@/features/lobby';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
@@ -80,15 +80,26 @@ export default function TestWaitingPage() {
           players={BOARD_PLAYERS}
           spaces={[]}
           sidebarPlayers={SIDEBAR_PLAYERS}
-          centerContent={
-            <WaitingCenterPanel
-              session={MOCK_SESSION}
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              onLeave={() => {}}
-              onStart={() => {}}
-            />
-          }
+          centerSlots={{
+            actions: (
+              <WaitingActionsPanel
+                session={MOCK_SESSION}
+                onLeave={() => {}}
+                onStart={() => {}}
+              />
+            ),
+            chat: (
+              <WaitingChatPanel
+                messages={messages}
+                onSendMessage={handleSendMessage}
+              />
+            ),
+            deed: (
+              <WaitingInviteCodePanel
+                session={MOCK_SESSION}
+              />
+            ),
+          }}
         />
       </div>
     </div>

@@ -1,14 +1,22 @@
-export { SessionCard } from './components/SessionCard';
 export { JoinByCodeForm } from './components/JoinByCodeForm';
-export { WaitingCenterPanel } from './components/WaitingCenterPanel';
+export { SessionCard } from './components/SessionCard';
+export {
+  WaitingActionsPanel,
+  WaitingCenterPanel,
+  WaitingChatPanel,
+  WaitingInviteCodePanel,
+} from './components/WaitingCenterPanel';
 export { useLobby } from './hooks/useLobby';
-export { SessionStatus, SessionVisibility, MemberRole } from './lobby.enums';
+export { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums';
 export type {
-  SessionSummary,
-  SessionDetail,
-  SessionMember,
-  LobbyListResponse,
   CreateSessionInput,
   JoinByCodeInput,
+  LobbyListResponse,
+  SessionDetail,
+  SessionMember,
+  SessionSummary,
+  WaitingActionsPanelProps,
   WaitingCenterPanelProps,
+  WaitingChatPanelProps,
+  WaitingInviteCodePanelProps,
 } from './lobby.types';

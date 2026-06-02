@@ -1,8 +1,6 @@
-import { SocketStatus } from '@/shared/socket';
-import { ChatMessage } from '../chat/chat.types';
+import type { SocketStatus } from '@/shared/socket';
+import type { ChatMessage } from '../chat/chat.types';
 import type { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums';
-
-// ─── Wire types (snake_case matches backend REST/WS contract) ─────────────────
 
 export interface LobbyHost {
   id: string;
@@ -18,21 +16,19 @@ export interface SessionMember {
 
 export interface SessionSummary {
   id: string;
-  invite_code: string;       // e.g. "TYC-A1B2"
+  invite_code: string;
   status: SessionStatus;
   visibility: SessionVisibility;
   member_count: number;
-  max_players: number;       // always 8
+  max_players: number;
   host: LobbyHost;
-  created_at: string;        // ISO 8601
+  created_at: string;
 }
 
 export interface SessionDetail extends SessionSummary {
   members: SessionMember[];
   your_role: MemberRole | null;
 }
-
-// ─── Request payloads ─────────────────────────────────────────────────────────
 
 export interface CreateSessionInput {
   visibility: SessionVisibility;
@@ -41,8 +37,6 @@ export interface CreateSessionInput {
 export interface JoinByCodeInput {
   invite_code: string;
 }
-
-// ─── Response envelopes ───────────────────────────────────────────────────────
 
 export interface LobbyListResponse {
   sessions: SessionSummary[];
@@ -53,13 +47,22 @@ export interface SessionResponse {
   session: SessionDetail;
 }
 
-export interface WaitingCenterPanelProps {
+export interface WaitingActionsPanelProps {
   session: SessionDetail;
-  messages: ChatMessage[];
-  onSendMessage?: (text: string) => void;
-  onLeave: () => void;
+  onLeave?: () => void;
   onStart: () => void;
   isLeaving?: boolean;
   isStarting?: boolean;
+}
+
+export interface WaitingChatPanelProps {
+  messages: ChatMessage[];
+  onSendMessage?: (text: string) => void;
   socketStatus?: SocketStatus;
 }
+
+export interface WaitingInviteCodePanelProps {
+  session: SessionDetail;
+}
+
+export interface WaitingCenterPanelProps extends WaitingActionsPanelProps, WaitingChatPanelProps {}

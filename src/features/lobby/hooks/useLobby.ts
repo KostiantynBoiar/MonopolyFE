@@ -1,18 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { listSessions, joinSession, joinByCode as joinByCodeApi } from '../api';
 import { POLL_INTERVAL_MS } from '@/shared/config/constants';
+import { joinByCode as joinByCodeApi, joinSession, listSessions } from '../api';
 import type { SessionSummary } from '../lobby.types';
 
 export function useLobby() {
-  const [sessions, setSessions]           = useState<SessionSummary[]>([]);
-  const [nextCursor, setNextCursor]       = useState<string | null>(null);
-  const [loading, setLoading]             = useState(true);
-  const [error, setError]                 = useState<string | null>(null);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [joiningId, setJoiningId]         = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetch = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -31,11 +31,14 @@ export function useLobby() {
   useEffect(() => {
     fetch();
     pollRef.current = setInterval(() => fetch(true), POLL_INTERVAL_MS);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [fetch]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || isLoadingMore) return;
+
     setIsLoadingMore(true);
     try {
       const data = await listSessions(nextCursor);
@@ -46,7 +49,7 @@ export function useLobby() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [nextCursor, isLoadingMore]);
+  }, [isLoadingMore, nextCursor]);
 
   const join = useCallback(async (sessionId: string) => {
     setJoiningId(sessionId);
