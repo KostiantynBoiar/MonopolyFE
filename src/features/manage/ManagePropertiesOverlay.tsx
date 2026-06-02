@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { PropertyColor } from '@/features/game-board';
-import { BOARD, GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
+import type { PropertyColor } from '@/features/game-board/game-board.enums';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
+import { BOARD } from '@/shared/config/board-layout';
 import { DeedWindow } from '@/features/deed';
 
 export interface ManageProperty {

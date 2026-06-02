@@ -140,7 +140,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
 
   return (
     <section
-      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_40px] gap-[3px]"
+      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_48px] gap-[3px]"
       style={{ color: GAME_BOARD_COLORS.text }}
     >
       <header
@@ -274,13 +274,13 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
       </div>
 
       <div
-        className="grid min-h-0 grid-cols-[minmax(0,1fr)_40px] gap-[3px]"
+        className="grid min-h-0 grid-cols-[minmax(0,1fr)_48px] gap-[3px]"
         style={{
           color: GAME_BOARD_COLORS.text,
         }}
       >
         <div
-          className="relative h-10 min-h-0 rounded-[10px] border"
+          className="relative h-12 min-h-0 rounded-[10px] border"
           style={{
             backgroundColor: GAME_BOARD_COLORS.surface,
             borderColor: GAME_BOARD_COLORS.border,
@@ -291,7 +291,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
             onChange={(event) => setDraft(clampMessage(event.target.value))}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-11 py-[10px] text-[15px] leading-tight outline-none"
+            className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-12 py-[14px] text-[15px] leading-tight outline-none"
             maxLength={128}
             style={{
               color: GAME_BOARD_COLORS.text,
@@ -300,7 +300,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
           <button
             type="button"
             onClick={() => setShowStickers((value) => !value)}
-          className="absolute right-[3px] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
+          className="absolute right-[4px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
           style={{
               backgroundColor: showStickers ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
               color: showStickers ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
@@ -319,7 +319,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
         <button
           type="button"
           onClick={handleSend}
-          className="flex h-10 w-10 items-center justify-center rounded-[10px] border text-[15px] font-semibold uppercase tracking-[0.02em]"
+          className="flex h-12 w-12 items-center justify-center rounded-[10px] border text-[13px] font-bold uppercase tracking-[0.06em]"
           style={{
             backgroundColor: BOARD_TILE_COLORS.propertyYellow,
             borderColor: BOARD_TILE_COLORS.propertyOrange,
@@ -331,7 +331,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
       </div>
       {showStickers && (
         <div
-          className="absolute bottom-[49px] left-[calc(100%-43px)] z-10 w-[236px] -translate-x-full overflow-hidden rounded-[10px] border"
+          className="absolute bottom-[57px] left-[calc(100%-51px)] z-10 w-[214px] -translate-x-full overflow-hidden rounded-[10px] border"
           style={{
             backgroundColor: GAME_BOARD_COLORS.surface,
             borderColor: GAME_BOARD_COLORS.border,
@@ -355,7 +355,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
               ))}
             </div>
           )}
-          <div className="grid max-h-[220px] grid-cols-4 gap-[3px] overflow-y-auto p-2">
+          <div className="grid max-h-[280px] grid-cols-3 gap-[4px] overflow-y-auto p-2">
             {activePack?.stickers.map((file, index) => {
               const url = `/stickers/${activePack.id}/${file}`;
               return (

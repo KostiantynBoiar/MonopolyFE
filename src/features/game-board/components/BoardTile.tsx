@@ -70,21 +70,34 @@ function getHeaderStyle(edge: TileEdge, color: string) {
 }
 
 function getContentPadding(edge: TileEdge, hasHeader: boolean) {
-  const base   = getTilePadding();
-  const header = `calc(var(--board-edge-depth) * ${PROPERTY_HEADER_RATIO})`;
-  const padded = `calc(${base} + ${header})`;
+  const base = getTilePadding();
+
+  // CSS percentage resolution quirk:
+  //
+  // LEFT/RIGHT tiles are landscape (2u wide × 1u tall).
+  // The absolute color band uses  width: %  → 100% = tile WIDTH = 2u  ✓
+  // The flex content uses padding-right: % → 100% = tile WIDTH = 2u  ✓  (match)
+  //
+  // BOTTOM/TOP tiles are portrait (1u wide × 2u tall).
+  // The absolute color band uses  height: % → 100% = tile HEIGHT = 2u
+  // The flex content uses padding-top: %   → 100% = tile WIDTH  = 1u  ✗  (2× off)
+  //
+  // To make the content padding match the real band depth, the BOTTOM/TOP
+  // coefficient must be doubled to compensate for the height:width = 2:1 ratio.
+  const bandH = `calc(var(--board-edge-depth) * ${PROPERTY_HEADER_RATIO})`;       // for LEFT/RIGHT (width-based, correct)
+  const bandV = `calc(var(--board-edge-depth) * ${PROPERTY_HEADER_RATIO * 2})`;   // for BOTTOM/TOP (width-based but band is height-based)
 
   if (!hasHeader) return { padding: base };
 
   switch (edge) {
     case TileEdge.BOTTOM:
-      return { paddingTop: padded, paddingRight: base, paddingBottom: base, paddingLeft: base };
+      return { paddingTop: `calc(${base} + ${bandV})`, paddingRight: base, paddingBottom: base, paddingLeft: base };
     case TileEdge.TOP:
-      return { paddingTop: base, paddingRight: base, paddingBottom: padded, paddingLeft: base };
+      return { paddingTop: base, paddingRight: base, paddingBottom: `calc(${base} + ${bandV})`, paddingLeft: base };
     case TileEdge.LEFT:
-      return { paddingTop: base, paddingRight: padded, paddingBottom: base, paddingLeft: base };
+      return { paddingTop: base, paddingRight: `calc(${base} + ${bandH})`, paddingBottom: base, paddingLeft: base };
     case TileEdge.RIGHT:
-      return { paddingTop: base, paddingRight: base, paddingBottom: base, paddingLeft: padded };
+      return { paddingTop: base, paddingRight: base, paddingBottom: base, paddingLeft: `calc(${base} + ${bandH})` };
     default:
       return { padding: base };
   }

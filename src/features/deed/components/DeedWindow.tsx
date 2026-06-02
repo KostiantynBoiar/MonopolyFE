@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { BoardSpace } from '@/features/game-board';
+import type { BoardSpace } from '@/features/game-board/game-board.types';
 import { CornerVariant, SpaceType } from '@/features/game-board/game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor, getSpaceHeaderTextColor } from '@/features/game-board/game-board.colors';
 import type { DeedInfo } from '../deed.types';

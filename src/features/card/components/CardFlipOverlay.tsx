@@ -8,7 +8,7 @@ import {
   CARD_FLIP_DURATION_MS,
   CARD_PROCEED_APPEAR_DELAY_MS,
 } from '@/shared/config/constants';
-import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { CardFlipState, CardKind } from '../card.enums';
 import type { CardFlipOverlayProps } from '../card.types';
 

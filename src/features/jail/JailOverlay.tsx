@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { DiceRoll } from '@/shared/protocol/game-state';
-import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 
 // ─── Sub-component ────────────────────────────────────────────────────────────
 

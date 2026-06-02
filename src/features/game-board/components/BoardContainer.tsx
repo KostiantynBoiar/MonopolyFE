@@ -454,7 +454,7 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
       style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
     >
       <section
-        className="grid h-full w-full gap-[4px] overflow-hidden lg:grid-cols-[minmax(0,1fr)_320px]"
+        className={`grid h-full w-full gap-[4px] overflow-hidden${centerContent == null ? ' lg:grid-cols-[minmax(0,1fr)_320px]' : ''}`}
         aria-label="Tycoon board"
         style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
       >
@@ -548,7 +548,9 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
           </div>
         </div>
 
-        <PlayerPanel currentPlayerId={MOCK_SNAPSHOT.game.turn.currentPlayerId} spaces={boardSpaces} />
+        {centerContent == null && (
+          <PlayerPanel currentPlayerId={MOCK_SNAPSHOT.game.turn.currentPlayerId} spaces={boardSpaces} />
+        )}
       </section>
     </div>
   );

@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { TOKEN_COLORS } from '@/features/player-panel';
-import { GAME_BOARD_COLORS, BOARD_TILE_COLORS, BOARD } from '@/features/game-board';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
+import { BOARD } from '@/shared/config/board-layout';
 import { TradeParty } from '../trade.enums';
 import type { TradeWindowProps } from '../trade.types';
 import type { TradeOffer } from '@/shared/protocol/game-state.schema';

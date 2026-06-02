@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 
 export interface DebtOverlayProps {
   amount:     number;
