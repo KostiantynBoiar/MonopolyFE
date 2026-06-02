@@ -22,8 +22,15 @@ export const useSessionStore = create<SessionState>()(
     {
       name: 'tycoon-session',
       partialize: (s) => ({ currentSession: s.currentSession }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+      onRehydrateStorage: () => (state, error) => {
+        if (state) {
+          state.setHasHydrated(true);
+          return;
+        }
+
+        if (error) {
+          useSessionStore.setState({ currentSession: null, _hasHydrated: true });
+        }
       },
     },
   ),
