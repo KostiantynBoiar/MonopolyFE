@@ -833,6 +833,7 @@ export default function GameRoomPage() {
           sidebarPlayers={sidebarPlayers}
           selectedPosition={highlightedBoardPosition}
           onSelectPosition={handleSelectBoardPosition}
+          focusPosition={isBuyDecisionForViewer ? pendingBuyPosition : null}
         />
       )}
     </main>

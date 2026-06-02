@@ -181,14 +181,40 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
 
 // ─── BoardTile ────────────────────────────────────────────────────────────────
 
+function OwnershipOverlay({ color, isMortgaged }: { color: string; isMortgaged: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-10"
+      style={{
+        borderRadius: 'inherit',
+        backgroundColor: color,
+        opacity: isMortgaged ? 0.22 : 0.30,
+      }}
+    />
+  );
+}
+
+function DimOverlay() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-40 transition-opacity duration-300"
+      style={{ borderRadius: 'inherit', backgroundColor: 'rgba(0,0,0,0.55)' }}
+    />
+  );
+}
+
 export function BoardTile({
   space,
   edge,
   flavor,
   ownership,
+  ownerColor,
   players,
   walkingPlayerIds,
   isSelected = false,
+  isDimmed = false,
   onSelect,
 }: BoardTileProps) {
   // Dynamic key lookup for board position — eslint-disable-next-line needed
@@ -255,6 +281,7 @@ export function BoardTile({
           </p>
         )}
         <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
+        {isDimmed && <DimOverlay />}
         <SelectionRing selected={isSelected} />
       </article>
     );
@@ -279,12 +306,12 @@ export function BoardTile({
         }}
       >
         <span
-          className="shrink-0 leading-none"
+          className="relative z-[45] shrink-0 leading-none"
           style={{ fontSize: specialEmojiSize, textShadow: shadowEmoji }}
         >
           {SPACE_SYMBOL_MAP[space.type]}
         </span>
-        <div className="min-w-0 overflow-hidden w-full text-center">
+        <div className="relative z-[45] min-w-0 overflow-hidden w-full text-center">
           <h3
             className="break-all font-sans font-bold uppercase leading-tight overflow-hidden"
             style={{ fontSize: specialNameSize, textShadow: shadowOnColor }}
@@ -301,6 +328,8 @@ export function BoardTile({
           )}
         </div>
         <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
+        {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
+        {isDimmed && <DimOverlay />}
         <SelectionRing selected={isSelected} />
       </article>
     );
@@ -337,13 +366,13 @@ export function BoardTile({
       }}
     >
       {propertyColor && (
-        <div className={EDGE_HEADER[edge]} style={getHeaderStyle(edge, propertyColor)} />
+        <div className={cn(EDGE_HEADER[edge], 'z-[45]')} style={getHeaderStyle(edge, propertyColor)} />
       )}
       <BuildingsMarker ownership={ownership} edge={edge} />
       <PlayerMarker players={players} edge={edge} />
 
       <div
-        className={cn('flex min-w-0 min-h-0 flex-1 overflow-hidden', flexDir)}
+        className={cn('relative z-[45] flex min-w-0 min-h-0 flex-1 overflow-hidden', flexDir)}
         style={getContentPadding(edge, !!propertyColor)}
       >
         {layoutIsRow ? (
@@ -383,6 +412,8 @@ export function BoardTile({
           </>
         )}
       </div>
+      {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
+      {isDimmed && <DimOverlay />}
       <SelectionRing selected={isSelected} />
     </article>
   );

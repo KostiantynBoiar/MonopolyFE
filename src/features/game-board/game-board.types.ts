@@ -20,6 +20,8 @@ export interface BoardContainerProps {
   sidebarPlayers?: Player[];
   selectedPosition?: number | null;
   onSelectPosition?: (position: number) => void;
+  /** When set, all tiles except this position are dimmed. */
+  focusPosition?: number | null;
 }
 
 export interface BoardCenterSlots {
@@ -86,9 +88,11 @@ export interface BoardTileProps {
   edge: TileEdge;
   flavor: BoardTileFlavor;
   ownership?: PropertyState | null;
+  ownerColor?: string;
   players?: BoardPlayer[];
   walkingPlayerIds?: Set<string>;
   isSelected?: boolean;
+  isDimmed?: boolean;
   onSelect?: () => void;
 }
 

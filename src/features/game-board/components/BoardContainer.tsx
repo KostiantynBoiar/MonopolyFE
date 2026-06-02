@@ -33,11 +33,13 @@ export function BoardContainer({
   sidebarPlayers,
   selectedPosition,
   onSelectPosition,
+  focusPosition,
 }: BoardContainerProps) {
   const boardSpaces = spaces ?? [];
   const boardPlayers = players ?? [];
   const hasSidebar = sidebarPlayers !== undefined;
   const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
+  const colorById = new Map(boardPlayers.map((p) => [p.id, p.tokenColor]));
   const playersByPosition = new Map<number, typeof boardPlayers>();
 
   const walkingIds = new Set((walkingPlayers ?? []).map((player) => player.id));
@@ -103,9 +105,14 @@ export function BoardContainer({
                       edge={getTileEdge(space.pos)}
                       flavor={getTileFlavor(space.type)}
                       ownership={ownershipByPosition.get(space.pos) ?? null}
+                      ownerColor={(() => {
+                        const own = ownershipByPosition.get(space.pos);
+                        return own?.ownerId ? colorById.get(own.ownerId) : undefined;
+                      })()}
                       players={playersByPosition.get(space.pos) ?? []}
                       walkingPlayerIds={walkingIds}
                       isSelected={selectedPosition === space.pos}
+                      isDimmed={focusPosition != null && space.pos !== focusPosition}
                       onSelect={onSelectPosition ? () => onSelectPosition(space.pos) : undefined}
                     />
                   </div>

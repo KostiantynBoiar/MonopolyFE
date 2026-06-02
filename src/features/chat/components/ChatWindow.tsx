@@ -59,7 +59,19 @@ function StickerFallback({ size, label = 'TGS' }: { size: number; label?: string
   );
 }
 
-function StickerPreview({ url, alt, size, loop = true }: { url: string; alt: string; size: number; loop?: boolean }) {
+function StickerPreview({
+  url,
+  alt,
+  size,
+  loop = true,
+  autoplay = true,
+}: {
+  url: string;
+  alt: string;
+  size: number;
+  loop?: boolean;
+  autoplay?: boolean;
+}) {
   const [failed, setFailed] = useState(false);
 
   if (isTgsSticker(url)) {
@@ -68,6 +80,7 @@ function StickerPreview({ url, alt, size, loop = true }: { url: string; alt: str
         src={url}
         size={size}
         loop={loop}
+        autoplay={autoplay}
         fallback={<StickerFallback size={size} />}
       />
     );
@@ -88,27 +101,43 @@ function StickerPreview({ url, alt, size, loop = true }: { url: string; alt: str
   );
 }
 
-function StickerCell({ url, file, onSelect }: { url: string; file: string; onSelect: () => void }) {
+function StickerCell({ url, file, index, onSelect }: { url: string; file: string; index: number; onSelect: () => void }) {
   const isTgs = isTgsSticker(file);
-  const [previewActive, setPreviewActive] = useState(false);
+  const [mounted, setMounted] = useState(!isTgs);
+
+  useEffect(() => {
+    if (!isTgs) return;
+
+    const mount = () => setMounted(true);
+    let idleId: number | null = null;
+    const timer = window.setTimeout(() => {
+      if ('requestIdleCallback' in window) {
+        idleId = window.requestIdleCallback(mount, { timeout: 300 });
+        return;
+      }
+
+      mount();
+    }, index * 30);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (idleId != null) window.cancelIdleCallback(idleId);
+    };
+  }, [index, isTgs]);
 
   return (
     <button
       type="button"
       onClick={onSelect}
       className="flex h-[60px] w-[60px] items-center justify-center rounded-[8px] border"
-      onBlur={() => setPreviewActive(false)}
-      onFocus={() => setPreviewActive(true)}
-      onPointerEnter={() => setPreviewActive(true)}
-      onPointerLeave={() => setPreviewActive(false)}
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,
       }}
     >
-      {isTgs && !previewActive
+      {isTgs && !mounted
         ? <StickerFallback size={45} />
-        : <StickerPreview url={url} alt={file} size={45} loop={false} />}
+        : <StickerPreview url={url} alt={file} size={45} loop={false} autoplay={false} />}
     </button>
   );
 }
@@ -438,13 +467,14 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
             </div>
           )}
           <div className="grid max-h-[280px] grid-cols-5 gap-[4px] overflow-y-auto p-2">
-            {activePack?.stickers.map((file) => {
+            {activePack?.stickers.map((file, index) => {
               const url = `/stickers/${activePack.id}/${file}`;
               return (
                 <StickerCell
                   key={`${activePack.id}-${file}`}
                   url={url}
                   file={file}
+                  index={index}
                   onSelect={() => handleSticker(url)}
                 />
               );
