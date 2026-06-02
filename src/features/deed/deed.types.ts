@@ -1,4 +1,4 @@
-import type { PropertyColor } from '@/features/game-board';
+import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import type { DeedSpaceType } from './deed.enums';
 
 export interface RentRow {

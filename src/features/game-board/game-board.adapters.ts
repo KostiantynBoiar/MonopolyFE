@@ -1,6 +1,6 @@
-import { TOKEN_COLORS } from '@/features/player-panel';
 import type { Player } from '@/features/player-panel';
-import type { GameState } from '@/shared/protocol/game-state.schema';
+import { TOKEN_COLORS } from '@/shared/config/constants';
+import type { GameState } from '@/shared/protocol/game-state';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { BoardPlayer } from './game-board.types';
 

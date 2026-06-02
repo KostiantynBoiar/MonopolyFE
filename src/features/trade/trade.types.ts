@@ -1,4 +1,4 @@
-import type { TradeState, TradeOffer } from '@/shared/protocol/game-state.schema';
+import type { TradeState, TradeOffer } from '@/shared/protocol/game-state';
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
 
 export interface TradeParticipant {

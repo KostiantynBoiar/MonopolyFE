@@ -1,10 +1,4 @@
-export enum TradeStatus {
-  PENDING    = 'pending',
-  COUNTERED  = 'countered',
-  ACCEPTED   = 'accepted',
-  REJECTED   = 'rejected',
-  CANCELLED  = 'cancelled',
-}
+export { TradeStatus } from '@/shared/protocol/game-state.enums';
 
 export enum TradeParty {
   PROPOSER = 'proposer',

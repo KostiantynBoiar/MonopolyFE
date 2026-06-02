@@ -1,4 +1,4 @@
-import type { ActiveCard } from '@/shared/protocol/game-state.schema';
+import type { ActiveCard } from '@/shared/protocol/game-state';
 
 export type CardFlipOverlayProps = {
   card: ActiveCard;

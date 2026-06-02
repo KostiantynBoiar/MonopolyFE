@@ -1,5 +1,4 @@
-import { PropertyColor } from '@/features/game-board/game-board.enums';
-import { TokenColor } from '@/shared/protocol/game-state.enums';
+import { PropertyColor, TokenColor } from '@/shared/protocol/game-state.enums';
 import { SocketStatus } from '../socket';
 import { StatusDot } from '@/features/lobby/lobby.enums';
 
@@ -59,6 +58,19 @@ export const TOKEN_ORDER: TokenColor[] = [
   TokenColor.CYAN,
   TokenColor.BROWN,
 ];
+
+export const TOKEN_COLORS: Record<TokenColor, string> = {
+  [TokenColor.BLUE]:   '#2B57C6',
+  [TokenColor.RED]:    '#C53A33',
+  [TokenColor.GREEN]:  '#2E7D4F',
+  [TokenColor.YELLOW]: '#DDAE1A',
+  [TokenColor.ORANGE]: '#D9802C',
+  [TokenColor.PINK]:   '#C24C8B',
+  [TokenColor.CYAN]:   '#8FC9DC',
+  [TokenColor.BROWN]:  '#6B4A2E',
+  [TokenColor.GOLD]:   '#C6951C',
+  [TokenColor.INK]:    '#10182E',
+};
 
 // ─── WebSocket ───────────────────────────────────────────────────────────────────
 

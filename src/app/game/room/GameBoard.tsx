@@ -2,20 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { BoardContainer, deriveBoardPlayers, deriveSidebarPlayers } from '@/features/game-board';
-import { TOKEN_COLORS } from '@/features/player-panel';
 import type {
   LogAndActionsProps,
   CardOverlayProps,
   DeedOverlayProps,
-  JailOverlayProps,
-  DebtOverlayProps,
-  AuctionPanelProps,
+  JailOverlaySlotProps,
+  DebtOverlaySlotProps,
+  AuctionPanelSlotProps,
   TradeWindowProps,
   ManageOverlayProps,
   TradeBuilderOverlayProps,
 } from '@/features/chat/chat.types';
 import type { WalkingPlayer } from '@/features/game-board';
-import type { GameState } from '@/shared/protocol/game-state.schema';
+import type { GameState } from '@/shared/protocol/game-state';
 import { TurnPhase, AuctionTargetKind, LogKind } from '@/shared/protocol/game-state.enums';
 import type { LogEntry } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
@@ -36,7 +35,7 @@ import { JailOverlay } from '@/features/jail';
 import { DebtOverlay } from '@/features/bankruptcy';
 import { ManagePropertiesOverlay } from '@/features/manage';
 import { TradeBuilder, TradeOverlay } from '@/features/trade';
-import { BOARD_W, BOARD_PX } from '@/shared/config/constants';
+import { BOARD_W, BOARD_PX, TOKEN_COLORS } from '@/shared/config/constants';
 import { useGameDispatch } from './useGameDispatch';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { playSfx } from '@/shared/lib/sfx';
@@ -357,7 +356,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     onManageDeed:  handleManage,
   };
 
-  const jailOverlayProps: JailOverlayProps = {
+  const jailOverlayProps: JailOverlaySlotProps = {
     jailDecision,
     jailAttempts:    viewer?.jailStatus?.attempts ?? 0,
     canPayJailFine:  permissions.canPayJailFine && !timelineBlocked,
@@ -370,7 +369,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     onRollInJail:    handleRollInJail,
   };
 
-  const debtOverlayProps: DebtOverlayProps = {
+  const debtOverlayProps: DebtOverlaySlotProps = {
     debtPending,
     debtAmount,
     canPayDebt:          permissions.canPayDebt,
@@ -379,7 +378,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
     onDeclareBankruptcy: handleDeclareBankruptcy,
   };
 
-  const auctionPanelProps: AuctionPanelProps = {
+  const auctionPanelProps: AuctionPanelSlotProps = {
     auctionState:        gameState.auction,
     auctionPropertyName,
     auctionPlayers,

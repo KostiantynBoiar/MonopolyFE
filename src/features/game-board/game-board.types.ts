@@ -1,7 +1,8 @@
 import { type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
 import type { DiceRoll, PropertyState } from '@/shared/protocol/game-state';
-import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, PropertyColor, TileEdge, BoardTileFlavor } from './game-board.enums';
+import type { PropertyColor } from '@/shared/protocol/game-state.enums';
+import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor } from './game-board.enums';
 
 export interface WalkingPlayer {
   id: string;

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { TOKEN_COLORS } from '@/features/player-panel';
 import type { Player } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';

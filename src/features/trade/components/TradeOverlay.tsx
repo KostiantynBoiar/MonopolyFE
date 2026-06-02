@@ -1,12 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { TOKEN_COLORS } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { BOARD } from '@/shared/config/board-layout';
 import { TradeParty } from '../trade.enums';
 import type { TradeWindowProps } from '../trade.types';
-import type { TradeOffer } from '@/shared/protocol/game-state.schema';
+import type { TradeOffer } from '@/shared/protocol/game-state';
+import type { TokenColor } from '@/shared/protocol/game-state.enums';
 import { DeedWindow } from '@/features/deed';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ function formatMoney(amount: number): string {
 
 interface OfferSideProps {
   name:    string;
-  token:   string;
+  token:   TokenColor;
   balance: number;
   offer:   TradeOffer;
   label:   string;
@@ -66,7 +67,7 @@ interface OfferSideProps {
 }
 
 function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProps) {
-  const tokenHex = TOKEN_COLORS[token as keyof typeof TOKEN_COLORS] ?? '#888';
+  const tokenHex = TOKEN_COLORS[token];
   const isEmpty = offer.money === 0 && offer.positions.length === 0 && offer.getOutOfJailCards === 0;
   const spaces = offer.positions
     .map((pos) => BOARD[pos])

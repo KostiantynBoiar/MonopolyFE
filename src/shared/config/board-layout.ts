@@ -1,4 +1,5 @@
-import { CornerVariant, PropertyColor, SpaceType, TileEdge } from '@/features/game-board/game-board.enums';
+import { CornerVariant, SpaceType, TileEdge } from '@/features/game-board/game-board.enums';
+import { PropertyColor } from '@/shared/protocol/game-state.enums';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import { N, NW, W } from '@/shared/config/constants';
 

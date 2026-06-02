@@ -1,6 +1,6 @@
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
 import type { DiceRoll, LogEntry, TradeOffer } from '@/shared/protocol/game-state';
-import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state.schema';
+import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state';
 import type { TradeParticipant, TradePlayer, TradeAsset } from '@/features/trade';
 import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
@@ -82,7 +82,7 @@ export interface DeedOverlayProps {
 }
 
 /** Jail decision overlay props */
-export interface JailOverlayProps {
+export interface JailOverlaySlotProps {
   jailDecision?: boolean;
   jailAttempts?: number;
   canPayJailFine?: boolean;
@@ -96,7 +96,7 @@ export interface JailOverlayProps {
 }
 
 /** Debt and bankruptcy overlay props */
-export interface DebtOverlayProps {
+export interface DebtOverlaySlotProps {
   debtPending?: boolean;
   debtAmount?: number;
   canPayDebt?: boolean;
@@ -106,7 +106,7 @@ export interface DebtOverlayProps {
 }
 
 /** Auction panel props (swaps the chat container when active) */
-export interface AuctionPanelProps {
+export interface AuctionPanelSlotProps {
   auctionState?: AuctionState | null;
   auctionPropertyName?: string;
   auctionPlayers?: AuctionPlayer[];
@@ -160,9 +160,9 @@ export interface TradeBuilderOverlayProps {
 export type BoardCenterPanelProps = LogAndActionsProps &
   CardOverlayProps &
   DeedOverlayProps &
-  JailOverlayProps &
-  DebtOverlayProps &
-  AuctionPanelProps &
+  JailOverlaySlotProps &
+  DebtOverlaySlotProps &
+  AuctionPanelSlotProps &
   TradeWindowProps &
   ManageOverlayProps &
   TradeBuilderOverlayProps;

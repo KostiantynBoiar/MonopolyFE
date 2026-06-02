@@ -1,4 +1,5 @@
-import { CornerVariant, PropertyColor, SpaceType } from './game-board.enums';
+import { PropertyColor } from '@/shared/protocol/game-state.enums';
+import { CornerVariant, SpaceType } from './game-board.enums';
 import type { BoardSpace } from './game-board.types';
 
 export const GAME_BOARD_COLORS = {

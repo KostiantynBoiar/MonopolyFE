@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
-import { TOKEN_COLORS } from '@/features/player-panel';
 import { ManagePropertiesOverlay } from '@/features/manage/ManagePropertiesOverlay';
 import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
 import { JailOverlay } from '@/features/jail/JailOverlay';
@@ -23,6 +22,7 @@ import {
 } from '@/shared/protocol/game-state.enums';
 import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '../game-board.colors';

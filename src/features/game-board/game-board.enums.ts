@@ -1,3 +1,5 @@
+export { PropertyColor } from '@/shared/protocol/game-state.enums';
+
 export enum SpaceType {
   CORNER = 'corner',
   PROPERTY = 'property',
@@ -27,17 +29,6 @@ export enum TileTopText {
   NONE = '',
   CHANCE = 'CHANCE',
   CHEST = 'COMMUNITY CHEST',
-}
-
-export enum PropertyColor {
-  BROWN = 'brown',
-  CYAN = 'cyan',
-  PINK = 'pink',
-  ORANGE = 'orange',
-  RED = 'red',
-  YELLOW = 'yellow',
-  GREEN = 'green',
-  BLUE = 'blue',
 }
 
 export enum CornerVariant {

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { TOKEN_COLORS } from '@/features/player-panel';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { SESSION_MIN_PLAYERS_TO_START, STATUS_DOT } from '@/shared/config/constants';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { MemberRole } from '../lobby.enums';

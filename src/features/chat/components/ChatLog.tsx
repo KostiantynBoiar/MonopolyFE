@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { TOKEN_COLORS } from '@/features/player-panel';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import type { ChatLogProps } from '../chat.types';
 

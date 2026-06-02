@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { BoardContainer } from '@/features/game-board';
-import { TOKEN_COLORS } from '@/features/player-panel';
 import { WaitingActionsPanel, WaitingChatPanel, WaitingInviteCodePanel, SessionStatus, SessionVisibility, MemberRole } from '@/features/lobby';
 import type { SessionDetail } from '@/features/lobby';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { TokenColor } from '@/shared/protocol/game-state.enums';
-import { TOKEN_ORDER } from '@/shared/config/constants';
+import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 

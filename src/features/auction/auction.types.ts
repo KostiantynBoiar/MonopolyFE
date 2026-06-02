@@ -1,4 +1,4 @@
-import type { AuctionState } from '@/shared/protocol/game-state.schema';
+import type { AuctionState } from '@/shared/protocol/game-state';
 
 export interface AuctionPlayer {
   id: string;

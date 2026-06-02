@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from 'react';
 import { BoardContainer, deriveBoardPlayers, deriveSidebarPlayers } from '@/features/game-board';
 import type { WalkingPlayer } from '@/features/game-board';
-import { TOKEN_COLORS } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/shared/config/constants';
 import { createMockGameRoomSnapshot } from '@/shared/mocks/game-room.mock';
 import type { GameState } from '@/shared/protocol/game-state';
 import { TurnPhase } from '@/shared/protocol/game-state.enums';

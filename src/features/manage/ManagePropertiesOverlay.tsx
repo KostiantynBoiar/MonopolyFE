@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { PropertyColor } from '@/features/game-board/game-board.enums';
+import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { BOARD } from '@/shared/config/board-layout';
 import { DeedWindow } from '@/features/deed';
