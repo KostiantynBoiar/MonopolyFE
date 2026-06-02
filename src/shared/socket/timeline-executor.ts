@@ -138,7 +138,9 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
         ui.bumpAnimatedDiceRollId();
         ui.setIsRolling(true);
         await delay(DICE_SPIN_MS + DICE_LINGER_MS);
-        ui.setAnimatedDiceRoll(null);
+        // Do NOT clear animatedDiceRoll here — game store hasn't committed yet.
+        // Clearing now would make diceRoll fall back to stale game.turn.diceRoll,
+        // causing DiceWindow to re-animate with wrong values.
         ui.setIsRolling(false);
         break;
 
@@ -185,6 +187,9 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
     ? { ...next, game: { ...next.game, activeCard: null } }
     : next;
   commit(finalSnapshot);
+  // Clear the animated dice roll only after commit so game.turn.diceRoll already holds
+  // the correct values — die1/die2 stay the same, DiceWindow never re-triggers.
+  ui.setAnimatedDiceRoll(null);
   ui.setIsTimelineRunning(false);
   maybeSurfaceDeed(next);
 }
