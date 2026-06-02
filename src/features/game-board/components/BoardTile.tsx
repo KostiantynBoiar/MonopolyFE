@@ -127,17 +127,17 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
   const shadow = shadowOnLight;
 
   return (
-    <div className="min-w-0 overflow-hidden">
+    <div className="min-w-0 overflow-hidden text-center">
       {doSplit && line2 ? (
         <>
           <p
-            className="font-display font-semibold uppercase leading-tight overflow-hidden whitespace-nowrap"
+            className="font-sans font-semibold uppercase leading-tight overflow-hidden whitespace-nowrap"
             style={{ fontSize: propNameSize, textShadow: shadow }}
           >
             {line1}
           </p>
           <p
-            className="break-all font-display font-black uppercase leading-tight overflow-hidden"
+            className="break-all font-sans font-black uppercase leading-tight overflow-hidden"
             style={{ fontSize: propNameSize, textShadow: shadow }}
           >
             {line2}
@@ -145,7 +145,7 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
         </>
       ) : (
         <h3
-          className="break-all font-display font-semibold uppercase leading-tight overflow-hidden"
+          className="break-all font-sans font-semibold uppercase leading-tight overflow-hidden"
           style={{ fontSize: propNameSize, textShadow: shadow }}
         >
           {name}
@@ -153,7 +153,7 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
       )}
       {price != null && (
         <p
-          className="font-mono font-black overflow-hidden whitespace-nowrap"
+          className="font-sans font-black overflow-hidden whitespace-nowrap"
           style={{ fontSize: propPriceSize, color: textColor, opacity: 0.90, textShadow: shadow }}
         >
           ${price}
@@ -198,14 +198,14 @@ export function BoardTile({ space, edge, flavor, ownership, players }: BoardTile
           {CORNER_SYMBOL_MAP[space.corner]}
         </span>
         <h3
-          className="break-all text-center font-display font-black uppercase leading-tight overflow-hidden w-full"
+          className="break-all text-center font-sans font-black uppercase leading-tight overflow-hidden w-full"
           style={{ fontSize: cornerNameSize, color: BOARD_TILE_COLORS.altText, textShadow: shadowOnColor }}
         >
           {tileName}
         </h3>
         {space.corner === CornerVariant.JAIL && (
           <p
-            className="font-mono uppercase tracking-[0.18em] overflow-hidden whitespace-nowrap"
+            className="font-sans uppercase tracking-[0.18em] overflow-hidden whitespace-nowrap"
             style={{ fontSize: cornerSubSize, color: BOARD_TILE_COLORS.altText, opacity: 0.80, textShadow: shadowOnColor }}
           >
             {justVisit}
@@ -238,14 +238,14 @@ export function BoardTile({ space, edge, flavor, ownership, players }: BoardTile
         </span>
         <div className="min-w-0 overflow-hidden w-full text-center">
           <h3
-            className="break-all font-display font-bold uppercase leading-tight overflow-hidden"
+            className="break-all font-sans font-bold uppercase leading-tight overflow-hidden"
             style={{ fontSize: specialNameSize, textShadow: shadowOnColor }}
           >
             {tileName}
           </h3>
           {space.price != null && (
             <p
-              className="font-mono font-semibold overflow-hidden whitespace-nowrap"
+              className="font-sans font-semibold overflow-hidden whitespace-nowrap"
               style={{ fontSize: specialPriceSize, opacity: 0.85, textShadow: shadowOnColor }}
             >
               Pay ${space.price}
@@ -270,7 +270,9 @@ export function BoardTile({ space, edge, flavor, ownership, players }: BoardTile
     ? 'flex-row items-center'
     : edge === TileEdge.TOP
       ? 'flex-col-reverse justify-between'
-      : 'flex-col justify-between';
+      : isVertical
+        ? 'flex-col justify-center'   // single child on landscape tile — center it
+        : 'flex-col justify-between';
 
   return (
     <article
@@ -293,7 +295,7 @@ export function BoardTile({ space, edge, flavor, ownership, players }: BoardTile
       >
         {layoutIsRow ? (
           <>
-            <div className="min-w-0 flex-1 overflow-hidden">
+            <div className="min-w-0 flex-1 overflow-hidden text-center">
               <TileText name={tileName} price={space.price} textColor={textColor} doSplit={false} />
             </div>
             {symbol && (

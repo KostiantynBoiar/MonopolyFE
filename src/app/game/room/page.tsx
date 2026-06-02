@@ -28,7 +28,7 @@ import { ManagePropertiesOverlay, type ManageProperty } from '@/features/manage'
 import { TradeBuilder, type TradeAsset, type TradePlayer } from '@/features/trade/components/TradeBuilder';
 import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
 import { BOARD } from '@/shared/config/board-layout';
-import { TOKEN_COLORS } from '@/shared/config/constants';
+import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { getPropertyRent, getPlayerProperties, getViewerPlayer, hasMonopoly } from '@/shared/protocol/selectors';
@@ -116,21 +116,6 @@ function getManageProperties(game: GameState, viewerPlayerId: string | null): Ma
   });
 }
 
-function SocketStatusBadge({ status }: { status: string }) {
-  const color =
-    status === 'open'
-      ? '#2E7D4F'
-      : status === 'connecting'
-        ? '#C6951C'
-        : '#C53A33';
-
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-      {status}
-    </span>
-  );
-}
 
 function EmptyGameState({ sessionCode, status }: { sessionCode: string | null; status: string }) {
   return (
@@ -276,7 +261,12 @@ export default function GameRoomPage() {
         router.replace('/lobby');
       })
       .finally(() => {
-        if (!cancelled) setIsValidatingSession(false);
+        // Always clear the loading state — even if this run was cancelled.
+        // React may flush the re-render (and run the effect cleanup) synchronously
+        // between .then and .finally, causing cancelled=true here even though the
+        // request completed successfully. The re-run takes the "already validated"
+        // early return and never clears isValidatingSession, hanging the boot.
+        setIsValidatingSession(false);
       });
 
     return () => {
@@ -307,6 +297,20 @@ export default function GameRoomPage() {
 
   const boardPlayers = useMemo(() => deriveBoardPlayers(game), [game]);
   const sidebarPlayers = useMemo(() => deriveSidebarPlayers(game), [game]);
+  const waitingSidebarPlayers = useMemo(
+    () => currentSession?.members.map((m, i) => ({
+      id:             m.user_id,
+      name:           m.display_name,
+      balance:        0,
+      position:       0,
+      token:          TOKEN_ORDER[i % TOKEN_ORDER.length],
+      ownedPositions: [] as number[],
+      isActive:       false,
+      isBankrupt:     false,
+      inJail:         false,
+    })) ?? [],
+    [currentSession?.members],
+  );
   const walkingPlayers = useMemo(() => {
     if (!walkState) return [];
 
@@ -679,13 +683,6 @@ export default function GameRoomPage() {
     <main className="relative h-screen min-h-0 w-full overflow-hidden bg-paper">
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
 
-      <div className="absolute left-3 top-3 z-40 flex flex-wrap items-center gap-2">
-        <SocketStatusBadge status={status} />
-        <span className="rounded-full border border-line bg-surface px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-          {currentSession.invite_code}
-        </span>
-      </div>
-
       {isWaitingSession ? (
         <div className="h-full min-h-0 p-3 pt-14">
           <BoardContainer
@@ -701,6 +698,7 @@ export default function GameRoomPage() {
                 socketStatus={status}
               />
             )}
+            sidebarPlayers={waitingSidebarPlayers}
           />
         </div>
       ) : game.players.length === 0 ? (

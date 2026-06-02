@@ -22,15 +22,15 @@ export const useSessionStore = create<SessionState>()(
     {
       name: 'tycoon-session',
       partialize: (s) => ({ currentSession: s.currentSession }),
-      onRehydrateStorage: () => (state, error) => {
+      onRehydrateStorage: () => (state) => {
         if (state) {
           state.setHasHydrated(true);
           return;
         }
-
-        if (error) {
-          useSessionStore.setState({ currentSession: null, _hasHydrated: true });
-        }
+        // Storage error path: mark hydration done but do NOT clear currentSession —
+        // the validation effect in the game room page will detect the missing session
+        // and redirect to lobby cleanly.
+        useSessionStore.setState({ _hasHydrated: true });
       },
     },
   ),

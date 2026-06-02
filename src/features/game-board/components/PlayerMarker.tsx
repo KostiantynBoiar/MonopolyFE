@@ -17,8 +17,6 @@ interface PlayerMarkerProps {
 // Multi token:  scale to ~65% so two tokens still fit across a single tile.
 const DIAMETER_SINGLE = 'clamp(28px, 3.2vmin, 46px)';
 const DIAMETER_MULTI  = 'clamp(20px, 2.2vmin, 32px)';
-const FONT_SINGLE     = 'clamp(10px, 1.1vmin, 16px)';
-const FONT_MULTI      = 'clamp(7px,  0.8vmin, 11px)';
 
 // ─── Anchor positions ──────────────────────────────────────────────────────────
 // Each anchor puts tokens on the OPPOSITE side from the color-band header,
@@ -43,29 +41,24 @@ const ANCHOR: Record<TileEdge, string> = {
 interface TokenProps {
   player: BoardPlayer;
   diameter: string;
-  fontSize: string;
 }
 
-function Token({ player, diameter, fontSize }: TokenProps) {
-  const label = player.id.replace(/\D/g, '') || player.id.slice(0, 1).toUpperCase();
-
+function Token({ player, diameter }: TokenProps) {
   const ring: React.CSSProperties = {
-    width:           diameter,
-    aspectRatio:     '1 / 1',
-    borderRadius:    '50%',
-    flexShrink:      0,
-    // White inner ring + dark outer ring + drop-shadow.
-    // Two-layer approach works on every tile background color.
-    outline:         '2px solid rgba(255,255,255,0.96)',
-    outlineOffset:   '0px',
-    boxShadow:       '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 9px rgba(0,0,0,0.65)',
+    width:         diameter,
+    aspectRatio:   '1 / 1',
+    borderRadius:  '50%',
+    flexShrink:    0,
+    outline:       '2px solid rgba(255,255,255,0.96)',
+    outlineOffset: '0px',
+    boxShadow:     '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 9px rgba(0,0,0,0.65)',
   };
 
   if (player.avatarUrl) {
     return (
       <img
         src={player.avatarUrl}
-        alt={label}
+        alt=""
         style={{ ...ring, objectFit: 'cover', display: 'block', backgroundColor: player.tokenColor }}
       />
     );
@@ -73,24 +66,8 @@ function Token({ player, diameter, fontSize }: TokenProps) {
 
   return (
     <span
-      style={{
-        ...ring,
-        display:         'flex',
-        alignItems:      'center',
-        justifyContent:  'center',
-        backgroundColor: player.tokenColor,
-        color:           'rgba(255,255,255,0.97)',
-        fontSize,
-        fontFamily:      'var(--font-dm-mono, monospace)',
-        fontWeight:      900,
-        lineHeight:      1,
-        textShadow:      '0 1px 3px rgba(0,0,0,0.70)',
-        letterSpacing:   '-0.02em',
-        userSelect:      'none',
-      }}
-    >
-      {label}
-    </span>
+      style={{ ...ring, display: 'block', backgroundColor: player.tokenColor }}
+    />
   );
 }
 
@@ -99,9 +76,8 @@ function Token({ player, diameter, fontSize }: TokenProps) {
 export function PlayerMarker({ players, edge }: PlayerMarkerProps) {
   if (!players?.length) return null;
 
-  const many      = players.length > 1;
-  const diameter  = many ? DIAMETER_MULTI  : DIAMETER_SINGLE;
-  const fontSize  = many ? FONT_MULTI      : FONT_SINGLE;
+  const many     = players.length > 1;
+  const diameter = many ? DIAMETER_MULTI : DIAMETER_SINGLE;
 
   return (
     <div
@@ -114,7 +90,7 @@ export function PlayerMarker({ players, edge }: PlayerMarkerProps) {
       aria-label={`${players.length} player token${players.length === 1 ? '' : 's'}`}
     >
       {players.slice(0, 6).map((player) => (
-        <Token key={player.id} player={player} diameter={diameter} fontSize={fontSize} />
+        <Token key={player.id} player={player} diameter={diameter} />
       ))}
     </div>
   );
