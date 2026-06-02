@@ -20,6 +20,10 @@ function getStickerUrl(text: string) {
   return match?.[1] ?? null;
 }
 
+function clampMessage(text: string) {
+  return text.slice(0, 128);
+}
+
 function useStickerPacks() {
   const [packs, setPacks] = useState<StickerPack[]>([]);
 
@@ -61,7 +65,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
 }
 
 export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSticker }: ChatWindowProps) {
-  const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.EVENTS);
+  const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [unreadCount, setUnreadCount] = useState(initialMessages.length);
@@ -87,7 +91,7 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
   }, [activeTab, eventEntries.length, messages.length]);
 
   function handleSend() {
-    const text = draft.trim();
+    const text = clampMessage(draft.trim());
     if (!text) return;
 
     const nextMessage: ChatMessage = {
@@ -126,29 +130,25 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
       event.preventDefault();
       handleSend();
     }
   }
 
+  const activeEntries = activeTab === ChatWindowTab.EVENTS ? eventEntries : messages;
+
   return (
     <section
-      className="relative grid h-full min-h-0 gap-[3px] overflow-hidden rounded-[16px] border p-[6px]"
-      style={{
-        gridTemplateRows: 'calc(100% / 12) minmax(0, 1fr) calc(100% / 6)',
-        backgroundColor: GAME_BOARD_COLORS.widgetSurface,
-        borderColor: GAME_BOARD_COLORS.widgetBorder,
-        color: GAME_BOARD_COLORS.widgetText,
-      }}
+      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_40px] gap-[3px]"
+      style={{ color: GAME_BOARD_COLORS.widgetText }}
     >
       <header
-        className="grid min-h-0 grid-cols-2 overflow-hidden rounded-[10px] border"
-        style={{ borderColor: GAME_BOARD_COLORS.widgetBorder }}
+        className="grid grid-cols-[3fr_1fr] gap-[3px]"
       >
         <button
           type="button"
-          className="flex min-h-0 items-center justify-center gap-2 border-r px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
+          className="flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.16em]"
           style={{
             backgroundColor:
               activeTab === ChatWindowTab.EVENTS ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
@@ -163,12 +163,13 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
 
         <button
           type="button"
-          className="flex min-h-0 items-center justify-center gap-2 px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
+          className="flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[11px] font-semibold uppercase tracking-[0.16em]"
           style={{
             backgroundColor:
               activeTab === ChatWindowTab.CHAT ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
             color:
               activeTab === ChatWindowTab.CHAT ? GAME_BOARD_COLORS.widgetHeaderText : GAME_BOARD_COLORS.widgetText,
+            borderColor: GAME_BOARD_COLORS.widgetBorder,
           }}
           onClick={() => setActiveTab(ChatWindowTab.CHAT)}
         >
@@ -188,99 +189,88 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
       </header>
 
       <div
-        className="min-h-0 overflow-hidden rounded-[10px] border px-2 py-2"
+        className="min-h-0 overflow-hidden rounded-[10px] border"
         style={{
           borderColor: GAME_BOARD_COLORS.widgetBorder,
-          backgroundColor: GAME_BOARD_COLORS.widgetSurfaceAlt,
+          backgroundColor: GAME_BOARD_COLORS.widgetSurface,
         }}
       >
-        {activeTab === ChatWindowTab.EVENTS ? (
-          <div className="flex h-full min-h-0 flex-col gap-[3px] overflow-y-auto pr-[2px]">
-            {eventEntries.map((entry) => (
-              <div
-                key={entry.id}
-                className="rounded-[8px] border px-2 py-1.5"
-                style={{
-                  backgroundColor: GAME_BOARD_COLORS.widgetSurface,
-                  borderColor: GAME_BOARD_COLORS.widgetBorder,
-                }}
-              >
-                <p
-                  className="text-left text-[12px] leading-[1.35]"
-                  style={{ color: GAME_BOARD_COLORS.widgetText }}
-                  title={`${formatTime(new Date(entry.ts).getTime())} | ${entry.playerName ?? 'Table'}: ${entry.text}`}
-                >
-                  {formatTime(new Date(entry.ts).getTime())} | {entry.playerName ?? 'Table'}: {entry.text}
-                </p>
-              </div>
-            ))}
-            <div ref={scrollRef} />
-          </div>
-        ) : (
-          <div className="flex h-full min-h-0 flex-col gap-[3px] overflow-y-auto pr-[2px]">
-            {messages.map((entry) => {
-              const stickerUrl = getStickerUrl(entry.text);
-
-              return (
-                <div
+        <div className="flex h-full min-h-0 flex-col overflow-y-auto p-[3px]">
+          {activeEntries.length === 0 ? (
+            <div
+              className="flex h-full items-center justify-center rounded-[8px] text-center text-[12px]"
+              style={{ color: GAME_BOARD_COLORS.widgetMuted }}
+            >
+              {activeTab === ChatWindowTab.EVENTS ? 'No events yet.' : 'No messages yet.'}
+            </div>
+          ) : activeTab === ChatWindowTab.EVENTS ? (
+            <div className="grid gap-[3px]">
+              {eventEntries.map((entry) => (
+                <article
                   key={entry.id}
-                  className="rounded-[8px] border px-2 py-1.5"
-                  style={{
-                    backgroundColor: GAME_BOARD_COLORS.widgetSurface,
-                    borderColor: GAME_BOARD_COLORS.widgetBorder,
-                  }}
+                  className="grid min-w-0 gap-[1px] rounded-[8px] px-2 py-1.5"
+                  style={{ backgroundColor: GAME_BOARD_COLORS.widgetSurfaceAlt }}
                 >
-                  {stickerUrl ? (
-                    <div className="flex items-center gap-2">
-                      <span className="shrink-0 text-[12px]" style={{ color: GAME_BOARD_COLORS.widgetMuted }}>
-                        {formatTime(entry.ts)} |
-                      </span>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: GAME_BOARD_COLORS.widgetMuted }}>
+                    {formatTime(new Date(entry.ts).getTime())}
+                  </p>
+                  <p
+                    className="min-w-0 whitespace-pre-wrap text-center text-[12px] leading-[1.35]"
+                    style={{ color: GAME_BOARD_COLORS.widgetText, overflowWrap: 'anywhere' }}
+                  >
+                    <span className="font-semibold">{entry.playerName ?? 'Table'}</span>
+                    {': '}
+                    {entry.text}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-[3px]">
+              {messages.map((entry) => {
+                const stickerUrl = getStickerUrl(entry.text);
+
+                return (
+                  <article
+                    key={entry.id}
+                    className="grid min-w-0 gap-[2px] rounded-[8px] px-2 py-1.5"
+                    style={{ backgroundColor: GAME_BOARD_COLORS.widgetSurfaceAlt }}
+                  >
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.12em]" style={{ color: GAME_BOARD_COLORS.widgetMuted }}>
+                      <span>{formatTime(entry.ts)}</span>
                       {entry.token && (
                         <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          className="h-2 w-2 rounded-full"
                           style={{ backgroundColor: TOKEN_COLORS[entry.token] }}
                         />
                       )}
-                      <span
-                        className="shrink-0 text-[12px] font-semibold"
-                        style={{ color: entry.token ? TOKEN_COLORS[entry.token] : GAME_BOARD_COLORS.widgetText }}
-                      >
-                        {entry.author ?? 'Player'}:
-                      </span>
-                      <img src={stickerUrl} alt="Sticker" className="h-16 w-16 shrink-0 object-contain" />
-                    </div>
-                  ) : (
-                    <p
-                      className="text-left text-[12px] leading-[1.35]"
-                      style={{ color: GAME_BOARD_COLORS.widgetText }}
-                      title={`${formatTime(entry.ts)} | ${entry.author ?? 'Player'}: ${entry.text}`}
-                    >
-                      <span style={{ color: GAME_BOARD_COLORS.widgetMuted }}>
-                        {formatTime(entry.ts)}
-                      </span>
-                      {' | '}
-                      {entry.token && (
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full align-middle"
-                          style={{ backgroundColor: TOKEN_COLORS[entry.token] }}
-                        />
-                      )}
-                      {entry.token && ' '}
                       <span
                         className="font-semibold"
-                        style={{ color: entry.token ? TOKEN_COLORS[entry.token] : GAME_BOARD_COLORS.widgetText }}
+                        style={{ color: entry.token ? TOKEN_COLORS[entry.token] : GAME_BOARD_COLORS.widgetMuted }}
                       >
                         {entry.author ?? 'Player'}
                       </span>
-                      : {entry.text}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-            <div ref={scrollRef} />
-          </div>
-        )}
+                    </div>
+                    {stickerUrl ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <img src={stickerUrl} alt="Sticker" className="h-16 w-16 max-w-full object-contain" />
+                      </div>
+                    ) : (
+                      <p
+                        className="min-w-0 whitespace-pre-wrap text-left text-[12px] leading-[1.35]"
+                        style={{ color: GAME_BOARD_COLORS.widgetText, overflowWrap: 'anywhere' }}
+                        title={`${formatTime(entry.ts)} | ${entry.author ?? 'Player'}: ${entry.text}`}
+                      >
+                        {entry.text}
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+          <div ref={scrollRef} />
+        </div>
       </div>
 
       <div
@@ -292,16 +282,17 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
         <div
           className="relative h-10 min-h-0 rounded-[10px] border"
           style={{
-            backgroundColor: GAME_BOARD_COLORS.tileSurface,
+            backgroundColor: GAME_BOARD_COLORS.widgetSurface,
             borderColor: GAME_BOARD_COLORS.widgetBorder,
           }}
         >
           <textarea
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => setDraft(clampMessage(event.target.value))}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-11 py-[10px] text-[12px] leading-tight outline-none"
+            maxLength={128}
             style={{
               color: GAME_BOARD_COLORS.widgetText,
             }}
@@ -309,9 +300,9 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
           <button
             type="button"
             onClick={() => setShowStickers((value) => !value)}
-            className="absolute right-[3px] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
-            style={{
-              backgroundColor: showStickers ? GAME_BOARD_COLORS.widgetHeader : 'transparent',
+          className="absolute right-[3px] top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
+          style={{
+              backgroundColor: showStickers ? GAME_BOARD_COLORS.widgetHeader : GAME_BOARD_COLORS.widgetSurfaceAlt,
               color: showStickers ? GAME_BOARD_COLORS.widgetHeaderText : GAME_BOARD_COLORS.widgetText,
             }}
             title="Stickers"

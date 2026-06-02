@@ -73,13 +73,13 @@ function getCornerText(corner: CornerVariant | undefined) {
 function getSpecialText(space: BoardSpace) {
   switch (space.type) {
     case SpaceType.CHANCE:
-      return { eyebrow: 'Chance', title: 'Draw a chance card.', value: 'DRAW' };
+      return 'Draw a chance card';
     case SpaceType.CHEST:
-      return { eyebrow: 'Community', title: 'Open the community chest.', value: 'DRAW' };
+      return 'Open the community chest';
     case SpaceType.TAX:
-      return { eyebrow: 'Tax', title: 'Pay the listed amount.', value: `$${space.price ?? 0}` };
+      return `Pay the listed amount ($${space.price ?? 0})`;
     default:
-      return { eyebrow: 'Status', title: 'Field details unavailable.', value: '--' };
+      return 'Board space information';
   }
 }
 
@@ -89,8 +89,9 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
   const headlineRent = deed?.rentRows[0]?.amount ?? (space.price != null ? `M${space.price}` : null);
   const cornerText = space.type === SpaceType.CORNER ? getCornerText(space.corner) : null;
   const specialText = !isDeed && !cornerText ? getSpecialText(space) : null;
+  const isSpecialCard = Boolean(specialText);
   const showActions = isDeed && space.price != null;
-  const nonDeedTitle = cornerText?.title ?? specialText?.title ?? 'Board space information.';
+  const nonDeedTitle = cornerText?.title ?? specialText ?? 'Board space information.';
 
   return (
     <section
@@ -120,21 +121,24 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
       <div
         className="grid min-h-0 rounded-[10px] border px-3 py-3"
         style={{
-          gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : 'auto 1fr',
+          gridTemplateRows:
+            isDeed && deed ? 'auto auto minmax(0,1fr)' : isSpecialCard ? '1fr' : 'auto 1fr',
           backgroundColor: GAME_BOARD_COLORS.deedBody,
           borderColor: GAME_BOARD_COLORS.deedRule,
         }}
       >
-        <div className="text-center">
-          <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.widgetText }}>
-            {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? specialText?.eyebrow ?? 'Status'}
-          </p>
-          <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
-            {isDeed && headlineRent
-              ? `$${headlineRent.replace(/^M/, '')}`
-              : cornerText?.value ?? specialText?.value ?? '--'}
-          </p>
-        </div>
+        {!isSpecialCard && (
+          <div className="text-center">
+            <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.widgetText }}>
+              {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? 'Status'}
+            </p>
+            <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
+              {isDeed && headlineRent
+                ? `$${headlineRent.replace(/^M/, '')}`
+                : cornerText?.value ?? '--'}
+            </p>
+          </div>
+        )}
 
         {isDeed && deed ? (
           <div
@@ -168,7 +172,12 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-center">
-            <p className="max-w-[16ch] text-sm font-medium leading-snug">{nonDeedTitle}</p>
+            <p
+              className="max-w-[18ch] text-lg font-black leading-tight"
+              style={{ color: cornerText ? GAME_BOARD_COLORS.priceText : GAME_BOARD_COLORS.widgetText }}
+            >
+              {nonDeedTitle}
+            </p>
           </div>
         )}
       </div>

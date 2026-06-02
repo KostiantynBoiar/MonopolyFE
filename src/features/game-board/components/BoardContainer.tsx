@@ -43,22 +43,7 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
 
 function ActionPanel() {
   return (
-    <section
-      className="grid h-full min-h-0 grid-cols-2 grid-rows-[auto_1fr_1fr] gap-[6px] rounded-[16px] border p-[8px]"
-      style={{
-        backgroundColor: GAME_BOARD_COLORS.widgetSurface,
-        borderColor: GAME_BOARD_COLORS.widgetBorder,
-      }}
-    >
-      <div className="col-span-2 px-1 pb-1 text-left">
-        <p
-          className="font-display text-[11px] font-semibold uppercase tracking-[0.22em]"
-          style={{ color: GAME_BOARD_COLORS.widgetMuted }}
-        >
-          Actions
-        </p>
-      </div>
-
+    <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.15fr_1fr_1fr] gap-[3px]">
       <button
         type="button"
         className="col-span-2 rounded-[12px] border px-3 py-3 text-sm font-black uppercase tracking-[0.12em]"
