@@ -43,15 +43,20 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
 
 function ActionPanel() {
   return (
-    <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.15fr_1fr_1fr] gap-[6px]">
+    <section
+      className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.15fr_1fr_1fr] gap-[6px] rounded-[16px] border p-[6px]"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.widgetSurface,
+        borderColor: GAME_BOARD_COLORS.widgetBorder,
+      }}
+    >
       <button
         type="button"
-        className="col-span-2 rounded-[16px] border px-3 py-2 text-base font-black uppercase tracking-[0.04em]"
+        className="col-span-2 rounded-[12px] border px-3 py-2 text-base font-black uppercase tracking-[0.04em]"
         style={{
-          background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.actionPrimary} 0%, ${GAME_BOARD_COLORS.actionPrimaryDark} 100%)`,
+          backgroundColor: GAME_BOARD_COLORS.actionPrimary,
           borderColor: GAME_BOARD_COLORS.actionPrimaryBorder,
-          color: GAME_BOARD_COLORS.actionSecondaryText,
-          boxShadow: '0 3px 0 rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.45)',
+          color: GAME_BOARD_COLORS.widgetAccentText,
         }}
       >
         <span className="flex items-center justify-center gap-2">
@@ -64,12 +69,11 @@ function ActionPanel() {
         <button
           key={action.id}
           type="button"
-          className="rounded-[16px] border px-2 py-2 text-[13px] font-bold"
+          className="rounded-[12px] border px-2 py-2 text-[13px] font-bold"
           style={{
-            background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.actionSecondary} 0%, #efe7de 100%)`,
+            backgroundColor: GAME_BOARD_COLORS.actionSecondary,
             borderColor: GAME_BOARD_COLORS.actionSecondaryBorder,
             color: GAME_BOARD_COLORS.actionSecondaryText,
-            boxShadow: '0 2px 0 rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.72)',
           }}
         >
           <span className="flex items-center justify-center gap-1.5">
@@ -87,7 +91,10 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
   const selectedSpace = BOARD[selectedPos] ?? BOARD[0];
 
   return (
-    <div className="flex h-screen w-full items-center justify-center p-[4px]">
+    <div
+      className="flex h-screen w-full items-center justify-center p-[4px]"
+      style={{ backgroundColor: GAME_BOARD_COLORS.boardFrame }}
+    >
       <section
         className="grid h-full w-full gap-[4px] overflow-hidden lg:grid-cols-[minmax(0,1fr)_320px]"
         aria-label="Tycoon board"
@@ -133,16 +140,10 @@ export function BoardContainer({ centerContent }: BoardContainerProps) {
                   gridRow: '2 / 11',
                   margin: '4px',
                   borderRadius: '12px',
-                  backgroundColor: GAME_BOARD_COLORS.boardCenter,
+                  backgroundColor: '#211c2f',
                   color: GAME_BOARD_COLORS.boardCenterText,
                 }}
               >
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    background: `radial-gradient(circle at top, ${GAME_BOARD_COLORS.boardCenterGlow}, transparent 58%)`,
-                  }}
-                />
                 <div className="relative z-10 grid h-full w-full grid-cols-6 grid-rows-5 gap-[4px] p-[4px]">
                   <div className="col-span-2 row-span-2 min-h-0">
                     <DiceWindow diceRoll={MOCK_DICE_ROLL} />

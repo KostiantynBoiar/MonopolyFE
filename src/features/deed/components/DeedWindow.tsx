@@ -90,41 +90,41 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
   const cornerText = space.type === SpaceType.CORNER ? getCornerText(space.corner) : null;
   const specialText = !isDeed && !cornerText ? getSpecialText(space) : null;
   const showActions = isDeed && space.price != null;
+  const nonDeedTitle = cornerText?.title ?? specialText?.title ?? 'Board space information.';
 
   return (
     <section
-      className="grid h-full min-h-0 grid-rows-[auto_auto_1fr_auto] overflow-hidden rounded-[18px] border p-[3px]"
+      className="grid h-full min-h-0 overflow-hidden rounded-[16px] border p-[6px]"
       style={{
+        gridTemplateRows: isDeed
+          ? (showActions ? 'auto auto minmax(0,1fr) auto' : 'auto auto minmax(0,1fr)')
+          : 'auto minmax(0,1fr)',
         backgroundColor: GAME_BOARD_COLORS.deedShell,
         borderColor: GAME_BOARD_COLORS.deedShellBorder,
-        color: GAME_BOARD_COLORS.tileText,
-        boxShadow: `0 8px 18px ${GAME_BOARD_COLORS.boardShadow}`,
+        color: GAME_BOARD_COLORS.widgetText,
       }}
     >
       <div
-        className="relative overflow-hidden rounded-[14px] border px-3 py-2 text-center"
+        className="relative overflow-hidden rounded-[10px] border px-3 py-2 text-center"
         style={{
-          background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedRail} 0%, ${GAME_BOARD_COLORS.deedRailDark} 100%)`,
-          borderColor: '#6ea1ff',
-          color: GAME_BOARD_COLORS.boardCenterText,
+          backgroundColor: GAME_BOARD_COLORS.deedRail,
+          borderColor: GAME_BOARD_COLORS.deedRail,
+          color: GAME_BOARD_COLORS.widgetHeaderText,
         }}
       >
-        <div className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-lg opacity-35">🏠</div>
-        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-lg opacity-35">🏠</div>
-        <p className="font-display text-xl font-semibold uppercase tracking-[0.08em]">
+        <p className="font-display text-lg font-semibold uppercase tracking-[0.08em]">
           {space.name}
         </p>
       </div>
 
       <div
-        className="rounded-[12px] border px-3 py-2 text-center"
+        className="rounded-[10px] border px-3 py-2 text-center"
         style={{
           backgroundColor: GAME_BOARD_COLORS.deedBody,
           borderColor: GAME_BOARD_COLORS.deedRule,
-          boxShadow: `inset 0 1px 0 ${GAME_BOARD_COLORS.deedBodyInset}`,
         }}
       >
-        <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.tileText }}>
+        <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.widgetText }}>
           {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? specialText?.eyebrow ?? 'Status'}
         </p>
         <p className="mt-1 text-4xl font-black leading-none" style={{ color: '#141414' }}>
@@ -132,21 +132,16 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
             ? `$${headlineRent.replace(/^M/, '')}`
             : cornerText?.value ?? specialText?.value ?? '--'}
         </p>
-        {!isDeed && (
-          <p className="mt-2 text-sm font-medium" style={{ color: GAME_BOARD_COLORS.priceText }}>
-            {cornerText?.title ?? specialText?.title}
-          </p>
-        )}
       </div>
 
-      <div
-        className="min-h-0 overflow-hidden rounded-[12px] border px-3 py-2"
-        style={{
-          backgroundColor: GAME_BOARD_COLORS.deedBody,
-          borderColor: GAME_BOARD_COLORS.deedRule,
-        }}
-      >
-        {isDeed && deed ? (
+      {isDeed && deed ? (
+        <div
+          className="min-h-0 overflow-hidden rounded-[10px] border px-3 py-2"
+          style={{
+            backgroundColor: GAME_BOARD_COLORS.deedBody,
+            borderColor: GAME_BOARD_COLORS.deedRule,
+          }}
+        >
           <div className="grid gap-1.5">
             {deed.rentRows.slice(1).map((row) => (
               <div
@@ -161,9 +156,7 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
                   <span
                     className="block h-px min-w-8 flex-1"
                     style={{
-                      backgroundImage: `radial-gradient(circle, ${GAME_BOARD_COLORS.deedRule} 1px, transparent 1.5px)`,
-                      backgroundSize: '6px 1px',
-                      backgroundRepeat: 'repeat-x',
+                      backgroundColor: GAME_BOARD_COLORS.deedRule,
                     }}
                   />
                   <span className="shrink-0 font-bold">
@@ -173,68 +166,54 @@ export function DeedWindow({ space, onBuy, onAuction }: DeedWindowProps) {
               </div>
             ))}
           </div>
-        ) : (
-          <div className="grid gap-2 text-left text-[12px]" style={{ color: '#1e1e1e' }}>
-            <div className="rounded-[10px] border px-2 py-2" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
-              <p className="font-semibold" style={{ color: GAME_BOARD_COLORS.tileMuted }}>Type</p>
-              <p className="mt-1 font-bold uppercase">{space.type}</p>
-            </div>
-            {space.price != null && (
-              <div className="rounded-[10px] border px-2 py-2" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
-                <p className="font-semibold" style={{ color: GAME_BOARD_COLORS.tileMuted }}>Value</p>
-                <p className="mt-1 font-bold">${space.price}</p>
-              </div>
-            )}
-            <div className="rounded-[10px] border px-2 py-2" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
-              <p className="font-semibold" style={{ color: GAME_BOARD_COLORS.tileMuted }}>Status</p>
-              <p className="mt-1 font-medium">{cornerText?.title ?? specialText?.title ?? 'Board space information.'}</p>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div
+          className="flex h-full min-h-0 items-center justify-center rounded-[10px] border px-4 py-3 text-center"
+          style={{
+            backgroundColor: GAME_BOARD_COLORS.deedBody,
+            borderColor: GAME_BOARD_COLORS.deedRule,
+            color: GAME_BOARD_COLORS.priceText,
+          }}
+        >
+          <p className="max-w-[16ch] text-sm font-medium leading-snug">{nonDeedTitle}</p>
+        </div>
+      )}
 
-      <div
-        className="grid grid-cols-2 gap-3 rounded-[12px] border p-2"
-        style={{
-          backgroundColor: GAME_BOARD_COLORS.deedBody,
-          borderColor: GAME_BOARD_COLORS.deedRule,
-        }}
-      >
-        {showActions ? (
-          <>
-            <button
-              type="button"
-              onClick={onBuy}
-              className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
-              style={{
-                background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedBuy} 0%, ${GAME_BOARD_COLORS.deedBuyDark} 100%)`,
-                borderColor: '#69d27f',
-                color: '#f8fff9',
-                boxShadow: '0 2px 0 rgba(0,0,0,0.18)',
-              }}
-            >
-              Buy ${space.price}
-            </button>
-            <button
-              type="button"
-              onClick={onAuction}
-              className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
-              style={{
-                background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.deedAuction} 0%, #f2f2f2 100%)`,
-                borderColor: '#d6d6d6',
-                color: GAME_BOARD_COLORS.deedAuctionText,
-                boxShadow: '0 2px 0 rgba(0,0,0,0.14)',
-              }}
-            >
-              Auction
-            </button>
-          </>
-        ) : (
-          <div className="col-span-2 rounded-[12px] border px-3 py-2 text-center text-sm font-semibold" style={{ borderColor: GAME_BOARD_COLORS.deedRule }}>
-            No property action available here
-          </div>
-        )}
-      </div>
+      {showActions && (
+        <div
+          className="grid grid-cols-2 gap-3 rounded-[10px] border p-2"
+          style={{
+            backgroundColor: GAME_BOARD_COLORS.deedBody,
+            borderColor: GAME_BOARD_COLORS.deedRule,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onBuy}
+            className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
+            style={{
+              backgroundColor: GAME_BOARD_COLORS.widgetSuccess,
+              borderColor: GAME_BOARD_COLORS.widgetSuccess,
+              color: GAME_BOARD_COLORS.widgetSuccessText,
+            }}
+          >
+            Buy ${space.price}
+          </button>
+          <button
+            type="button"
+            onClick={onAuction}
+            className="rounded-[12px] border px-3 py-2 text-sm font-black uppercase tracking-[0.04em]"
+            style={{
+              backgroundColor: GAME_BOARD_COLORS.widgetNeutral,
+              borderColor: GAME_BOARD_COLORS.widgetBorder,
+              color: GAME_BOARD_COLORS.widgetNeutralText,
+            }}
+          >
+            Auction
+          </button>
+        </div>
+      )}
     </section>
   );
 }

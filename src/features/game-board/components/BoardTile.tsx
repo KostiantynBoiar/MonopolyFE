@@ -5,6 +5,8 @@ import type { BoardTileProps } from '../game-board.types';
 import { CORNER_COLOR_MAP, GAME_BOARD_COLORS, PROPERTY_COLOR_MAP, SPACE_SURFACE_MAP, SPACE_SYMBOL_MAP } from '../game-board.colors';
 import { cn } from '@/shared/lib/cn';
 
+const PROPERTY_HEADER_RATIO = 1.25;
+
 const EDGE_CONTENT: Record<TileEdge, string> = {
   [TileEdge.BOTTOM]: 'flex-col',
   [TileEdge.TOP]: 'flex-col-reverse',
@@ -32,13 +34,13 @@ function getHeaderStyle(edge: TileEdge, color: string) {
   if (edge === TileEdge.LEFT || edge === TileEdge.RIGHT) {
     return {
       backgroundColor: color,
-      width: 'calc(var(--board-edge-depth) * 0.25)',
+      width: `calc(var(--board-edge-depth) * ${PROPERTY_HEADER_RATIO})`,
     };
   }
 
   return {
     backgroundColor: color,
-    height: 'calc(var(--board-edge-depth) * 0.25)',
+    height: `calc(var(--board-edge-depth) * ${PROPERTY_HEADER_RATIO})`,
   };
 }
 
@@ -48,7 +50,7 @@ function getTilePadding() {
 
 function getContentPadding(edge: TileEdge, hasHeader: boolean) {
   const base = getTilePadding();
-  const header = 'calc(var(--board-edge-depth) * 0.25)';
+  const header = `calc(var(--board-edge-depth) * ${PROPERTY_HEADER_RATIO})`;
   const padded = `calc(${base} + ${header})`;
 
   if (!hasHeader) {
@@ -98,7 +100,6 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
           backgroundColor: GAME_BOARD_COLORS.tileSurface,
           borderColor: GAME_BOARD_COLORS.tileBorder,
           color: GAME_BOARD_COLORS.tileText,
-          boxShadow: `0 10px 18px ${GAME_BOARD_COLORS.boardShadow}`,
           padding: getTilePadding(),
         }}
       >
@@ -143,12 +144,11 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
   if (flavor === BoardTileFlavor.SPECIAL) {
     return (
       <article
-        className="flex h-full w-full flex-col items-start justify-between rounded-[12px] border shadow-sm"
+        className="flex h-full w-full flex-col items-center justify-center rounded-[12px] border text-center shadow-sm"
         style={{
           backgroundColor: SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.specialSurface,
           borderColor: GAME_BOARD_COLORS.specialBorder,
           color: GAME_BOARD_COLORS.tileText,
-          boxShadow: `0 8px 14px ${GAME_BOARD_COLORS.boardShadow}`,
           padding: getTilePadding(),
         }}
       >
@@ -158,19 +158,19 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
         >
           {SPACE_SYMBOL_MAP[space.type]}
         </span>
-        <div>
+        <div className="mt-1 min-w-0 px-1 py-1 text-center">
           <h3
-            className="font-display font-semibold uppercase leading-tight"
-            style={{ fontSize: 'clamp(10px, calc(var(--board-tile-width) * 0.18), 14px)' }}
+            className="break-words font-display font-bold uppercase leading-[1.05]"
+            style={{ fontSize: 'clamp(12px, calc(var(--board-tile-width) * 0.23), 17px)' }}
           >
             {space.name}
           </h3>
           {space.price != null && (
             <p
-              className="mt-1 font-medium"
+              className="mt-1 font-extrabold"
               style={{
                 color: GAME_BOARD_COLORS.priceText,
-                fontSize: 'clamp(9px, calc(var(--board-tile-width) * 0.16), 12px)',
+                fontSize: 'clamp(10px, calc(var(--board-tile-width) * 0.18), 13px)',
               }}
             >
               Pay ${space.price}
@@ -194,7 +194,6 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
         backgroundColor: surface,
         borderColor: GAME_BOARD_COLORS.tileBorder,
         color: GAME_BOARD_COLORS.tileText,
-        boxShadow: `0 8px 14px ${GAME_BOARD_COLORS.boardShadow}`,
       }}
     >
       {propertyColor && (
@@ -207,19 +206,19 @@ export function BoardTile({ space, edge, flavor }: BoardTileProps) {
         className={cn('flex min-w-0 flex-1 justify-between', EDGE_CONTENT[edge])}
         style={getContentPadding(edge, !!propertyColor)}
       >
-        <div className="min-w-0">
+        <div className={cn('min-w-0 px-1 py-1', edge === TileEdge.BOTTOM && 'translate-y-[3px]')}>
           <h3
-            className="font-display font-semibold uppercase leading-tight"
-            style={{ fontSize: 'clamp(9px, calc(var(--board-tile-width) * 0.16), 12px)' }}
+            className="break-words font-display font-bold uppercase leading-[1.05]"
+            style={{ fontSize: 'clamp(11px, calc(var(--board-tile-width) * 0.21), 15px)' }}
           >
             {space.name}
           </h3>
           {space.price != null && (
             <p
-              className="mt-1 font-medium"
+              className="mt-1 font-extrabold"
               style={{
                 color: GAME_BOARD_COLORS.priceText,
-                fontSize: 'clamp(8px, calc(var(--board-tile-width) * 0.14), 11px)',
+                fontSize: 'clamp(10px, calc(var(--board-tile-width) * 0.17), 13px)',
               }}
             >
               ${space.price}

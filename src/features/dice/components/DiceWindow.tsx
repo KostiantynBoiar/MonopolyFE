@@ -22,9 +22,8 @@ function DieFace({ value, tilt }: { value: number; tilt: string }) {
     <div
       className="relative aspect-square w-full max-w-[72px] rounded-[18px] border"
       style={{
-        background: `linear-gradient(180deg, ${GAME_BOARD_COLORS.diceGlow} 0%, ${GAME_BOARD_COLORS.diceDieFace} 26%, ${GAME_BOARD_COLORS.diceDieFace} 100%)`,
+        backgroundColor: GAME_BOARD_COLORS.diceDieFace,
         borderColor: GAME_BOARD_COLORS.diceDieEdge,
-        boxShadow: `0 10px 18px ${GAME_BOARD_COLORS.diceShadow}, inset 0 2px 0 ${GAME_BOARD_COLORS.diceGlow}`,
         transform: tilt,
       }}
     >
@@ -36,7 +35,6 @@ function DieFace({ value, tilt }: { value: number; tilt: string }) {
             top: `${row * 25}%`,
             left: `${col * 25}%`,
             backgroundColor: GAME_BOARD_COLORS.dicePip,
-            boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.22)',
           }}
         />
       ))}
@@ -52,33 +50,33 @@ export function DiceWindow({ diceRoll }: DiceWindowProps) {
 
   return (
     <section
-      className="relative grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-[18px] border px-3 py-2"
+      className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-[16px] border p-[6px]"
       style={{
-        background: GAME_BOARD_COLORS.dicePanelSurface,
+        backgroundColor: GAME_BOARD_COLORS.dicePanelSurface,
         borderColor: GAME_BOARD_COLORS.dicePanelBorder,
         color: GAME_BOARD_COLORS.dicePanelText,
-        boxShadow: `0 10px 20px ${GAME_BOARD_COLORS.diceShadow}, inset 0 1px 0 ${GAME_BOARD_COLORS.dicePanelInset}`,
       }}
     >
       <div
-        className="pointer-events-none absolute inset-0"
+        className="rounded-[10px] border px-3 py-1.5 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
         style={{
-          background: `radial-gradient(circle at top, ${GAME_BOARD_COLORS.diceGlow}, transparent 60%)`,
+          backgroundColor: GAME_BOARD_COLORS.widgetHeader,
+          borderColor: GAME_BOARD_COLORS.widgetHeader,
+          color: GAME_BOARD_COLORS.widgetHeaderText,
         }}
-      />
-      <p
-        className="relative text-center font-display text-[12px] font-semibold uppercase tracking-[0.18em]"
-        style={{ color: GAME_BOARD_COLORS.dicePanelText }}
       >
         Dice
-      </p>
+      </div>
 
-      <div className="relative grid min-h-0 grid-cols-2 place-items-center gap-3 py-2">
+      <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-3">
         <DieFace value={die1} tilt="rotate(-12deg)" />
         <DieFace value={die2} tilt="rotate(14deg)" />
       </div>
 
-      <div className="relative flex flex-col items-center gap-1 text-[12px]">
+      <div className="flex flex-col items-center gap-1 rounded-[10px] border px-2 py-2 text-[12px]" style={{
+        backgroundColor: GAME_BOARD_COLORS.widgetSurfaceAlt,
+        borderColor: GAME_BOARD_COLORS.widgetBorder,
+      }}>
         <span className="text-xl font-semibold" style={{ color: GAME_BOARD_COLORS.dicePanelText }}>
           Total: {total}
         </span>
@@ -87,7 +85,6 @@ export function DiceWindow({ diceRoll }: DiceWindowProps) {
           style={{
             backgroundColor: GAME_BOARD_COLORS.diceStatus,
             color: GAME_BOARD_COLORS.diceStatusText,
-            boxShadow: `inset 0 1px 0 ${GAME_BOARD_COLORS.diceGlow}`,
           }}
         >
           {isDoubles ? 'Doubles' : 'No doubles'}

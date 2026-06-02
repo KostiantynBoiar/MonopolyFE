@@ -20,7 +20,6 @@ export function ChatLog({ log }: ChatLogProps) {
         backgroundColor: GAME_BOARD_COLORS.tileSurface,
         borderColor: GAME_BOARD_COLORS.tileBorder,
         color: GAME_BOARD_COLORS.tileText,
-        boxShadow: `0 8px 18px ${GAME_BOARD_COLORS.boardShadow}`,
       }}
     >
       <div
