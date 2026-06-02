@@ -12,7 +12,7 @@ import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { BOARD, getGridPos, getTileEdge } from '../board-data';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
-import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '../game-board.colors';
+import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
 import { BoardTile } from './BoardTile';
 
 const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
@@ -94,11 +94,11 @@ function rollDie() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function getOwnedPropertyNames(playerId: string, spaces: typeof MOCK_SPACES) {
+function getOwnedProperties(playerId: string, spaces: typeof MOCK_SPACES) {
   return spaces
     .filter((space) => space.ownerId === playerId)
-    .map((space) => BOARD.find((boardSpace) => boardSpace.pos === space.position)?.name)
-    .filter((name): name is string => Boolean(name));
+    .map((space) => BOARD.find((boardSpace) => boardSpace.pos === space.position))
+    .filter((space): space is NonNullable<typeof space> => Boolean(space));
 }
 
 interface PlayerPanelProps {
@@ -136,7 +136,7 @@ function PlayerPanel({ currentPlayerId, spaces }: PlayerPanelProps) {
 
       <div className="grid min-h-0 gap-3">
         {MOCK_PANEL_PLAYERS.map((player) => {
-          const ownedProperties = getOwnedPropertyNames(player.id, spaces);
+          const ownedProperties = getOwnedProperties(player.id, spaces);
           const isCurrent = player.id === currentPlayerId;
 
           return (
@@ -184,23 +184,22 @@ function PlayerPanel({ currentPlayerId, spaces }: PlayerPanelProps) {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-6 gap-1" aria-label={`${player.displayName} owned properties`}>
                 {ownedProperties.length > 0 ? (
-                  ownedProperties.slice(0, 4).map((property) => (
+                  ownedProperties.slice(0, 12).map((property) => (
                     <span
-                      key={property}
-                      className="max-w-full truncate rounded-[8px] border px-2 py-1 text-[11px] font-semibold leading-none"
+                      key={property.pos}
+                      className="aspect-square rounded-[5px] border"
                       style={{
-                        backgroundColor: GAME_BOARD_COLORS.tile,
-                        borderColor: GAME_BOARD_COLORS.border,
-                        color: GAME_BOARD_COLORS.tileText,
+                        backgroundColor: getSpaceHeaderColor(property),
+                        borderColor: BOARD_TILE_COLORS.altText,
+                        boxShadow: '0 1px 3px rgba(0,0,0,.22)',
                       }}
-                    >
-                      {property}
-                    </span>
+                      title={property.name}
+                    />
                   ))
                 ) : (
-                  <span className="text-[11px] font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
+                  <span className="col-span-6 text-[11px] font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
                     No properties
                   </span>
                 )}

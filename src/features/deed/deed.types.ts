@@ -2,7 +2,6 @@ import type { PropertyColor } from '@/features/game-board';
 import type { DeedSpaceType } from './deed.enums';
 
 export interface RentRow {
-  /** Translation key within the `Deed.rent` namespace (e.g. `'base'`, `'house1'`). */
   labelKey: string;
   amount: string;
 }

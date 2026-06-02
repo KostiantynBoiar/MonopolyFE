@@ -43,7 +43,7 @@ export function BuildingsMarker({ ownership, edge }: BuildingsMarkerProps) {
           className="leading-none"
           style={{
             fontSize: 'clamp(18px, calc(var(--board-tile-width) * 0.28), 28px)',
-            filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.38))',
+            filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.7)) drop-shadow(0 0 3px rgba(255,255,255,.75))',
           }}
         >
           🏨
@@ -55,7 +55,7 @@ export function BuildingsMarker({ ownership, edge }: BuildingsMarkerProps) {
             className="leading-none"
             style={{
               fontSize: 'clamp(14px, calc(var(--board-tile-width) * 0.22), 22px)',
-              filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.34))',
+              filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.68)) drop-shadow(0 0 3px rgba(255,255,255,.7))',
             }}
           >
             🏠
