@@ -86,7 +86,7 @@ function BalanceDelta({
   const isGain = entry.amount > 0;
   return (
     <span
-      className="pointer-events-none absolute left-0 top-0 animate-balance-delta whitespace-nowrap font-mono text-xs font-black"
+      className="pointer-events-none animate-balance-delta whitespace-nowrap font-mono text-xs font-black"
       style={{ color: isGain ? BOARD_TILE_COLORS.propertyGreen : BOARD_TILE_COLORS.propertyRed }}
       onAnimationEnd={onDone}
     >
@@ -190,21 +190,22 @@ export function PlayerPanel({ players }: PlayerPanelProps) {
                     )}
                   </div>
 
-                  {/* Balance row with animated delta */}
-                  <div className="relative mt-1 flex items-baseline gap-2">
+                  {/* Balance row */}
+                  <div className="mt-1 flex items-baseline gap-1.5">
                     <p
                       className="font-mono text-sm font-bold tabular-nums"
                       style={{ color: GAME_BOARD_COLORS.text }}
                     >
                       ${player.balance.toLocaleString()}
                     </p>
-                    <p className="font-mono text-[10px] tabular-nums" style={{ color: GAME_BOARD_COLORS.muted }}>
-                      net ~${netWorth.toLocaleString()}
-                    </p>
                     {delta && (
                       <BalanceDelta key={delta.id} entry={delta} onDone={() => clearDelta(player.id)} />
                     )}
                   </div>
+                  {/* Net worth */}
+                  <p className="font-mono text-[10px] tabular-nums" style={{ color: GAME_BOARD_COLORS.muted }}>
+                    net ~${netWorth.toLocaleString()}
+                  </p>
                 </div>
               </div>
 
