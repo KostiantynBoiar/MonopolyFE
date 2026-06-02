@@ -46,7 +46,7 @@ function DieFace({
         animation: rolling
           ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} 760ms cubic-bezier(.16,.84,.28,1)`
           : undefined,
-        background: `${DIE_BG}, #1a2340`,
+        background: `${DIE_BG}, ${BOARD_TILE_COLORS.propertyRed}`,
         borderColor: 'rgba(255,255,255,0.10)',
         boxShadow: rolling
           ? '0 12px 0 rgba(0,0,0,0.35), 0 20px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18)'

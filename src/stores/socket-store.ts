@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { SocketStatus } from '@/shared/socket/GameSocket';
 import type { WsErrorPayload } from '@/shared/protocol/messages.schema';
 
@@ -43,16 +44,24 @@ const INITIAL: Pick<SocketStore,
   messages:          [],
 };
 
-export const useSocketStore = create<SocketStore>((set) => ({
-  ...INITIAL,
+export const useSocketStore = create<SocketStore>()(
+  persist(
+    (set) => ({
+      ...INITIAL,
 
-  setStatus:          (status) => set({ status }),
-  setLatency:         (ms)     => set({ latency: ms }),
-  incrementReconnect: ()       => set((s) => ({ reconnectAttempts: s.reconnectAttempts + 1 })),
-  resetReconnect:     ()       => set({ reconnectAttempts: 0 }),
-  setWsError:         (err)    => set({ wsError: err }),
-  clearWsError:       ()       => set({ wsError: null }),
-  setWasKicked:       (kicked) => set({ wasKicked: kicked }),
-  addMessage:         (msg)    => set((s) => ({ messages: [...s.messages, msg] })),
-  reset:              ()       => set({ ...INITIAL }),
-}));
+      setStatus:          (status) => set({ status }),
+      setLatency:         (ms)     => set({ latency: ms }),
+      incrementReconnect: ()       => set((s) => ({ reconnectAttempts: s.reconnectAttempts + 1 })),
+      resetReconnect:     ()       => set({ reconnectAttempts: 0 }),
+      setWsError:         (err)    => set({ wsError: err }),
+      clearWsError:       ()       => set({ wsError: null }),
+      setWasKicked:       (kicked) => set({ wasKicked: kicked }),
+      addMessage:         (msg)    => set((s) => ({ messages: [...s.messages, msg] })),
+      reset:              ()       => set({ ...INITIAL }),
+    }),
+    {
+      name: 'tycoon-chat',
+      partialize: (s) => ({ messages: s.messages }),
+    },
+  ),
+);

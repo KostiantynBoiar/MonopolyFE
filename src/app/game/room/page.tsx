@@ -376,6 +376,20 @@ export default function GameRoomPage() {
     [socketMessages],
   );
 
+  const gameChatMessages = useMemo(
+    () =>
+      socketMessages
+        .filter((message) => message.from_user_id !== user?.id)
+        .map((message) => ({
+          id: message.id,
+          kind: 'chat' as const,
+          author: message.display_name,
+          text: message.kind === 'sticker' ? `[sticker:${message.sticker_url}]` : message.text,
+          ts: Date.parse(message.ts),
+        })),
+    [socketMessages, user?.id],
+  );
+
   const diceRoll = animatedDiceRoll ?? game.turn.diceRoll;
   const activeCard = activeAnimationCard ?? game.activeCard;
   const pendingBuyPosition = game.turn.pendingBuyPosition;
@@ -493,6 +507,33 @@ export default function GameRoomPage() {
       );
     }
 
+    if (game.turn.phase === TurnPhase.JAIL_DECISION && viewerPlayer?.jailStatus) {
+      return (
+        <JailOverlay
+          attempts={viewerPlayer.jailStatus.attempts}
+          canPayFine={permissions.canPayJailFine}
+          canUseCard={permissions.canUseJailCard}
+          canRoll={permissions.canRollInJail && !isRolling}
+          diceRoll={diceRoll}
+          isRolling={isRolling}
+          onPayFine={() => dispatchCommand(CommandType.PayJailFine)}
+          onUseCard={() => dispatchCommand(CommandType.UseJailCard)}
+          onRoll={handleRoll}
+        />
+      );
+    }
+
+    return (
+      <ChatWindow
+        log={game.log}
+        externalMessages={gameChatMessages}
+        onSendMessage={sendChat}
+        onSendSticker={sendSticker}
+      />
+    );
+  }
+
+  function renderFullCenterOverlay() {
     if (
       game.trade &&
       game.trade.status === TradeStatus.PENDING &&
@@ -508,22 +549,6 @@ export default function GameRoomPage() {
           onAccept={() => dispatch({ type: CommandType.AcceptTrade, tradeId: game.trade!.id })}
           onReject={() => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id })}
           onCancel={() => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id })}
-        />
-      );
-    }
-
-    if (game.turn.phase === TurnPhase.JAIL_DECISION && viewerPlayer?.jailStatus) {
-      return (
-        <JailOverlay
-          attempts={viewerPlayer.jailStatus.attempts}
-          canPayFine={permissions.canPayJailFine}
-          canUseCard={permissions.canUseJailCard}
-          canRoll={permissions.canRollInJail && !isRolling}
-          diceRoll={diceRoll}
-          isRolling={isRolling}
-          onPayFine={() => dispatchCommand(CommandType.PayJailFine)}
-          onUseCard={() => dispatchCommand(CommandType.UseJailCard)}
-          onRoll={handleRoll}
         />
       );
     }
@@ -563,76 +588,80 @@ export default function GameRoomPage() {
       );
     }
 
-    return (
-      <ChatWindow
-        log={game.log}
-        onSendMessage={sendChat}
-        onSendSticker={sendSticker}
-      />
-    );
+    return null;
   }
 
   function renderGameCenter() {
+    const fullOverlay = renderFullCenterOverlay();
+
     return (
-      <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[6px]">
-        <div className="col-span-2 row-span-2 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
-          <DiceWindow diceRoll={diceRoll} rollId={animatedDiceRollId} />
-        </div>
-
-        <section className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-cols-3 gap-[6px]">
-          <button
-            type="button"
-            onClick={handleRoll}
-            disabled={!canRoll}
-            className="col-span-2 rounded-[12px] border border-green bg-green px-3 py-2 font-display text-xl font-black uppercase tracking-[0.12em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-          >
-            {isRolling ? 'Rolling' : 'Roll'}
-          </button>
-          <button
-            type="button"
-            onClick={() => dispatchCommand(CommandType.EndTurn)}
-            disabled={!permissions.canEndTurn}
-            className="rounded-[12px] border border-red bg-red px-3 py-2 font-display text-sm font-black uppercase tracking-[0.1em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-          >
-            End turn
-          </button>
-          <button
-            type="button"
-            onClick={() => setCenterOverlay('manage')}
-            disabled={!canManage}
-            className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
-          >
-            Manage
-          </button>
-          <button
-            type="button"
-            onClick={() => setCenterOverlay('trade-builder')}
-            disabled={!permissions.canTrade || !tradeBuilderData?.others.length}
-            className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
-          >
-            Trade
-          </button>
-          <div className="flex min-w-0 items-center justify-center rounded-[12px] border border-line bg-surface px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-            {isViewerTurn ? 'Your turn' : `Round ${game.turn.roundNumber}`}
+      <div className="relative h-full w-full">
+        <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[6px]">
+          <div className="col-span-2 row-span-2 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
+            <DiceWindow diceRoll={diceRoll} rollId={animatedDiceRollId} />
           </div>
-        </section>
 
-        <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
-          {renderCenterPanel()}
+          <section className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-cols-3 gap-[6px]">
+            <button
+              type="button"
+              onClick={handleRoll}
+              disabled={!canRoll}
+              className="col-span-2 rounded-[12px] border border-green bg-green px-3 py-2 font-display text-xl font-black uppercase tracking-[0.12em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+            >
+              {isRolling ? 'Rolling' : 'Roll'}
+            </button>
+            <button
+              type="button"
+              onClick={() => dispatchCommand(CommandType.EndTurn)}
+              disabled={!permissions.canEndTurn}
+              className="rounded-[12px] border border-red bg-red px-3 py-2 font-display text-sm font-black uppercase tracking-[0.1em] text-white transition-opacity disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
+            >
+              End turn
+            </button>
+            <button
+              type="button"
+              onClick={() => setCenterOverlay('manage')}
+              disabled={!canManage}
+              className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
+            >
+              Manage
+            </button>
+            <button
+              type="button"
+              onClick={() => setCenterOverlay('trade-builder')}
+              disabled={!permissions.canTrade || !tradeBuilderData?.others.length}
+              className="rounded-[12px] border border-line bg-surface px-3 py-2 text-sm font-bold uppercase tracking-[0.08em] text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:text-muted"
+            >
+              Trade
+            </button>
+            <div className="flex min-w-0 items-center justify-center rounded-[12px] border border-line bg-surface px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+              {isViewerTurn ? 'Your turn' : `Round ${game.turn.roundNumber}`}
+            </div>
+          </section>
+
+          <div className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0 overflow-hidden rounded-[12px] border border-line bg-surface">
+            {renderCenterPanel()}
+          </div>
+
+          <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0 overflow-hidden">
+            {pendingBuySpace ? (
+              <DeedWindow
+                space={pendingBuySpace}
+                decisionSpace={pendingBuySpace}
+                onBuy={handleBuy}
+                onAuction={handlePassBuy}
+              />
+            ) : (
+              <DeedWindow space={BOARD[viewerPlayer?.position ?? 0] ?? BOARD[0]} viewOnly />
+            )}
+          </div>
         </div>
 
-        <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0 overflow-hidden">
-          {pendingBuySpace ? (
-            <DeedWindow
-              space={pendingBuySpace}
-              decisionSpace={pendingBuySpace}
-              onBuy={handleBuy}
-              onAuction={handlePassBuy}
-            />
-          ) : (
-            <DeedWindow space={BOARD[viewerPlayer?.position ?? 0] ?? BOARD[0]} viewOnly />
-          )}
-        </div>
+        {fullOverlay && (
+          <div className="absolute inset-[6px] z-10 overflow-hidden rounded-[12px] border border-line bg-surface">
+            {fullOverlay}
+          </div>
+        )}
       </div>
     );
   }

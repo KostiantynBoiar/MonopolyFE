@@ -28,6 +28,7 @@ export interface ChatLogProps {
 export interface ChatWindowProps {
   log: LogEntry[];
   initialMessages?: ChatMessage[];
+  externalMessages?: ChatMessage[];
   onSendMessage?: (text: string) => void;
   onSendSticker?: (url: string) => void;
 }

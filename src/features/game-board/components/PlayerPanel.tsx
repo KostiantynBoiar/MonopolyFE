@@ -51,7 +51,7 @@ function PlayerAvatar({ player }: { player: Player }) {
         boxShadow: '0 2px 6px rgba(0,0,0,.22)',
       }}
     >
-      {player.id.replace(/\D/g, '') || player.name.slice(0, 1)}
+      {player.name.slice(0, 1)}
     </span>
   );
 }

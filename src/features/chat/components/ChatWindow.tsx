@@ -64,7 +64,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
   );
 }
 
-export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSticker }: ChatWindowProps) {
+export function ChatWindow({ log, initialMessages = [], externalMessages, onSendMessage, onSendSticker }: ChatWindowProps) {
   const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -79,6 +79,21 @@ export function ChatWindow({ log, initialMessages = [], onSendMessage, onSendSti
     [log],
   );
   const activePack = stickerPacks[packIndex];
+
+  useEffect(() => {
+    if (!externalMessages?.length) return;
+    setMessages((current) => {
+      const existingIds = new Set(current.map((m) => m.id));
+      const incoming = externalMessages.filter((m) => !existingIds.has(m.id));
+      if (!incoming.length) return current;
+      if (activeTab !== ChatWindowTab.CHAT) {
+        setUnreadCount((n) => n + incoming.length);
+      }
+      return [...current, ...incoming].sort((a, b) => a.ts - b.ts);
+    });
+  // externalMessages.length is the stable trigger — the array reference changes on every render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalMessages?.length]);
 
   useEffect(() => {
     if (activeTab === ChatWindowTab.CHAT) {
