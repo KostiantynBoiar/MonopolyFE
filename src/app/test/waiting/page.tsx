@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { BoardContainer } from '@/features/game-board';
-import { FloatingPlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
+import { TOKEN_COLORS } from '@/features/player-panel';
 import { WaitingCenterPanel, SessionStatus, SessionVisibility, MemberRole } from '@/features/lobby';
 import type { SessionDetail } from '@/features/lobby';
 import type { ChatMessage } from '@/features/chat/chat.types';
@@ -17,7 +17,7 @@ const MOCK_SESSION: SessionDetail = {
   status:       SessionStatus.WAITING,
   visibility:   SessionVisibility.PRIVATE,
   member_count: 3,
-  max_players:  8,
+  max_players:  16,
   host:         { id: 'u1', display_name: 'You (host)' },
   created_at:   new Date(Date.now() - 1000 * 60 * 3).toISOString(),
   members: [
@@ -33,7 +33,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   { id: 'm2', kind: 'chat', author: 'Dave',  token: TokenColor.GREEN, text: "Same, let's go 🎲",   ts: Date.now() - 1000 * 45 },
 ];
 
-// Players for FloatingPlayerSidebar (name + token label)
+// Players for BoardContainer sidebar (name + token label)
 const SIDEBAR_PLAYERS = MOCK_SESSION.members.map((m, i) => ({
   id:             m.user_id,
   name:           m.display_name,
@@ -75,10 +75,11 @@ export default function TestWaitingPage() {
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-paper">
-      <div className="flex-1 overflow-hidden p-4 md:pr-72">
+      <div className="flex-1 overflow-hidden">
         <BoardContainer
           players={BOARD_PLAYERS}
           spaces={[]}
+          sidebarPlayers={SIDEBAR_PLAYERS}
           centerContent={
             <WaitingCenterPanel
               session={MOCK_SESSION}
@@ -90,7 +91,6 @@ export default function TestWaitingPage() {
           }
         />
       </div>
-      <FloatingPlayerSidebar players={SIDEBAR_PLAYERS} />
     </div>
   );
 }

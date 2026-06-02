@@ -16,13 +16,3 @@ export interface DeedInfo {
   buildingCost?: number;
   mortgageValue: number;
 }
-
-export interface DeedCardProps {
-  deed: DeedInfo;
-  canBuy: boolean;
-  canManage: boolean;
-  onBuy: () => void;
-  onAuction: () => void;
-  onManage: () => void;
-  viewOnly?: boolean;
-}

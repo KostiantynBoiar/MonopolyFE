@@ -25,9 +25,10 @@ import { playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
-import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
+import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '../game-board.colors';
 import { useActionButtons } from '../hooks';
 import { BoardTile } from './BoardTile';
+import { PlayerPanel } from './PlayerPanel';
 
 const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
 const BOARD_ROWS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
@@ -170,150 +171,21 @@ function ActionPanel({ onRollDice, onAction, activeAction }: ActionPanelProps) {
   );
 }
 
-// ─── PlayerPanel ─────────────────────────────────────────────────────────────
+// ─── Dice helpers ────────────────────────────────────────────────────────────
 
 function rollDie() {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-function getOwnedProperties(playerId: string, spaces: typeof MOCK_SPACES) {
-  return spaces
-    .filter((space) => space.ownerId === playerId)
-    .map((space) => BOARD.find((boardSpace) => boardSpace.pos === space.position))
-    .filter((space): space is NonNullable<typeof space> => Boolean(space));
-}
-
-interface PlayerPanelProps {
-  currentPlayerId: string;
-  spaces: typeof MOCK_SPACES;
-}
-
-function PlayerPanel({ currentPlayerId, spaces }: PlayerPanelProps) {
-  const currentPlayer = MOCK_PANEL_PLAYERS.find((player) => player.id === currentPlayerId);
-
-  return (
-    <aside
-      className="flex min-h-[220px] flex-col gap-4 rounded-[18px] border p-4"
-      style={{
-        backgroundColor: GAME_BOARD_COLORS.panel,
-        borderColor: GAME_BOARD_COLORS.border,
-        color: GAME_BOARD_COLORS.text,
-      }}
-    >
-      <div
-        className="rounded-[14px] border px-3 py-3"
-        style={{
-          backgroundColor: BOARD_TILE_COLORS.propertyBlue,
-          borderColor: BOARD_TILE_COLORS.propertyBlue,
-          color: BOARD_TILE_COLORS.altText,
-        }}
-      >
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.22em]">
-          Current Turn
-        </p>
-        <p className="mt-1 truncate font-display text-2xl font-semibold">
-          {currentPlayer?.displayName ?? 'Unknown'}
-        </p>
-      </div>
-
-      <div className="grid min-h-0 gap-3">
-        {MOCK_PANEL_PLAYERS.map((player) => {
-          const ownedProperties = getOwnedProperties(player.id, spaces);
-          const isCurrent = player.id === currentPlayerId;
-
-          return (
-            <article
-              key={player.id}
-              className="grid gap-3 rounded-[14px] border px-3 py-3"
-              style={{
-                backgroundColor: isCurrent ? GAME_BOARD_COLORS.center : GAME_BOARD_COLORS.surface,
-                borderColor: isCurrent ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.border,
-                color: GAME_BOARD_COLORS.text,
-              }}
-            >
-              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-full border-2 font-mono text-sm font-black"
-                  style={{
-                    backgroundColor: TOKEN_COLORS[player.token],
-                    borderColor: BOARD_TILE_COLORS.altText,
-                    color: BOARD_TILE_COLORS.altText,
-                    boxShadow: '0 2px 6px rgba(0,0,0,.22)',
-                  }}
-                >
-                  {player.id.replace(/\D/g, '') || player.displayName.slice(0, 1)}
-                </span>
-                <div className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <p className="truncate font-display text-lg font-semibold leading-tight">
-                      {player.displayName}
-                    </p>
-                    {isCurrent && (
-                      <span
-                        className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] font-black uppercase tracking-[0.12em]"
-                        style={{
-                          backgroundColor: BOARD_TILE_COLORS.propertyBlue,
-                          color: BOARD_TILE_COLORS.altText,
-                        }}
-                      >
-                        Turn
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 font-mono text-xs font-semibold" style={{ color: GAME_BOARD_COLORS.muted }}>
-                    ${player.balance}
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(14, 1fr)', gap: '0.125rem' }} aria-label={`${player.displayName} owned properties`}>
-                {ownedProperties.length > 0 ? (
-                  ownedProperties.slice(0, 28).map((property) => (
-                    <span
-                      key={property.pos}
-                      className="aspect-square rounded-[3px] border"
-                      style={{
-                        backgroundColor: getSpaceHeaderColor(property),
-                        borderColor: BOARD_TILE_COLORS.altText,
-                        boxShadow: '0 0.5px 1.5px rgba(0,0,0,.22)',
-                      }}
-                      title={property.name}
-                    />
-                  ))
-                ) : (
-                  <span className="text-[11px] font-semibold" style={{ gridColumn: '1 / -1', color: GAME_BOARD_COLORS.muted }}>
-                    No properties
-                  </span>
-                )}
-              </div>
-            </article>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        className="mt-auto rounded-[14px] border px-4 py-3 text-sm font-black uppercase tracking-[0.12em]"
-        style={{
-          backgroundColor: BOARD_TILE_COLORS.propertyRed,
-          borderColor: BOARD_TILE_COLORS.propertyRed,
-          color: BOARD_TILE_COLORS.altText,
-        }}
-      >
-        Surrender
-      </button>
-    </aside>
-  );
-}
-
 // ─── BoardContainer ───────────────────────────────────────────────────────────
 
-export function BoardContainer({ centerContent, spaces, players }: BoardContainerProps) {
+export function BoardContainer({ centerContent, spaces, players, sidebarPlayers }: BoardContainerProps) {
   const [selectedPos, setSelectedPos] = useState(37);
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(MOCK_DICE_ROLL);
   const [diceRollId, setDiceRollId] = useState(0);
   const boardSpaces = spaces ?? MOCK_SPACES;
   const boardPlayers = players ?? MOCK_PLAYERS;
+  const hasSidebar = sidebarPlayers !== undefined;
   const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
   const playersByPosition = new Map<number, typeof boardPlayers>();
   const { activeOverlay, handleAction, closeOverlay } = useActionButtons();
@@ -454,7 +326,7 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
       style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
     >
       <section
-        className={`grid h-full w-full gap-[4px] overflow-hidden${centerContent == null ? ' lg:grid-cols-[minmax(0,1fr)_320px]' : ''}`}
+        className={`grid h-full w-full gap-[4px] overflow-hidden${hasSidebar ? ' md:grid-cols-[minmax(0,1fr)_320px]' : ''}`}
         aria-label="Tycoon board"
         style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
       >
@@ -548,8 +420,10 @@ export function BoardContainer({ centerContent, spaces, players }: BoardContaine
           </div>
         </div>
 
-        {centerContent == null && (
-          <PlayerPanel currentPlayerId={MOCK_SNAPSHOT.game.turn.currentPlayerId} spaces={boardSpaces} />
+        {hasSidebar && (
+          <div className="hidden min-h-0 md:block">
+            <PlayerPanel players={sidebarPlayers} />
+          </div>
         )}
       </section>
     </div>

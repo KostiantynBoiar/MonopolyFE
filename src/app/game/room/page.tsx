@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BoardContainer } from '@/features/game-board';
-import { FloatingPlayerSidebar } from '@/features/player-panel';
 import { WaitingCenterPanel, SessionStatus } from '@/features/lobby';
 import { joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import type { SessionMember } from '@/features/lobby';
@@ -128,11 +127,14 @@ export default function GameRoomPage() {
   if (!ready || resolvingCode) return <FullScreenSpinner />;
 
   if (isWaiting && currentSession) {
+    const sidebarPlayers = sessionMembersToPlayers(currentSession.members);
+
     return (
       <div className="relative flex h-screen overflow-hidden bg-paper">
         <WsErrorBanner error={wsError} onDismiss={clearWsError} />
-        <div className="flex-1 overflow-hidden p-4 md:pr-72">
+        <div className="flex-1 overflow-hidden">
           <BoardContainer
+            sidebarPlayers={sidebarPlayers}
             centerContent={
               <WaitingCenterPanel
                 session={currentSession}
@@ -147,7 +149,6 @@ export default function GameRoomPage() {
             }
           />
         </div>
-        <FloatingPlayerSidebar players={sessionMembersToPlayers(currentSession.members)} />
       </div>
     );
   }

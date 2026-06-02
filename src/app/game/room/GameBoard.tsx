@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { BoardContainer } from '@/features/game-board';
-import { FloatingPlayerSidebar, TOKEN_COLORS } from '@/features/player-panel';
+import { BoardContainer, deriveBoardPlayers, deriveSidebarPlayers } from '@/features/game-board';
+import { TOKEN_COLORS } from '@/features/player-panel';
 import type {
   LogAndActionsProps,
   CardOverlayProps,
@@ -14,8 +14,7 @@ import type {
   ManageOverlayProps,
   TradeBuilderOverlayProps,
 } from '@/features/chat/chat.types';
-import type { Player } from '@/features/player-panel';
-import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
+import type { WalkingPlayer } from '@/features/game-board';
 import type { GameState } from '@/shared/protocol/game-state.schema';
 import { TurnPhase, AuctionTargetKind, LogKind } from '@/shared/protocol/game-state.enums';
 import type { LogEntry } from '@/shared/protocol/game-state';
@@ -32,6 +31,7 @@ import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import type { AuctionPlayer } from '@/features/auction';
 import { AuctionOverlay } from '@/features/auction';
 import { CardFlipOverlay } from '@/features/card';
+import { DeedWindow } from '@/features/deed';
 import { JailOverlay } from '@/features/jail';
 import { DebtOverlay } from '@/features/bankruptcy';
 import { ManagePropertiesOverlay } from '@/features/manage';
@@ -41,32 +41,6 @@ import { useGameDispatch } from './useGameDispatch';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { playSfx } from '@/shared/lib/sfx';
 import { BoardCenterPanel, MobileGamePanel } from '@/features/chat/components';
-
-// ─── Adapters ─────────────────────────────────────────────────────────────────
-
-function deriveSidebarPlayers(gs: GameState): Player[] {
-  return gs.players.map((p) => ({
-    id:             p.id,
-    name:           p.displayName,
-    balance:        p.balance,
-    position:       p.position,
-    token:          p.token,
-    ownedPositions: getPlayerPositions(gs, p.id),
-    isActive:       p.id === gs.turn.currentPlayerId,
-    isBankrupt:     p.isBankrupt,
-    inJail:         p.jailStatus !== null,
-    jailTurns:      p.jailStatus?.attempts,
-  }));
-}
-
-function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
-  return gs.players.map((p) => ({
-    id:         p.id,
-    position:   p.position,
-    tokenColor: TOKEN_COLORS[p.token],
-    isBankrupt: p.isBankrupt,
-  }));
-}
 
 function deriveTradeParticipant(gs: GameState, playerId: string): TradeParticipant | undefined {
   const p = gs.players.find((pl) => pl.id === playerId);
@@ -323,6 +297,7 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
   // ── Derived values used by both layouts ───────────────────────────────────────
 
   const canManageDeed = activeDeed !== null && manageProperties.some((p) => !p.isMortgaged);
+  const activeDeedSpace = activeDeed ? (BOARD[activeDeed.position] ?? null) : null;
 
   const isAuctionActive = gameState.auction !== null;
   const isTradeActive =
@@ -512,14 +487,14 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
         )}
         {activeDeed && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-6">
-            <DeedCard
-              deed={activeDeed}
-              canBuy={permissions.canBuyProperty}
-              canManage={canManageDeed}
-              onBuy={handleBuy}
-              onAuction={handleAuction}
-              onManage={handleManage}
-            />
+            <div className="h-full max-h-[520px] w-full max-w-[360px]">
+              <DeedWindow
+                space={activeDeedSpace ?? BOARD[0]}
+                decisionSpace={activeDeedSpace}
+                onBuy={handleBuy}
+                onAuction={handleAuction}
+              />
+            </div>
           </div>
         )}
         {jailDecision && !gameState.activeCard && (
@@ -581,22 +556,20 @@ export function GameBoard({ wsError, onClearWsError, onSendChat }: GameBoardProp
             />
           </div>
         )}
-
-        <FloatingPlayerSidebar players={sidebarPlayers} />
       </div>
 
       {/* ── Desktop layout (≥ md) ────────────────────────────────────────────── */}
       <div className="relative hidden h-screen overflow-hidden bg-paper md:flex">
         <WsErrorBanner error={wsError} onDismiss={onClearWsError} />
-        <div className="flex-1 overflow-hidden p-4 pr-72">
+        <div className="flex-1 overflow-hidden">
           <BoardContainer
             spaces={gameState.spaces}
             players={boardPlayers}
             walkingPlayers={walkingBoardPlayers}
+            sidebarPlayers={sidebarPlayers}
             centerContent={<BoardCenterPanel {...centerPanelProps} />}
           />
         </div>
-        <FloatingPlayerSidebar players={sidebarPlayers} />
       </div>
     </>
   );

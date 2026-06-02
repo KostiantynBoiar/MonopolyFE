@@ -8,6 +8,7 @@ export interface Player {
   balance: number;
   position: number;
   token: TokenColor;
+  avatarUrl?: string | null;
   ownedPositions: number[];
   isActive: boolean;
   isBankrupt: boolean;
