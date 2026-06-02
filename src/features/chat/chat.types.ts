@@ -27,7 +27,7 @@ export interface ChatLogProps {
 
 export interface ChatWindowProps {
   log: LogEntry[];
-  initialMessages?: ChatMessage[];
+  /** Live, server-sourced chat messages from ALL players (reactive). */
   externalMessages?: ChatMessage[];
   viewerToken?: TokenColor;
   onSendMessage?: (text: string) => void;

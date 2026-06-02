@@ -449,9 +449,7 @@ function Composer({
 
 export function ChatWindow({
   log,
-  initialMessages: _initialMessages,
   externalMessages,
-  viewerToken,
   onSendMessage,
   onSendSticker,
 }: ChatWindowProps) {
@@ -459,11 +457,11 @@ export function ChatWindow({
 
   const [activeTab,    setActiveTab]    = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft,        setDraft]        = useState('');
-  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [unreadCount,  setUnreadCount]  = useState(0);
   const [showStickers, setShowStickers] = useState(false);
   const [packIndex,    setPackIndex]    = useState(0);
   const scrollRef  = useRef<HTMLDivElement>(null);
+  const prevExternalLenRef = useRef((externalMessages ?? []).length);
   const stickerPacks = useStickerPacks();
 
   const eventEntries = useMemo(
@@ -492,19 +490,9 @@ export function ChatWindow({
     return (externalMessages ?? []).filter((m) => !serverIds.has(m.id));
   }, [externalMessages, serverChatEntries]);
 
-  // Local optimistic sends not yet confirmed by server or real-time feed.
-  const pendingLocal = useMemo(() => {
-    const confirmedTexts = new Set(
-      [...serverChatEntries, ...realtimeOnly].map((m) => m.text + '|' + Math.floor(m.ts / 30_000)),
-    );
-    return localMessages.filter(
-      (local) => !confirmedTexts.has(local.text + '|' + Math.floor(local.ts / 30_000)),
-    );
-  }, [localMessages, serverChatEntries, realtimeOnly]);
-
   const displayMessages = useMemo(
-    () => [...serverChatEntries, ...realtimeOnly, ...pendingLocal].sort((a, b) => a.ts - b.ts),
-    [serverChatEntries, realtimeOnly, pendingLocal],
+    () => [...serverChatEntries, ...realtimeOnly].sort((a, b) => a.ts - b.ts),
+    [serverChatEntries, realtimeOnly],
   );
 
   // Unread badge: count new server chat messages while not on the chat tab.
@@ -515,6 +503,15 @@ export function ChatWindow({
     }
     prevServerLenRef.current = serverChatEntries.length;
   }, [serverChatEntries.length, activeTab]);
+
+  // Socket messages arrive reactively (incl. sender echo) — bump unread on Events tab.
+  useEffect(() => {
+    const externalLen = (externalMessages ?? []).length;
+    if (externalLen > prevExternalLenRef.current && activeTab !== ChatWindowTab.CHAT) {
+      setUnreadCount((count) => count + (externalLen - prevExternalLenRef.current));
+    }
+    prevExternalLenRef.current = externalLen;
+  }, [externalMessages, activeTab]);
 
   useEffect(() => {
     if (activeTab === ChatWindowTab.CHAT) setUnreadCount(0);
@@ -528,20 +525,11 @@ export function ChatWindow({
   function handleSend() {
     const text = clampMessage(draft.trim());
     if (!text) return;
-    setLocalMessages((current) => [...current, {
-      id: `local-${Date.now()}`, kind: 'chat', author: 'You', token: viewerToken, text, ts: Date.now(),
-    }]);
-    if (activeTab !== ChatWindowTab.CHAT) setUnreadCount((c) => c + 1);
     setDraft('');
     onSendMessage?.(text);
   }
 
   function handleSticker(url: string) {
-    setLocalMessages((current) => [...current, {
-      id: `sticker-${Date.now()}`, kind: 'chat', author: 'You', token: viewerToken,
-      text: `[sticker:${url}]`, ts: Date.now(),
-    }]);
-    if (activeTab !== ChatWindowTab.CHAT) setUnreadCount((c) => c + 1);
     setShowStickers(false);
     onSendSticker?.(url);
   }

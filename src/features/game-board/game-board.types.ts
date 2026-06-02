@@ -91,7 +91,8 @@ export interface BoardTileProps {
   edge: TileEdge;
   flavor: BoardTileFlavor;
   ownership?: PropertyState | null;
-  ownerColor?: string;
+  /** Resolved hex token color of the owning player, or null if unowned. */
+  ownerColor?: string | null;
   players?: BoardPlayer[];
   walkingPlayerIds?: Set<string>;
   isSelected?: boolean;

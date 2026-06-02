@@ -454,6 +454,7 @@ export default function GameRoomPage() {
 
   // ─── Boot guards ──────────────────────────────────────────────────────────
 
+
   if (
     !roomBootTimedOut &&
     (!ready || !sessionHydrated || isJoiningByCode || isValidatingSession ||
