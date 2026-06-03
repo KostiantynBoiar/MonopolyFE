@@ -181,6 +181,69 @@ function buildTradeSelectionTones(
   return tones;
 }
 
+function setsAreEqual(left: Set<number>, right: Set<number>): boolean {
+  if (left.size !== right.size) return false;
+
+  for (const value of left) {
+    if (!right.has(value)) return false;
+  }
+
+  return true;
+}
+
+function normalizeTradeDraft(
+  draft: TradeDraftState,
+  game: GameState,
+  viewerPlayer: PlayerState | null,
+): TradeDraftState {
+  if (!viewerPlayer) {
+    return createTradeDraftState();
+  }
+
+  const ownedByViewer = new Set(getPlayerProperties(game, viewerPlayer.id).map((space) => space.position));
+  const nextGivePositions = new Set(
+    [...draft.givePositions].filter((position) => ownedByViewer.has(position)),
+  );
+
+  const target = draft.targetId
+    ? game.players.find((player) => player.id === draft.targetId && !player.isBankrupt)
+    : null;
+  const ownedByTarget = target
+    ? new Set(getPlayerProperties(game, target.id).map((space) => space.position))
+    : new Set<number>();
+  const nextGetPositions = new Set(
+    [...draft.getPositions].filter((position) => ownedByTarget.has(position)),
+  );
+
+  const nextGiveMoney = Math.min(draft.giveMoney, viewerPlayer.balance);
+  const nextGiveCards = Math.min(draft.giveCards, viewerPlayer.getOutOfJailCards);
+  const nextGetMoney = target ? Math.min(draft.getMoney, target.balance) : 0;
+  const nextGetCards = target ? Math.min(draft.getCards, target.getOutOfJailCards) : 0;
+
+  const isUnchanged =
+    draft.targetId === (target?.id ?? null) &&
+    draft.giveMoney === nextGiveMoney &&
+    draft.getMoney === nextGetMoney &&
+    draft.giveCards === nextGiveCards &&
+    draft.getCards === nextGetCards &&
+    setsAreEqual(draft.givePositions, nextGivePositions) &&
+    setsAreEqual(draft.getPositions, nextGetPositions);
+
+  if (isUnchanged) {
+    return draft;
+  }
+
+  return {
+    targetId: target?.id ?? null,
+    giveMoney: nextGiveMoney,
+    getMoney: nextGetMoney,
+    giveCards: nextGiveCards,
+    getCards: nextGetCards,
+    givePositions: nextGivePositions,
+    getPositions: nextGetPositions,
+  };
+}
+
 function EmptyGameState({ sessionCode, status }: { sessionCode: string | null; status: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 rounded-[18px] border border-line bg-surface px-5 text-center">
@@ -638,6 +701,10 @@ export default function GameRoomPage() {
     dispatch({ type: CommandType.ResolveCard });
   }, [dispatch]);
 
+  useEffect(() => {
+    setTradeDraft((currentDraft) => normalizeTradeDraft(currentDraft, game, viewerPlayer));
+  }, [game, viewerPlayer]);
+
   // ─── Boot guards ──────────────────────────────────────────────────────────
 
 
@@ -665,18 +732,18 @@ export default function GameRoomPage() {
     );
   }
 
-  if (!currentSession) return <NoActiveRoomState />;
-  if (validatedSessionId !== currentSession.id) return <NoActiveRoomState />;
-
   const isWaitingSession =
-    currentSession.status === SessionStatus.WAITING ||
+    currentSession?.status === SessionStatus.WAITING ||
     (game.status === GameStatus.LOBBY && game.players.length === 0);
   const isFinishedSession =
-    currentSession.status === SessionStatus.FINISHED ||
+    currentSession?.status === SessionStatus.FINISHED ||
     game.status === GameStatus.FINISHED;
   const winnerName = game.winnerId
     ? game.players.find((player) => player.id === game.winnerId)?.displayName ?? null
     : null;
+
+  if (!currentSession) return <NoActiveRoomState />;
+  if (validatedSessionId !== currentSession.id) return <NoActiveRoomState />;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
