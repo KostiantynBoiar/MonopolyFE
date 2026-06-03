@@ -1,21 +1,27 @@
 'use client';
 
 import { ManagePropertiesOverlay, type ManageProperty } from '@/features/manage';
-import { TradeBuilder, type TradeAsset, type TradePlayer } from '@/features/trade/components/TradeBuilder';
+import { TradeBuilder, type TradeAsset, type TradeCounterparty, type TradePlayer } from '@/features/trade/components/TradeBuilder';
 import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
 import type { TradeParticipant } from '@/features/trade/trade.types';
-import type { TradeOffer, TradeState } from '@/shared/protocol/game-state';
+import type { TradeState } from '@/shared/protocol/game-state';
 import { TradeStatus } from '@/shared/protocol/game-state.enums';
 
-export type ActiveOverlay = 'manage' | 'trade-builder' | null;
+export enum ActiveOverlay {
+  MANAGE = 'manage',
+  TRADE_BUILDER = 'trade_builder',
+}
 
 export interface TradeBuilderData {
   me: TradePlayer;
-  others: TradePlayer[];
-  myProperties: TradeAsset[];
-  myJailCards: number;
-  propertiesOf: (playerId: string) => TradeAsset[];
-  jailCardsOf: (playerId: string) => number;
+  others: TradeCounterparty[];
+  target: TradeCounterparty | null;
+  offerAssets: TradeAsset[];
+  requestAssets: TradeAsset[];
+  giveMoney: number;
+  getMoney: number;
+  giveCards: number;
+  getCards: number;
 }
 
 export interface FullOverlayProps {
@@ -23,7 +29,7 @@ export interface FullOverlayProps {
   tradeProposer: TradeParticipant | null;
   tradeTarget: TradeParticipant | null;
   viewerPlayerId: string | null;
-  activeOverlay: ActiveOverlay;
+  activeOverlay: ActiveOverlay | null;
   manageProperties: ManageProperty[];
   canBuildHouse: boolean;
   canBuildHotel: boolean;
@@ -41,7 +47,13 @@ export interface FullOverlayProps {
   onUnmortgage: (position: number) => void;
   onSellProperty: (position: number) => void;
   onCloseOverlay: () => void;
-  onTradePropose: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
+  onTradeGiveMoneyChange: (value: number) => void;
+  onTradeGetMoneyChange: (value: number) => void;
+  onTradeGiveCardsChange: (value: number) => void;
+  onTradeGetCardsChange: (value: number) => void;
+  onTradeClearOfferAssets: () => void;
+  onTradeClearRequestAssets: () => void;
+  onTradePropose: () => void;
 }
 
 export function FullOverlay({
@@ -67,6 +79,12 @@ export function FullOverlay({
   onUnmortgage,
   onSellProperty,
   onCloseOverlay,
+  onTradeGiveMoneyChange,
+  onTradeGetMoneyChange,
+  onTradeGiveCardsChange,
+  onTradeGetCardsChange,
+  onTradeClearOfferAssets,
+  onTradeClearRequestAssets,
   onTradePropose,
 }: FullOverlayProps) {
   if (trade && trade.status === TradeStatus.PENDING && tradeProposer && tradeTarget) {
@@ -83,7 +101,7 @@ export function FullOverlay({
     );
   }
 
-  if (activeOverlay === 'manage') {
+  if (activeOverlay === ActiveOverlay.MANAGE) {
     return (
       <ManagePropertiesOverlay
         properties={manageProperties}
@@ -103,19 +121,17 @@ export function FullOverlay({
     );
   }
 
-  if (activeOverlay === 'trade-builder' && tradeBuilderData) {
+  if (activeOverlay === ActiveOverlay.TRADE_BUILDER && tradeBuilderData) {
     return (
       <TradeBuilder
-        me={tradeBuilderData.me}
-        others={tradeBuilderData.others}
-        myProperties={tradeBuilderData.myProperties}
-        myJailCards={tradeBuilderData.myJailCards}
-        propertiesOf={tradeBuilderData.propertiesOf}
-        jailCardsOf={tradeBuilderData.jailCardsOf}
-        onPropose={(targetId, offer, request) => {
-          onTradePropose(targetId, offer, request);
-          onCloseOverlay();
-        }}
+        {...tradeBuilderData}
+        onGiveMoneyChange={onTradeGiveMoneyChange}
+        onGetMoneyChange={onTradeGetMoneyChange}
+        onGiveCardsChange={onTradeGiveCardsChange}
+        onGetCardsChange={onTradeGetCardsChange}
+        onClearOfferAssets={onTradeClearOfferAssets}
+        onClearRequestAssets={onTradeClearRequestAssets}
+        onPropose={onTradePropose}
         onClose={onCloseOverlay}
       />
     );

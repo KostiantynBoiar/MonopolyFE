@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { BoardTileFlavor, CornerVariant, SpaceType, TileEdge } from '../game-board.enums';
+import { BoardTileFlavor, BoardTileSelectionTone, CornerVariant, SpaceType, TileEdge } from '../game-board.enums';
 import type { BoardTileProps } from '../game-board.types';
 import {
   BOARD_TILE_COLORS,
@@ -114,18 +114,43 @@ function splitAtFirst(name: string): [string, string | null] {
   return [name.slice(0, idx), name.slice(idx + 1)];
 }
 
-function SelectionRing({ selected }: { selected: boolean }) {
-  if (!selected) return null;
+const SELECTION_RING_COLOR: Record<BoardTileSelectionTone, string> = {
+  [BoardTileSelectionTone.TRADE_OFFER]: BOARD_TILE_COLORS.propertyGreen,
+  [BoardTileSelectionTone.TRADE_REQUEST]: BOARD_TILE_COLORS.propertyCyan,
+};
+
+function SelectionRing({
+  selected,
+  tone,
+}: {
+  selected: boolean;
+  tone: BoardTileSelectionTone | null;
+}) {
+  if (!selected && !tone) return null;
 
   return (
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 z-[50]"
-      style={{
-        borderRadius: 'inherit',
-        boxShadow: `inset 0 0 0 clamp(2px, 0.45vmin, 5px) ${BOARD_TILE_COLORS.propertyYellow}, 0 0 0 1px rgba(16,24,46,0.55)`,
-      }}
-    />
+    <>
+      {tone && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[50]"
+          style={{
+            borderRadius: 'inherit',
+            boxShadow: `inset 0 0 0 clamp(3px, 0.5vmin, 6px) ${SELECTION_RING_COLOR[tone]}, 0 0 0 1px rgba(16,24,46,0.55)`,
+          }}
+        />
+      )}
+      {selected && (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-[3px] z-[51]"
+          style={{
+            borderRadius: 'inherit',
+            boxShadow: `inset 0 0 0 clamp(2px, 0.35vmin, 4px) ${BOARD_TILE_COLORS.propertyYellow}`,
+          }}
+        />
+      )}
+    </>
   );
 }
 
@@ -214,6 +239,7 @@ export function BoardTile({
   players,
   walkingPlayerIds,
   isSelected = false,
+  selectionTone = null,
   isDimmed = false,
   onSelect,
 }: BoardTileProps) {
@@ -279,7 +305,7 @@ export function BoardTile({
         )}
         <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
         {isDimmed && <DimOverlay />}
-        <SelectionRing selected={isSelected} />
+        <SelectionRing selected={isSelected} tone={selectionTone} />
       </article>
     );
   }
@@ -327,7 +353,7 @@ export function BoardTile({
         <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
         {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
         {isDimmed && <DimOverlay />}
-        <SelectionRing selected={isSelected} />
+        <SelectionRing selected={isSelected} tone={selectionTone} />
       </article>
     );
   }
@@ -419,7 +445,7 @@ export function BoardTile({
       </div>
       {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
       {isDimmed && <DimOverlay />}
-      <SelectionRing selected={isSelected} />
+      <SelectionRing selected={isSelected} tone={selectionTone} />
     </article>
   );
 }

@@ -44,6 +44,11 @@ export enum BoardTileFlavor {
   SPECIAL = 'special',
 }
 
+export enum BoardTileSelectionTone {
+  TRADE_OFFER = 'trade_offer',
+  TRADE_REQUEST = 'trade_request',
+}
+
 export enum TileEdge {
   BOTTOM = 'bottom',
   LEFT = 'left',

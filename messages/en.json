@@ -140,11 +140,19 @@
     "builder": {
       "header": "Propose Trade",
       "close": "Close",
-      "tradeWith": "Trade with",
+      "instructions": "Click your owned tiles to add what you give. Click another player's owned tile to choose them and add what you want back.",
+      "awaitingTarget": "Choose another player from the board.",
+      "selectedTarget": "Trading with {name}",
+      "chooseFromBoard": "board pick",
       "youGive": "You give",
       "youGet": "You get",
       "noProperties": "no properties",
+      "noTargetSelected": "choose a player from the board",
+      "offerInstruction": "Toggle your tiles on the board to add or remove properties.",
+      "requestInstruction": "Toggle {name}'s tiles on the board to add or remove properties.",
+      "requestNeedsTarget": "Pick another player on the board before requesting properties or cards.",
       "jailCards": "Jail cards",
+      "clearProperties": "Clear",
       "cancel": "Cancel",
       "propose": "Propose"
     }

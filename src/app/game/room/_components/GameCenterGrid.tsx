@@ -117,6 +117,12 @@ export function GameCenterGrid({
   onUnmortgage,
   onSellProperty,
   onCloseOverlay,
+  onTradeGiveMoneyChange,
+  onTradeGetMoneyChange,
+  onTradeGiveCardsChange,
+  onTradeGetCardsChange,
+  onTradeClearOfferAssets,
+  onTradeClearRequestAssets,
   onTradePropose,
 }: GameCenterGridProps) {
   const t = useTranslations('Game');
@@ -326,6 +332,12 @@ export function GameCenterGrid({
         onUnmortgage={onUnmortgage}
         onSellProperty={onSellProperty}
         onCloseOverlay={onCloseOverlay}
+        onTradeGiveMoneyChange={onTradeGiveMoneyChange}
+        onTradeGetMoneyChange={onTradeGetMoneyChange}
+        onTradeGiveCardsChange={onTradeGiveCardsChange}
+        onTradeGetCardsChange={onTradeGetCardsChange}
+        onTradeClearOfferAssets={onTradeClearOfferAssets}
+        onTradeClearRequestAssets={onTradeClearRequestAssets}
         onTradePropose={onTradePropose}
       />
     </div>
