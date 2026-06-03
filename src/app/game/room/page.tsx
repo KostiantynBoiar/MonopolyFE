@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  BoardTileSelectionTone,
   BoardContainer,
   deriveBoardPlayers,
   deriveSidebarPlayers,
@@ -10,7 +11,7 @@ import {
 import { getSession, joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import { SessionStatus } from '@/features/lobby';
 import type { ManageProperty } from '@/features/manage';
-import type { TradeAsset, TradePlayer } from '@/features/trade/components/TradeBuilder';
+import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade/components/TradeBuilder';
 import type { TradeParticipant } from '@/features/trade/trade.types';
 import { BOARD } from '@/shared/config/board-layout';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
@@ -36,12 +37,45 @@ import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useUiStore } from '@/stores/ui-store';
 import { useGameDispatch } from './useGameDispatch';
-import type { ActiveOverlay, TradeBuilderData } from './_components/FullOverlay';
+import { ActiveOverlay, type TradeBuilderData } from './_components/FullOverlay';
 import { GameCenterGrid } from './_components/GameCenterGrid';
 import { WaitingCenterGrid } from './_components/WaitingCenterGrid';
 
 const SESSION_RESTORE_TIMEOUT_MS = 5_000;
 const ROOM_BOOT_TIMEOUT_MS = 7_000;
+
+interface TradeDraftState {
+  targetId: string | null;
+  giveMoney: number;
+  getMoney: number;
+  giveCards: number;
+  getCards: number;
+  givePositions: Set<number>;
+  getPositions: Set<number>;
+}
+
+function createTradeDraftState(): TradeDraftState {
+  return {
+    targetId: null,
+    giveMoney: 0,
+    getMoney: 0,
+    giveCards: 0,
+    getCards: 0,
+    givePositions: new Set(),
+    getPositions: new Set(),
+  };
+}
+
+function withToggledPosition(source: Set<number>, position: number): Set<number> {
+  const next = new Set(source);
+  if (next.has(position)) {
+    next.delete(position);
+    return next;
+  }
+
+  next.add(position);
+  return next;
+}
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -66,7 +100,19 @@ function toTradeParticipant(game: GameState, player: PlayerState): TradeParticip
 }
 
 function toTradePlayer(player: PlayerState): TradePlayer {
-  return { id: player.id, name: player.displayName, balance: player.balance };
+  return {
+    id: player.id,
+    name: player.displayName,
+    balance: player.balance,
+    getOutOfJailCards: player.getOutOfJailCards,
+  };
+}
+
+function toTradeCounterparty(game: GameState, player: PlayerState): TradeCounterparty {
+  return {
+    ...toTradePlayer(player),
+    propertyCount: getPlayerProperties(game, player.id).length,
+  };
 }
 
 function toTradeAsset(game: GameState, position: number): TradeAsset {
@@ -90,6 +136,49 @@ function getManageProperties(game: GameState, viewerPlayerId: string | null): Ma
       rent: getPropertyRent(game, space.position),
     };
   });
+}
+
+function getSpaceOwnerId(game: GameState, position: number): string | null {
+  return game.spaces.find((space) => space.position === position)?.ownerId ?? null;
+}
+
+function resolveTradeTargetIdFromPosition(
+  game: GameState,
+  viewerPlayerId: string | null,
+  position: number,
+  currentTargetId: string | null,
+): string | null {
+  const ownerId = getSpaceOwnerId(game, position);
+  if (ownerId && ownerId !== viewerPlayerId) {
+    const owner = game.players.find((player) => player.id === ownerId);
+    return owner && !owner.isBankrupt ? owner.id : null;
+  }
+
+  const playersOnPosition = game.players.filter(
+    (player) => player.position === position && player.id !== viewerPlayerId && !player.isBankrupt,
+  );
+  if (playersOnPosition.length === 1) {
+    return playersOnPosition[0].id;
+  }
+
+  return playersOnPosition.find((player) => player.id === currentTargetId)?.id ?? null;
+}
+
+function buildTradeSelectionTones(
+  givePositions: Set<number>,
+  getPositions: Set<number>,
+): Partial<Record<number, BoardTileSelectionTone>> {
+  const tones: Partial<Record<number, BoardTileSelectionTone>> = {};
+
+  for (const position of givePositions) {
+    tones[position] = BoardTileSelectionTone.TRADE_OFFER;
+  }
+
+  for (const position of getPositions) {
+    tones[position] = BoardTileSelectionTone.TRADE_REQUEST;
+  }
+
+  return tones;
 }
 
 function EmptyGameState({ sessionCode, status }: { sessionCode: string | null; status: string }) {
@@ -186,7 +275,8 @@ export default function GameRoomPage() {
   const [roomBootTimedOut, setRoomBootTimedOut] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay>(null);
+  const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay | null>(null);
+  const [tradeDraft, setTradeDraft] = useState<TradeDraftState>(createTradeDraftState);
 
   const sessionId = currentSession?.id ?? null;
   const canConnectSocket = Boolean(ready && sessionId && validatedSessionId === sessionId);
@@ -337,16 +427,20 @@ export default function GameRoomPage() {
     if (!viewerPlayer) return null;
     const others = game.players
       .filter((p) => p.id !== viewerPlayer.id && !p.isBankrupt)
-      .map(toTradePlayer);
+      .map((player) => toTradeCounterparty(game, player));
+    const target = others.find((player) => player.id === tradeDraft.targetId) ?? null;
     return {
       me: toTradePlayer(viewerPlayer),
       others,
-      myProperties: getPlayerProperties(game, viewerPlayer.id).map((space) => toTradeAsset(game, space.position)),
-      myJailCards: viewerPlayer.getOutOfJailCards,
-      propertiesOf: (playerId) => getPlayerProperties(game, playerId).map((space) => toTradeAsset(game, space.position)),
-      jailCardsOf: (playerId) => game.players.find((p) => p.id === playerId)?.getOutOfJailCards ?? 0,
+      target,
+      offerAssets: [...tradeDraft.givePositions].map((position) => toTradeAsset(game, position)),
+      requestAssets: [...tradeDraft.getPositions].map((position) => toTradeAsset(game, position)),
+      giveMoney: tradeDraft.giveMoney,
+      getMoney: tradeDraft.getMoney,
+      giveCards: tradeDraft.giveCards,
+      getCards: tradeDraft.getCards,
     };
-  }, [game, viewerPlayer]);
+  }, [game, tradeDraft, viewerPlayer]);
 
   const tokenByUserId = useMemo(
     () => new Map(game.players.map((p) => [p.userId, p.token])),
@@ -387,6 +481,12 @@ export default function GameRoomPage() {
   const deedBrowseSpace = BOARD[deedBrowsePosition] ?? BOARD[0];
   const highlightedBoardPosition = isBuyDecisionForViewer ? pendingBuyPosition : deedBrowsePosition;
   const deedPanelSpace = isBuyDecisionForViewer && pendingBuySpace ? pendingBuySpace : deedBrowseSpace;
+  const tradeSelectionTones = useMemo(
+    () => activeOverlay === ActiveOverlay.TRADE_BUILDER
+      ? buildTradeSelectionTones(tradeDraft.givePositions, tradeDraft.getPositions)
+      : undefined,
+    [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions],
+  );
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling && !isTimelineRunning;
   const canManagePendingBuyShortfall = Boolean(
     pendingBuySpace &&
@@ -424,9 +524,48 @@ export default function GameRoomPage() {
     dispatch({ type: CommandType.PassBuy });
   }, [dispatch, permissions.canBuyProperty]);
 
+  const handleCloseOverlay = useCallback(() => {
+    setActiveOverlay(null);
+    setTradeDraft(createTradeDraftState());
+  }, []);
+
+  const handleTradeOpen = useCallback(() => {
+    setTradeDraft(createTradeDraftState());
+    setActiveOverlay(ActiveOverlay.TRADE_BUILDER);
+  }, []);
+
   const handleSelectBoardPosition = useCallback((position: number) => {
     setSelectedTile(position);
-  }, [setSelectedTile]);
+    if (activeOverlay !== ActiveOverlay.TRADE_BUILDER || !viewerPlayerId) return;
+
+    const ownerId = getSpaceOwnerId(game, position);
+    if (ownerId === viewerPlayerId) {
+      setTradeDraft((currentDraft) => ({
+        ...currentDraft,
+        givePositions: withToggledPosition(currentDraft.givePositions, position),
+      }));
+      return;
+    }
+
+    const targetId = resolveTradeTargetIdFromPosition(game, viewerPlayerId, position, tradeDraft.targetId);
+    if (!targetId) return;
+
+    setTradeDraft((currentDraft) => {
+      const nextTarget = targetId;
+      const isRequestedProperty = getSpaceOwnerId(game, position) === nextTarget;
+      const nextGetPositions = currentDraft.targetId === nextTarget
+        ? (isRequestedProperty ? withToggledPosition(currentDraft.getPositions, position) : currentDraft.getPositions)
+        : (isRequestedProperty ? new Set([position]) : new Set<number>());
+
+      return {
+        ...currentDraft,
+        targetId: nextTarget,
+        getMoney: currentDraft.targetId === nextTarget ? currentDraft.getMoney : 0,
+        getCards: currentDraft.targetId === nextTarget ? currentDraft.getCards : 0,
+        getPositions: nextGetPositions,
+      };
+    });
+  }, [activeOverlay, game, setSelectedTile, tradeDraft.targetId, viewerPlayerId]);
 
   const handleStartGame = useCallback(async () => {
     if (!sessionId || isStarting) return;
@@ -447,10 +586,47 @@ export default function GameRoomPage() {
     }
   }, [clearSession, isLeaving, resetSocket, router, sessionId]);
 
-  const handleTradePropose = useCallback((targetId: string, offer: TradeOffer, request: TradeOffer) => {
-    dispatch({ type: CommandType.StartTrade, targetId, offer, request });
-    setActiveOverlay(null);
-  }, [dispatch]);
+  const handleTradeGiveMoneyChange = useCallback((value: number) => {
+    setTradeDraft((currentDraft) => ({ ...currentDraft, giveMoney: value }));
+  }, []);
+
+  const handleTradeGetMoneyChange = useCallback((value: number) => {
+    setTradeDraft((currentDraft) => ({ ...currentDraft, getMoney: value }));
+  }, []);
+
+  const handleTradeGiveCardsChange = useCallback((value: number) => {
+    setTradeDraft((currentDraft) => ({ ...currentDraft, giveCards: value }));
+  }, []);
+
+  const handleTradeGetCardsChange = useCallback((value: number) => {
+    setTradeDraft((currentDraft) => ({ ...currentDraft, getCards: value }));
+  }, []);
+
+  const handleTradeClearOfferAssets = useCallback(() => {
+    setTradeDraft((currentDraft) => ({ ...currentDraft, givePositions: new Set() }));
+  }, []);
+
+  const handleTradeClearRequestAssets = useCallback(() => {
+    setTradeDraft((currentDraft) => ({ ...currentDraft, getPositions: new Set() }));
+  }, []);
+
+  const handleTradePropose = useCallback(() => {
+    if (!tradeDraft.targetId) return;
+
+    const offer: TradeOffer = {
+      money: tradeDraft.giveMoney,
+      positions: [...tradeDraft.givePositions],
+      getOutOfJailCards: tradeDraft.giveCards,
+    };
+    const request: TradeOffer = {
+      money: tradeDraft.getMoney,
+      positions: [...tradeDraft.getPositions],
+      getOutOfJailCards: tradeDraft.getCards,
+    };
+
+    dispatch({ type: CommandType.StartTrade, targetId: tradeDraft.targetId, offer, request });
+    handleCloseOverlay();
+  }, [dispatch, handleCloseOverlay, tradeDraft]);
 
   const handleCardProceed = useCallback(() => {
     const pending = useUiStore.getState().pendingAnimationInteraction;
@@ -582,8 +758,8 @@ export default function GameRoomPage() {
               // Button handlers
               onRoll={handleRoll}
               onEndTurn={() => dispatchCommand(CommandType.EndTurn)}
-              onManageOpen={() => setActiveOverlay('manage')}
-              onTradeOpen={() => setActiveOverlay('trade-builder')}
+              onManageOpen={() => setActiveOverlay(ActiveOverlay.MANAGE)}
+              onTradeOpen={handleTradeOpen}
               onBuy={handleBuy}
               onAuction={handlePassBuy}
               onSurrender={() => dispatchCommand(CommandType.Surrender)}
@@ -607,7 +783,7 @@ export default function GameRoomPage() {
               viewerToken={viewerPlayer?.token}
               onCardProceed={handleCardProceed}
               onPayDebt={() => dispatchCommand(CommandType.PayDebt)}
-              onManage={() => setActiveOverlay('manage')}
+              onManage={() => setActiveOverlay(ActiveOverlay.MANAGE)}
               onBankrupt={() => dispatchCommand(CommandType.DeclareBankruptcy)}
               onBidAuction={(amount) => dispatch({ type: CommandType.BidAuction, amount })}
               onPayJailFine={() => dispatchCommand(CommandType.PayJailFine)}
@@ -635,7 +811,13 @@ export default function GameRoomPage() {
               onMortgage={(position) => dispatch({ type: CommandType.Mortgage, position })}
               onUnmortgage={(position) => dispatch({ type: CommandType.Unmortgage, position })}
               onSellProperty={(position) => dispatch({ type: CommandType.SellProperty, position })}
-              onCloseOverlay={() => setActiveOverlay(null)}
+              onCloseOverlay={handleCloseOverlay}
+              onTradeGiveMoneyChange={handleTradeGiveMoneyChange}
+              onTradeGetMoneyChange={handleTradeGetMoneyChange}
+              onTradeGiveCardsChange={handleTradeGiveCardsChange}
+              onTradeGetCardsChange={handleTradeGetCardsChange}
+              onTradeClearOfferAssets={handleTradeClearOfferAssets}
+              onTradeClearRequestAssets={handleTradeClearRequestAssets}
               onTradePropose={handleTradePropose}
             />
           )}
@@ -644,6 +826,7 @@ export default function GameRoomPage() {
           walkingPlayers={walkingPlayers}
           sidebarPlayers={sidebarPlayers}
           selectedPosition={highlightedBoardPosition}
+          tileSelectionTones={tradeSelectionTones}
           onSelectPosition={handleSelectBoardPosition}
           focusPosition={isBuyDecisionForViewer ? pendingBuyPosition : null}
           viewerId={viewerPlayerId ?? undefined}

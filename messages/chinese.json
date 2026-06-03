@@ -122,11 +122,19 @@
     "builder": {
       "header": "提出交易",
       "close": "关闭",
-      "tradeWith": "与...交易",
+      "instructions": "点击您拥有的地块来添加您要给出的内容。点击其他玩家拥有的地块来选择对方，并添加您想换回的内容。",
+      "awaitingTarget": "请先从棋盘上选择另一位玩家。",
+      "selectedTarget": "与 {name} 交易",
+      "chooseFromBoard": "棋盘选择",
       "youGive": "您给出",
       "youGet": "您获得",
       "noProperties": "没有地产",
+      "noTargetSelected": "请先从棋盘上选择玩家",
+      "offerInstruction": "在棋盘上切换您的地块，以添加或移除地产。",
+      "requestInstruction": "在棋盘上切换 {name} 的地块，以添加或移除地产。",
+      "requestNeedsTarget": "请求地产或卡片前，请先在棋盘上选择另一位玩家。",
       "jailCards": "出狱卡",
+      "clearProperties": "清除",
       "cancel": "取消",
       "propose": "提出交易"
     }

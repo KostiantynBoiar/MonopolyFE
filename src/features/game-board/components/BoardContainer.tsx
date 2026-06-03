@@ -93,6 +93,7 @@ export function BoardContainer({
   walkingPlayers,
   sidebarPlayers,
   selectedPosition,
+  tileSelectionTones,
   onSelectPosition,
   focusPosition,
   viewerId,
@@ -169,6 +170,7 @@ export function BoardContainer({
                       players={playersByPosition.get(space.pos) ?? []}
                       walkingPlayerIds={walkingIds}
                       isSelected={selectedPosition === space.pos}
+                      selectionTone={tileSelectionTones?.[space.pos] ?? null}
                       isDimmed={focusPosition != null && space.pos !== focusPosition}
                       onSelect={onSelectPosition ? () => onSelectPosition(space.pos) : undefined}
                     />

@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
-import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor } from './game-board.enums';
+import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor, BoardTileSelectionTone } from './game-board.enums';
 
 export interface WalkingPlayer {
   id: string;
@@ -19,6 +19,7 @@ export interface BoardContainerProps {
   walkingPlayers?: WalkingPlayer[];
   sidebarPlayers?: Player[];
   selectedPosition?: number | null;
+  tileSelectionTones?: Partial<Record<number, BoardTileSelectionTone>>;
   onSelectPosition?: (position: number) => void;
   /** When set, all tiles except this position are dimmed. */
   focusPosition?: number | null;
@@ -96,6 +97,7 @@ export interface BoardTileProps {
   players?: BoardPlayer[];
   walkingPlayerIds?: Set<string>;
   isSelected?: boolean;
+  selectionTone?: BoardTileSelectionTone | null;
   isDimmed?: boolean;
   onSelect?: () => void;
 }

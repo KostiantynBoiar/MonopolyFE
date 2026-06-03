@@ -1,4 +1,4 @@
-export { BoardTileFlavor, PropertyColor, SpaceType, TileEdge } from './game-board.enums';
+export { BoardTileFlavor, BoardTileSelectionTone, PropertyColor, SpaceType, TileEdge } from './game-board.enums';
 export type { BoardSpace, BoardPlayer, WalkingPlayer } from './game-board.types';
 export { BOARD, getGridPos, getTileEdge, getWalkSteps, getTileCenter } from '@/shared/config/board-layout';
 export { BoardContainer } from './components/BoardContainer';
