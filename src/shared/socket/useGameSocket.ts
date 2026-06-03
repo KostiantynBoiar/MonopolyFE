@@ -109,8 +109,6 @@ export function useGameSocket(sessionId: string | null) {
           // Server-authoritative full snapshot + the animation timeline describing how
           // it was reached. The executor replays the timeline, then commits the state.
           const snapshot = adaptGameStateFrame(msg.payload as unknown as BeGameState);
-          console.log('[WS] GAME_STATE raw', msg.payload);
-          console.log('[WS] GAME_STATE adapted', snapshot);
           enqueueSnapshot(snapshot);
           break;
         }

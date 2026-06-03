@@ -21,10 +21,8 @@ function useSessionTimer(createdAt: string | undefined) {
 
   useEffect(() => {
     if (!createdAt) return;
-    const id = setInterval(
-      () => setElapsed(Date.now() - new Date(createdAt).getTime()),
-      1000,
-    );
+    const startMs = new Date(createdAt).getTime();
+    const id = setInterval(() => setElapsed(Date.now() - startMs), 1000);
     return () => clearInterval(id);
   }, [createdAt]);
 

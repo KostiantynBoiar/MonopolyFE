@@ -95,6 +95,7 @@ export function resetSnapshotPipeline(): void {
   queue = [];
   running = false;
   closeGate(''); // force-release whatever gate is open
+  useUiStore.getState().setIsRolling(false);
 }
 
 async function drain(): Promise<void> {

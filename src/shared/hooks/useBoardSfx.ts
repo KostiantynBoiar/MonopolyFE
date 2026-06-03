@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { GameState } from '@/shared/protocol/game-state';
-import { LogKind } from '@/shared/protocol/game-state.enums';
+import { GameEventType, LogKind } from '@/shared/protocol/game-state.enums';
 import { Sfx, playSfx, preloadSfx } from '@/shared/lib/sfx';
 import { onAnimation } from '@/shared/socket/timeline-executor';
 import { useBalanceChange } from './useBalanceChange';
@@ -22,8 +22,10 @@ const SFX_MAP = {
 
 export function useBoardSfx(gameState: GameState) {
   useEffect(() => {
-    // Only preload files that exist on disk; omit PAID / CHAT_MESSAGE until added.
-    preloadSfx(Sfx.DICE_ROLL, Sfx.NOTIFICATION, Sfx.AUCTION_BID, Sfx.PASSED_GO, Sfx.YOUR_TURN);
+    preloadSfx(
+      Sfx.DICE_ROLL, Sfx.NOTIFICATION, Sfx.AUCTION_BID,
+      Sfx.PASSED_GO, Sfx.YOUR_TURN, Sfx.PAID, Sfx.CHAT_MESSAGE,
+    );
   }, []);
 
   useEffect(() => {
@@ -40,50 +42,60 @@ export function useBoardSfx(gameState: GameState) {
   const prevTradeIdRef    = useRef<string | null>(null);
   const prevLogLenRef     = useRef(0);
 
+  // Keep a ref so the effect closure always reads current state without
+  // making the whole gameState object a dep (would fire on every frame).
+  const gameStateRef = useRef(gameState);
+  gameStateRef.current = gameState;
+
+  const hasAuction  = gameState.auction !== null;
+  const highestBid  = gameState.auction?.highestBid ?? -1;
+  const tradeId     = gameState.trade?.id ?? null;
+  const tradeStatus = gameState.trade?.status ?? null;
+  const logLen      = gameState.log.length;
+  const viewerId    = gameState.viewerId;
+
   useEffect(() => {
+    const gs = gameStateRef.current;
+
     // ── Auction start ─────────────────────────────────────────────────────────
-    const hasAuction = gameState.auction !== null;
     if (hasAuction && !prevAuctionRef.current) {
       playSfx(SFX_MAP.auctionStarted);
-      prevHighestBidRef.current = gameState.auction!.highestBid;
+      prevHighestBidRef.current = highestBid;
     }
     prevAuctionRef.current = hasAuction;
 
     // ── New bid landed ────────────────────────────────────────────────────────
     if (hasAuction) {
-      const currentBid = gameState.auction!.highestBid;
-      if (currentBid > prevHighestBidRef.current) {
+      if (highestBid > prevHighestBidRef.current) {
         playSfx(SFX_MAP.newBidLanded);
       }
-      prevHighestBidRef.current = currentBid;
+      prevHighestBidRef.current = highestBid;
     } else {
       prevHighestBidRef.current = -1;
     }
 
     // ── Trade proposed ────────────────────────────────────────────────────────
-    const tradeId = gameState.trade?.id ?? null;
-    if (tradeId && tradeId !== prevTradeIdRef.current && gameState.trade?.status === 'pending') {
+    if (tradeId && tradeId !== prevTradeIdRef.current && tradeStatus === 'pending') {
       playSfx(SFX_MAP.tradeProposed);
     }
     prevTradeIdRef.current = tradeId;
 
     // ── New log entries ───────────────────────────────────────────────────────
-    const logLen = gameState.log.length;
     if (logLen > prevLogLenRef.current) {
-      const newEntries = gameState.log.slice(prevLogLenRef.current);
+      const newEntries = gs.log.slice(prevLogLenRef.current);
 
-      if (newEntries.some((e) => /passed GO/i.test(e.text))) {
+      if (newEntries.some((e) => e.kind === LogKind.EVENT && e.event?.type === GameEventType.PassedGo)) {
         playSfx(SFX_MAP.passedGo);
       }
 
       if (newEntries.some(
         (e) =>
           (e.kind === LogKind.CHAT || e.kind === LogKind.STICKER) &&
-          e.playerId !== gameState.viewerId,
+          e.playerId !== viewerId,
       )) {
         playSfx(SFX_MAP.incomingChat);
       }
     }
     prevLogLenRef.current = logLen;
-  }, [gameState]);
+  }, [hasAuction, highestBid, tradeId, tradeStatus, logLen, viewerId]);
 }

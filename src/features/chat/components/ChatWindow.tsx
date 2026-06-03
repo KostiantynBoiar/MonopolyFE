@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TOKEN_COLORS } from '@/shared/config/constants';
@@ -46,18 +46,11 @@ function clampMessage(text: string) {
   return text.slice(0, 128);
 }
 
-function getTabStyle(isActive: boolean) {
+function getActiveStyle(isActive: boolean, withBorder = false) {
   return {
     backgroundColor: isActive ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
     color: isActive ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
-    borderColor: GAME_BOARD_COLORS.border,
-  };
-}
-
-function getStickerPackStyle(isActive: boolean) {
-  return {
-    backgroundColor: isActive ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
-    color: isActive ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
+    ...(withBorder ? { borderColor: GAME_BOARD_COLORS.border } : {}),
   };
 }
 
@@ -201,7 +194,7 @@ function ChatTabs({
       <button
         type="button"
         className={TAB_BUTTON_CLASS}
-        style={getTabStyle(activeTab === ChatWindowTab.EVENTS)}
+        style={getActiveStyle(activeTab === ChatWindowTab.EVENTS, true)}
         onClick={() => onTabChange(ChatWindowTab.EVENTS)}
       >
         <span>{eventsLabel}</span>
@@ -210,7 +203,7 @@ function ChatTabs({
       <button
         type="button"
         className={TAB_BUTTON_CLASS}
-        style={getTabStyle(activeTab === ChatWindowTab.CHAT)}
+        style={getActiveStyle(activeTab === ChatWindowTab.CHAT, true)}
         onClick={() => onTabChange(ChatWindowTab.CHAT)}
       >
         <span>{chatLabel}</span>
@@ -359,7 +352,7 @@ function StickerPicker({
               type="button"
               onClick={() => onPackChange(index)}
               className="rounded-[8px] px-2 py-1 text-[14px] font-semibold uppercase tracking-[0.16em]"
-              style={getStickerPackStyle(index === packIndex)}
+              style={getActiveStyle(index === packIndex)}
             >
               {pack.name}
             </button>
@@ -478,8 +471,7 @@ export function ChatWindow({
     () => log.filter((entry) => entry.kind === LogKind.EVENT),
     [log],
   );
-  const deferredMessages = useDeferredValue(messages);
-  const activeEntries = activeTab === ChatWindowTab.EVENTS ? eventEntries : deferredMessages;
+  const activeEntries = activeTab === ChatWindowTab.EVENTS ? eventEntries : messages;
 
   useEffect(() => {
     if (!externalMessages?.length) return;
@@ -526,7 +518,7 @@ export function ChatWindow({
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeTab, eventEntries.length, deferredMessages.length]);
+  }, [activeTab, eventEntries.length, messages.length]);
 
   function handleSend() {
     const text = clampMessage(draft.trim());
@@ -598,7 +590,7 @@ export function ChatWindow({
             <EventEntries entries={eventEntries} tableLabel={t('table')} />
           ) : (
             <MessageEntries
-              entries={deferredMessages}
+              entries={messages}
               playerLabel={t('player')}
               stickerAlt={t('stickerAlt')}
             />
