@@ -7,6 +7,7 @@ import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { BoardTile } from '@/features/game-board/components/BoardTile';
 import type { BoardPlayer } from '@/features/game-board/game-board.types';
 import type { PropertyState } from '@/shared/protocol/game-state';
+import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 
 // ─── Board layout helpers ─────────────────────────────────────────────────────
 
@@ -22,48 +23,41 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
   }
 }
 
-// The rendered board is a 13×13 equal-unit grid (aspect-square).
-// Corner tiles span 2 units, regular tiles 1 unit.
-//
-// Tokens walk the outer perimeter: for each edge group the position is fixed
-// to the outer side of that edge while the other axis tracks the tile's centre.
-// OUTER_MARGIN is the distance (in grid units) the token centre sits inside
-// the board border — roughly matching PlayerMarker's `bottom/left-[4px]` offset.
-const OUTER_MARGIN = 0.35; // units inward from the board's outer border
+const OUTER_MARGIN = 0.35;
 
 function getTileOuterEdgePct(pos: number): { x: number; y: number } {
   const { col, row } = getGridPos(pos);
 
-  // Horizontal / vertical midpoint of this tile column / row (13-unit space)
   const cx = col === 0 ? 1 : col === 10 ? 12 : col + 1.5;
   const cy = row === 0 ? 1 : row === 10 ? 12 : row + 1.5;
 
-  const lo = OUTER_MARGIN;        // near the 0 edge  (left / top)
-  const hi = 13 - OUTER_MARGIN;   // near the 13 edge (right / bottom)
+  const lo = OUTER_MARGIN;
+  const hi = 13 - OUTER_MARGIN;
 
   let x: number;
   let y: number;
 
-  // Corners sit at the intersection of their two outer edges
-  if      (col === 10 && row === 10) { x = hi; y = hi; } // pos  0 – GO
-  else if (col === 0  && row === 10) { x = lo; y = hi; } // pos 10 – JAIL
-  else if (col === 0  && row === 0 ) { x = lo; y = lo; } // pos 20 – PARKING
-  else if (col === 10 && row === 0 ) { x = hi; y = lo; } // pos 30 – GOTO JAIL
-  // Regular edges: one axis = outer border, other = tile centre
-  else if (row === 10) { x = cx; y = hi; } // bottom row
-  else if (col === 0 ) { x = lo; y = cy; } // left column
-  else if (row === 0 ) { x = cx; y = lo; } // top row
-  else                 { x = hi; y = cy; } // right column
+  if      (col === 10 && row === 10) { x = hi; y = hi; }
+  else if (col === 0  && row === 10) { x = lo; y = hi; }
+  else if (col === 0  && row === 0 ) { x = lo; y = lo; }
+  else if (col === 10 && row === 0 ) { x = hi; y = lo; }
+  else if (row === 10) { x = cx; y = hi; }
+  else if (col === 0 ) { x = lo; y = cy; }
+  else if (row === 0 ) { x = cx; y = lo; }
+  else                 { x = hi; y = cy; }
 
   return { x: (x / 13) * 100, y: (y / 13) * 100 };
 }
 
 // ─── Animation constants ──────────────────────────────────────────────────────
 
-const ANIM = {
-  slow: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: 650 },
-  fast: { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: 350 },
-} as const;
+type AnimVariant = 'normal' | 'fast' | 'drag';
+
+const ANIM_CONFIG: Record<AnimVariant, { easing: string; duration: number }> = {
+  normal: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: WALK_STEP_DURATION_MS },
+  fast:   { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: CARD_WALK_STEP_DURATION_MS },
+  drag:   { easing: 'cubic-bezier(0.16, 0.84, 0.24, 1)',    duration: JAIL_CORNER_DRAG_DURATION_MS },
+};
 
 // ─── Static board state ───────────────────────────────────────────────────────
 
@@ -71,11 +65,17 @@ function houses(position: number): PropertyState {
   return { position, ownerId: null, houses: 4, hotel: false, isMortgaged: false };
 }
 
+function mortgaged(position: number): PropertyState {
+  return { position, ownerId: 'p1', houses: 0, hotel: false, isMortgaged: true };
+}
+
 const STATIC_OWNERSHIP = new Map<number, PropertyState>([
   [2,  houses(2)],
   [18, houses(18)],
   [23, houses(23)],
   [39, houses(39)],
+  [5,  mortgaged(5)],
+  [12, mortgaged(12)],
 ]);
 
 const STATIC_PLAYERS = new Map<number, BoardPlayer[]>([
@@ -83,56 +83,49 @@ const STATIC_PLAYERS = new Map<number, BoardPlayer[]>([
   [20, [{ id: 'still-b', position: 20, tokenColor: '#A855F7', isBankrupt: false }]],
 ]);
 
-// ─── Token definitions ────────────────────────────────────────────────────────
+// ─── Walk mode: continuous loop ───────────────────────────────────────────────
 
-const TOKENS = [
-  { id: 'dbg-red',   tokenColor: '#EF4444' },
-  { id: 'dbg-blue',  tokenColor: '#3B82F6' },
+const WALK_TOKENS = [
   { id: 'dbg-green', tokenColor: '#22C55E' },
 ];
 
-const START_OFFSETS = [0, 13, 27];
+const WALK_START = [0];
 
-const SPEEDS = [
-  { label: '½×', ms: 1200, fast: false },
-  { label: '1×', ms: 600,  fast: false },
-  { label: '2×', ms: 300,  fast: true  },
-  { label: '4×', ms: 150,  fast: true  },
+const WALK_SPEEDS = [
+  { label: '½×', ms: 1200 },
+  { label: '1×', ms: 600  },
+  { label: '2×', ms: 300  },
+  { label: '4×', ms: 150  },
 ];
 
 // ─── Animated token ───────────────────────────────────────────────────────────
-// Absolutely positioned over the board grid; transitions left/top on pos change.
-// Wrapping from pos 39 → 0 disables the transition for one paint cycle so the
-// token teleports rather than flying across the entire board.
 
 interface AnimatedTokenProps {
   tokenColor: string;
   pos:        number;
-  fast:       boolean;
+  variant:    AnimVariant;
+  isDrag?:    boolean;
 }
 
-function AnimatedToken({ tokenColor, pos, fast }: AnimatedTokenProps) {
+function AnimatedToken({ tokenColor, pos, variant }: AnimatedTokenProps) {
   const prevPosRef            = useRef(pos);
   const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
     const prev  = prevPosRef.current;
     const delta = Math.abs(pos - prev);
-
-    if (delta > 20) {
-      // Wraparound jump — teleport without transition, then re-enable
+    // Drag is always an intentional teleport — never suppress it
+    if (variant !== 'drag' && delta > 20) {
       setAnimate(false);
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => setAnimate(true)),
-      );
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
     } else {
       setAnimate(true);
     }
     prevPosRef.current = pos;
-  }, [pos]);
+  }, [pos, variant]);
 
-  const { x, y }           = getTileOuterEdgePct(pos);
-  const { easing, duration } = fast ? ANIM.fast : ANIM.slow;
+  const { x, y } = getTileOuterEdgePct(pos);
+  const { easing, duration } = ANIM_CONFIG[variant];
 
   return (
     <div
@@ -160,22 +153,114 @@ function AnimatedToken({ tokenColor, pos, fast }: AnimatedTokenProps) {
   );
 }
 
+// ─── Scenario script runner ───────────────────────────────────────────────────
+
+interface ScriptStep {
+  pos:        number;
+  variant:    AnimVariant;
+  holdMs:     number; // time to wait after this step before advancing
+}
+
+interface ScriptState {
+  pos:     number;
+  variant: AnimVariant;
+}
+
+function useScript(steps: ScriptStep[], active: boolean): ScriptState {
+  const [state, setState] = useState<ScriptState>({ pos: steps[0].pos, variant: steps[0].variant });
+  const timerRef          = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeRef         = useRef(active);
+  const stepIdxRef        = useRef(0);
+
+  useEffect(() => { activeRef.current = active; }, [active]);
+
+  useEffect(() => {
+    if (!active) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      stepIdxRef.current = 0;
+      setState({ pos: steps[0].pos, variant: steps[0].variant });
+      return;
+    }
+
+    function advance() {
+      if (!activeRef.current) return;
+      const idx  = stepIdxRef.current % steps.length;
+      const step = steps[idx];
+      setState({ pos: step.pos, variant: step.variant });
+      stepIdxRef.current++;
+      timerRef.current = setTimeout(advance, step.holdMs);
+    }
+
+    advance();
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  return state;
+}
+
+// ─── Jail scenario: red token walks to pos 30, then drags to pos 10 ──────────
+
+const JAIL_STEPS: ScriptStep[] = [
+  // Walk clockwise from 24 toward GOTO_JAIL (pos 30)
+  { pos: 25, variant: 'normal', holdMs: WALK_STEP_DURATION_MS + 60 },
+  { pos: 26, variant: 'normal', holdMs: WALK_STEP_DURATION_MS + 60 },
+  { pos: 27, variant: 'normal', holdMs: WALK_STEP_DURATION_MS + 60 },
+  { pos: 28, variant: 'normal', holdMs: WALK_STEP_DURATION_MS + 60 },
+  { pos: 29, variant: 'normal', holdMs: WALK_STEP_DURATION_MS + 60 },
+  // Land on GOTO_JAIL – pause before the drag
+  { pos: 30, variant: 'normal', holdMs: 700 },
+  // Drag to JAIL corner (pos 10) – hold before repeating
+  { pos: 10, variant: 'drag', holdMs: JAIL_CORNER_DRAG_DURATION_MS + 1400 },
+  // Teleport back to start (no transition needed – next step will be pos 25)
+  { pos: 24, variant: 'normal', holdMs: 60 },
+];
+
+// ─── Card scenario: blue token zips fast from pos 7 toward pos 20 ────────────
+
+const CARD_STEPS: ScriptStep[] = [
+  { pos: 8,  variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 9,  variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 10, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 11, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 12, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 13, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 14, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 15, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 16, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 17, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 18, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  { pos: 19, variant: 'fast', holdMs: CARD_WALK_STEP_DURATION_MS + 40 },
+  // Destination – hold before reset
+  { pos: 20, variant: 'fast', holdMs: 1200 },
+  // Teleport back to chance tile
+  { pos: 7,  variant: 'fast', holdMs: 200 },
+];
+
+// ─── Mode ────────────────────────────────────────────────────────────────────
+
+type Mode = 'walk' | 'jail' | 'card';
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DebugPage() {
+  const [mode, setMode]         = useState<Mode>('walk');
   const [tick, setTick]         = useState(0);
   const [playing, setPlaying]   = useState(true);
   const [speedIdx, setSpeedIdx] = useState(1);
 
-  const { ms, fast } = SPEEDS[speedIdx];
+  const { ms } = WALK_SPEEDS[speedIdx];
 
   useEffect(() => {
-    if (!playing) return;
+    if (mode !== 'walk' || !playing) return;
     const id = setInterval(() => setTick((t) => t + 1), ms);
     return () => clearInterval(id);
-  }, [playing, ms]);
+  }, [mode, playing, ms]);
 
-  const positions = TOKENS.map((_, i) => (tick + START_OFFSETS[i]) % 40);
+  const walkPositions = WALK_TOKENS.map((_, i) => (tick + WALK_START[i]) % 40);
+
+  const jailState = useScript(JAIL_STEPS, mode === 'jail');
+  const cardState = useScript(CARD_STEPS, mode === 'card');
 
   return (
     <div
@@ -190,12 +275,13 @@ export default function DebugPage() {
           <div
             className="relative grid h-full w-full"
             style={{
-              ['--board-unit' as string]:        'calc(100% / 13)',
+              ['--board-unit' as string]:        'calc((100% - 24px) / 13)',
               ['--board-tile-width' as string]:  'var(--board-unit)',
               ['--board-corner-size' as string]: 'calc(var(--board-unit) * 2)',
               ['--board-edge-depth' as string]:  'calc(var(--board-unit) * 2)',
               gridTemplateColumns: BOARD_COLUMNS,
               gridTemplateRows:    BOARD_ROWS,
+              gap:                 '2px',
               backgroundColor:     GAME_BOARD_COLORS.ink,
             }}
           >
@@ -227,15 +313,33 @@ export default function DebugPage() {
               }}
             />
 
-            {/* Token overlay — absolutely positioned over the grid */}
-            {TOKENS.map((token, i) => (
+            {/* Walk mode – green token loops continuously */}
+            {mode === 'walk' && WALK_TOKENS.map((token, i) => (
               <AnimatedToken
                 key={token.id}
                 tokenColor={token.tokenColor}
-                pos={positions[i]}
-                fast={fast}
+                pos={walkPositions[i]}
+                variant="normal"
               />
             ))}
+
+            {/* Jail scenario – red token */}
+            {mode === 'jail' && (
+              <AnimatedToken
+                tokenColor="#EF4444"
+                pos={jailState.pos}
+                variant={jailState.variant}
+              />
+            )}
+
+            {/* Card scenario – blue token */}
+            {mode === 'card' && (
+              <AnimatedToken
+                tokenColor="#3B82F6"
+                pos={cardState.pos}
+                variant={cardState.variant}
+              />
+            )}
           </div>
 
         </div>
@@ -251,52 +355,74 @@ export default function DebugPage() {
           boxShadow:       '0 4px 24px rgba(0,0,0,0.55)',
         }}
       >
-        <button
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-sm text-white transition-colors hover:bg-white/10 active:scale-95"
-          aria-label={playing ? 'Pause' : 'Play'}
-          onClick={() => setPlaying((p) => !p)}
-        >
-          {playing ? '⏸' : '▶'}
-        </button>
-
-        <div className="h-4 w-px bg-white/20" />
-
+        {/* Mode selector */}
         <div className="flex gap-1">
-          {SPEEDS.map((s, i) => (
+          {([
+            { id: 'walk', label: '🔄 Walk',  color: '#22C55E' },
+            { id: 'jail', label: '🚨 Jail',  color: '#EF4444' },
+            { id: 'card', label: '⚡ Card',  color: '#3B82F6' },
+          ] as const).map((m) => (
             <button
-              key={s.label}
-              className="rounded px-2 py-0.5 text-xs font-mono transition-colors active:scale-95"
+              key={m.id}
+              className="rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors active:scale-95"
               style={{
-                backgroundColor: i === speedIdx ? 'rgba(255,255,255,0.15)' : 'transparent',
-                color:           i === speedIdx ? '#ffffff'                 : 'rgba(255,255,255,0.40)',
+                backgroundColor: mode === m.id ? `${m.color}28` : 'transparent',
+                color:           mode === m.id ? m.color        : 'rgba(255,255,255,0.40)',
+                border:          mode === m.id ? `1px solid ${m.color}60` : '1px solid transparent',
               }}
-              onClick={() => setSpeedIdx(i)}
+              onClick={() => setMode(m.id)}
             >
-              {s.label}
+              {m.label}
             </button>
           ))}
         </div>
 
         <div className="h-4 w-px bg-white/20" />
 
-        <div className="flex gap-3">
-          {TOKENS.map((t, i) => (
-            <div key={t.id} className="flex items-center gap-1">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: t.tokenColor }}
-              />
-              <span
-                className="tabular-nums font-mono text-xs"
-                style={{ color: t.tokenColor }}
-              >
-                {positions[i].toString().padStart(2, '0')}
-              </span>
-            </div>
-          ))}
-        </div>
+        {/* Walk controls — only relevant in walk mode */}
+        {mode === 'walk' && (
+          <>
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-sm text-white transition-colors hover:bg-white/10 active:scale-95"
+              aria-label={playing ? 'Pause' : 'Play'}
+              onClick={() => setPlaying((p) => !p)}
+            >
+              {playing ? '⏸' : '▶'}
+            </button>
 
-        <div className="h-4 w-px bg-white/20" />
+            <div className="h-4 w-px bg-white/20" />
+
+            <div className="flex gap-1">
+              {WALK_SPEEDS.map((s, i) => (
+                <button
+                  key={s.label}
+                  className="rounded px-2 py-0.5 text-xs font-mono transition-colors active:scale-95"
+                  style={{
+                    backgroundColor: i === speedIdx ? 'rgba(255,255,255,0.15)' : 'transparent',
+                    color:           i === speedIdx ? '#ffffff'                 : 'rgba(255,255,255,0.40)',
+                  }}
+                  onClick={() => setSpeedIdx(i)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-4 w-px bg-white/20" />
+          </>
+        )}
+
+        {/* Scenario info badge */}
+        {mode === 'jail' && (
+          <span className="text-xs text-[#EF4444]/80 font-mono">
+            pos 24 → 30 <span className="opacity-50">walk</span> → 10 <span className="opacity-50">drag</span>
+          </span>
+        )}
+        {mode === 'card' && (
+          <span className="text-xs text-[#3B82F6]/80 font-mono">
+            pos 7 → 20 <span className="opacity-50">fast</span>
+          </span>
+        )}
 
         <span className="font-mono text-[10px] uppercase tracking-widest text-white/25">
           debug

@@ -30,7 +30,7 @@ const BAND_DEPTH = 'calc(var(--board-edge-depth) * 1.25)';
 function getBandStyle(edge: TileEdge): React.CSSProperties {
   const base: React.CSSProperties = {
     position:       'absolute',
-    zIndex:         20,
+    zIndex:         99,
     display:        'flex',
     alignItems:     'center',
     justifyContent: 'center',

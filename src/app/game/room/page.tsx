@@ -143,6 +143,10 @@ function getSpaceOwnerId(game: GameState, position: number): string | null {
   return game.spaces.find((space) => space.position === position)?.ownerId ?? null;
 }
 
+function isSpaceMortgaged(game: GameState, position: number): boolean {
+  return game.spaces.find((space) => space.position === position)?.isMortgaged ?? false;
+}
+
 function resolveTradeTargetIdFromPosition(
   game: GameState,
   viewerPlayerId: string | null,
@@ -203,7 +207,9 @@ function normalizeTradeDraft(
 
   const ownedByViewer = new Set(getPlayerProperties(game, viewerPlayer.id).map((space) => space.position));
   const nextGivePositions = new Set(
-    [...draft.givePositions].filter((position) => ownedByViewer.has(position)),
+    [...draft.givePositions].filter(
+      (position) => ownedByViewer.has(position) && !isSpaceMortgaged(game, position),
+    ),
   );
 
   const target = draft.targetId
@@ -213,7 +219,9 @@ function normalizeTradeDraft(
     ? new Set(getPlayerProperties(game, target.id).map((space) => space.position))
     : new Set<number>();
   const nextGetPositions = new Set(
-    [...draft.getPositions].filter((position) => ownedByTarget.has(position)),
+    [...draft.getPositions].filter(
+      (position) => ownedByTarget.has(position) && !isSpaceMortgaged(game, position),
+    ),
   );
 
   const nextGiveMoney = Math.min(draft.giveMoney, viewerPlayer.balance);
@@ -408,9 +416,7 @@ export default function GameRoomPage() {
         router.replace('/lobby');
       })
       .finally(() => {
-        // Always clear — even if cancelled. React may flush cleanup between .then/.finally,
-        // causing cancelled=true even on success. The re-run takes the early return and
-        // never clears isValidatingSession, hanging the boot.
+
         setIsValidatingSession(false);
       });
 
@@ -429,9 +435,6 @@ export default function GameRoomPage() {
     router.replace('/lobby?kicked=1');
   }, [clearSession, resetSocket, router, wasKicked]);
 
-  // Clear the persisted game store once the session is finished. Kept up here with the
-  // other hooks (NOT after the boot-guard early returns below) so the hook order stays
-  // stable — otherwise React throws "rendered fewer hooks than expected" (#310).
   useEffect(() => {
     const finished =
       currentSession?.status === SessionStatus.FINISHED ||
@@ -602,6 +605,8 @@ export default function GameRoomPage() {
     setSelectedTile(position);
     if (activeOverlay !== ActiveOverlay.TRADE_BUILDER || !viewerPlayerId) return;
 
+    if (isSpaceMortgaged(game, position)) return;
+
     const ownerId = getSpaceOwnerId(game, position);
     if (ownerId === viewerPlayerId) {
       setTradeDraft((currentDraft) => ({
@@ -707,7 +712,6 @@ export default function GameRoomPage() {
   }, [game, viewerPlayer]);
 
   // ─── Boot guards ──────────────────────────────────────────────────────────
-
 
   if (
     !roomBootTimedOut &&
