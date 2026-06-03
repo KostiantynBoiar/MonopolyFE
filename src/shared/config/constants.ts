@@ -84,3 +84,12 @@ export const STATUS_DOT: Record<SocketStatus, StatusDot> = {
 export const BASE_DELAY_MS = 1_000;
 export const MAX_DELAY_MS  = 30_000;
 export const JITTER_RATIO  = 0.2;   // ±20% randomization to spread reconnect storms
+
+// ─── Dice Animation ───────────────────────────────────────────────────────────────────
+
+
+// Total CSS animation duration. timeline-executor's DICE_SPIN_MS must match.
+export const SPIN_MS = 900;
+export const FAST_PHASE_MS       = 560;
+export const FAST_INTERVAL_MS    = 42;
+export const SLOW_INTERVAL_MS    = 130;

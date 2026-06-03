@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
+import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, SPIN_MS } from '@/shared/config/constants';
 
 interface DiceWindowProps {
   diceRoll?: DiceRoll | null;
@@ -18,13 +19,6 @@ const PIP_LAYOUTS: Record<number, Array<[number, number]>> = {
   5: [[1, 1], [1, 3], [2, 2], [3, 1], [3, 3]],
   6: [[1, 1], [1, 3], [2, 1], [2, 3], [3, 1], [3, 3]],
 };
-
-// Total CSS animation duration. timeline-executor's DICE_SPIN_MS must match.
-const SPIN_MS = 900;
-// Two-phase pip cycling: fast chaotic tumble → slow deceleration → reveal.
-const FAST_PHASE_MS       = 560;
-const FAST_INTERVAL_MS    = 42;
-const SLOW_INTERVAL_MS    = 130;
 
 function randomFace() {
   return Math.floor(Math.random() * 6) + 1;
