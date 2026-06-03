@@ -147,12 +147,13 @@ export function BoardContainer({
             <div
               className="relative grid h-full w-full"
               style={{
-                ['--board-unit' as string]: 'calc(100% / 13)',
+                ['--board-unit' as string]: 'calc((100% - 24px) / 13)',
                 ['--board-tile-width' as string]: 'var(--board-unit)',
                 ['--board-corner-size' as string]: 'calc(var(--board-unit) * 2)',
                 ['--board-edge-depth' as string]: 'calc(var(--board-unit) * 2)',
                 gridTemplateColumns: BOARD_COLUMNS,
                 gridTemplateRows: BOARD_ROWS,
+                gap: '2px',
                 backgroundColor: GAME_BOARD_COLORS.ink,
               }}
             >

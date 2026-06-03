@@ -432,11 +432,13 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
   // The BE broadcasts the current player's actions_available to all viewers in the
   // same frame, so we must gate every turn-specific action on viewer identity.
   // Auction bidding is the exception: all players can bid simultaneously.
-  // Gate turn-specific actions on viewer identity only when the BE provides viewer_id.
-  // If viewer_id is absent the field is undefined and we fall back to trusting
-  // actions_available as-is (avoids breaking older BE builds that omit the field).
+  // When viewer_id is absent or empty we deny all turn-specific actions to be safe —
+  // treating a missing viewer_id as "everyone is the active player" would expose the
+  // Roll Dice / End Turn buttons to every connected client on the first game frame.
   const isCurrentPlayer =
-    state.viewer_id == null || state.viewer_id === state.turn.current_player_id;
+    state.viewer_id != null &&
+    state.viewer_id !== '' &&
+    state.viewer_id === state.turn.current_player_id;
   const a = isCurrentPlayer ? (state.turn.actions_available ?? {}) : {};
   const rawA = state.turn.actions_available ?? {};
   const inJail = state.turn.phase === TurnPhase.JAIL_DECISION;
