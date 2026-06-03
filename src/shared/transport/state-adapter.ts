@@ -364,7 +364,7 @@ function mapEvent(raw: Record<string, unknown> | undefined): GameEvent | undefin
   if (!raw?.type) return undefined;
   return {
     ...raw,
-    // snake_case → camelCase for every field renderEventLocalized touches
+    // snake_case → camelCase for every event field the frontend reads
     playerId:      raw.player_id,
     playerName:    raw.player_name,
     payerId:       raw.payer_id,

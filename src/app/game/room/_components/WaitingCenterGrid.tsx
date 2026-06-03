@@ -111,13 +111,21 @@ export function WaitingCenterGrid({
           onClick={onStart}
           disabled={!canStart}
           className="rounded-[12px] border font-display font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed"
-          style={{ fontSize: 'clamp(13px,2vmin,22px)', paddingLeft: 'clamp(8px,1.2vmin,16px)', paddingRight: 'clamp(8px,1.2vmin,16px)' }}
           style={canStart ? {
+            ...DISABLED_BUTTON,
+            fontSize: 'clamp(13px,2vmin,22px)',
+            paddingLeft: 'clamp(8px,1.2vmin,16px)',
+            paddingRight: 'clamp(8px,1.2vmin,16px)',
             backgroundColor: BOARD_TILE_COLORS.propertyGreen,
             borderColor: BOARD_TILE_COLORS.propertyGreen,
             color: BOARD_TILE_COLORS.altText,
             transition: TRANSITION,
-          } : DISABLED_BUTTON}
+          } : {
+            ...DISABLED_BUTTON,
+            fontSize: 'clamp(13px,2vmin,22px)',
+            paddingLeft: 'clamp(8px,1.2vmin,16px)',
+            paddingRight: 'clamp(8px,1.2vmin,16px)',
+          }}
         >
           {startLabel}
         </button>
@@ -173,10 +181,10 @@ export function WaitingCenterGrid({
           type="button"
           onClick={handleCopy}
           className="mt-2 flex min-h-0 flex-1 items-center justify-center rounded-[10px] border px-2 text-center font-mono font-black tracking-[0.14em]"
-          style={{ fontSize: 'clamp(14px,2.4vmin,24px)' }}
           title={t('copyInviteCode')}
           aria-label={t('copyInviteCodeWithValue', { code: inviteCode })}
           style={{
+            fontSize: 'clamp(14px,2.4vmin,24px)',
             backgroundColor: GAME_BOARD_COLORS.tile ?? GAME_BOARD_COLORS.surface,
             borderColor: GAME_BOARD_COLORS.border,
             color: GAME_BOARD_COLORS.text,

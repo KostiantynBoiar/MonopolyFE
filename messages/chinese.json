@@ -1,33 +1,4 @@
 {
-  "EventLog": {
-    "turn_started":    "<player>{playerName}</player> 的回合。",
-    "round_started":   "第 {roundNumber} 轮。",
-    "dice_rolled":     "<player>{playerName}</player> 掷出 {die1} + {die2} = {total}{doubles, select, yes {（双！）} other {}}。",
-    "player_moved":    "<player>{playerName}</player> 移动到 {toName}。",
-    "passed_go":       "<player>{playerName}</player> 经过起点，获得 <amount>{amount}</amount>。",
-    "property_bought": "<player>{playerName}</player> 以 <amount>{price}</amount> 购入 <property>{propertyName}</property>。",
-    "property_sold":   "<player>{playerName}</player> 将 <property>{propertyName}</property> 以 <amount>{refund}</amount> 卖给银行。",
-    "rent_paid":       "<player>{payerName}</player> 为 <property>{propertyName}</property> 向 <player>{ownerName}</player> 支付了 <amount>{amount}</amount> 租金。",
-    "tax_paid":        "<player>{playerName}</player> 缴纳了 <amount>{amount}</amount> — {taxName}。",
-    "card_drawn":      "<player>{playerName}</player> 抽到：「{text}」",
-    "sent_to_jail":    "<player>{playerName}</player> 被送进监狱。",
-    "left_jail":       "<player>{playerName}</player> {method, select, fine {支付 M50 出狱} card {使用出狱卡出狱} other {掷出双骰出狱}}。",
-    "house_built":     "<player>{playerName}</player> 在 <property>{propertyName}</property> 建造了一栋房屋（<amount>{cost}</amount>）。",
-    "hotel_built":     "<player>{playerName}</player> 在 <property>{propertyName}</property> 升级为酒店（<amount>{cost}</amount>）。",
-    "house_sold":      "<player>{playerName}</player> 将 <property>{propertyName}</property> 的一栋房屋以 <amount>{refund}</amount> 出售。",
-    "hotel_sold":      "<player>{playerName}</player> 将 <property>{propertyName}</property> 的酒店以 <amount>{refund}</amount> 出售。",
-    "mortgaged":       "<player>{playerName}</player> 将 <property>{propertyName}</property> 抵押，获得 <amount>{amount}</amount>。",
-    "unmortgaged":     "<player>{playerName}</player> 赎回 <property>{propertyName}</property>，花费 <amount>{cost}</amount>。",
-    "auction_started": "<property>{propertyName}</property> 进入拍卖！",
-    "auction_bid":     "<player>{playerName}</player> 出价 <amount>{amount}</amount>。",
-    "auction_won":     "{haswinner, select, yes {<player>{winnerName}</player> 以 <amount>{amount}</amount> 赢得拍卖。} other {无人出价，地产归还银行。}}",
-    "trade_proposed":  "<player>{proposerName}</player> 向 <player>{targetName}</player> 提出交易。",
-    "trade_resolved":  "{accepted, select, yes {交易已接受。} other {交易已拒绝。}}",
-    "debt_incurred":   "<player>{debtorName}</player> 欠款 <amount>{amount}</amount>，需筹集资金。",
-    "bankrupted":      "<player>{playerName}</player> 已破产。",
-    "game_over":       "<player>{winnerName}</player> 赢得游戏！"
-  },
-
   "Card": {
     "chance": "机会",
     "community_chest": "宝箱",
