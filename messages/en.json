@@ -176,7 +176,9 @@
     "yourTurn": "Your turn",
     "round": "Round {number}",
     "gameLog": "Game Log",
-    "messagePlaceholder": "Message…"
+    "messagePlaceholder": "Message…",
+    "surrender": "Surrender",
+    "surrenderConfirm": "Sure?"
   },
 
   "Chat": {

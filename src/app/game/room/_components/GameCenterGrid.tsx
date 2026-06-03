@@ -8,6 +8,8 @@ import type { BoardSpace } from '@/features/game-board/game-board.types';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { CenterPanel, type CenterPanelProps } from './CenterPanel';
 import { FullOverlay, type FullOverlayProps } from './FullOverlay';
+import { TurnTimer } from './TurnTimer';
+import { SurrenderButton } from './SurrenderButton';
 
 interface GameCenterGridProps extends CenterPanelProps, FullOverlayProps {
   isBuyDecisionForViewer: boolean;
@@ -22,11 +24,14 @@ interface GameCenterGridProps extends CenterPanelProps, FullOverlayProps {
   hasOtherTraders: boolean;
   isViewerTurn: boolean;
   roundNumber: number;
+  turnDeadlineMs: number | null;
+  canSurrender: boolean;
   onEndTurn: () => void;
   onManageOpen: () => void;
   onTradeOpen: () => void;
   onBuy: () => void;
   onAuction: () => void;
+  onSurrender: () => void;
 }
 
 const DISABLED_BUTTON = {
@@ -52,6 +57,8 @@ export function GameCenterGrid({
   hasOtherTraders,
   isViewerTurn,
   roundNumber,
+  turnDeadlineMs,
+  canSurrender,
   isRolling,
   // Button handlers
   onRoll,
@@ -60,6 +67,7 @@ export function GameCenterGrid({
   onTradeOpen,
   onBuy,
   onAuction,
+  onSurrender,
   // CenterPanel props
   activeCard,
   pendingInteractionPlayerId,
@@ -225,14 +233,21 @@ export function GameCenterGrid({
           </button>
 
           <div
-            className="flex min-w-0 items-center justify-center rounded-[12px] border px-2 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.12em]"
+            className="flex min-w-0 flex-col items-center justify-center gap-[2px] rounded-[12px] border px-2 py-1 text-center"
             style={{
               backgroundColor: GAME_BOARD_COLORS.surface,
               borderColor: GAME_BOARD_COLORS.border,
               color: GAME_BOARD_COLORS.muted,
             }}
           >
-            {isViewerTurn ? t('yourTurn') : t('round', { number: roundNumber })}
+            <TurnTimer deadlineMs={turnDeadlineMs} />
+            {isViewerTurn && canSurrender ? (
+              <SurrenderButton onSurrender={onSurrender} />
+            ) : (
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em]">
+                {isViewerTurn ? t('yourTurn') : t('round', { number: roundNumber })}
+              </span>
+            )}
           </div>
         </section>
 
