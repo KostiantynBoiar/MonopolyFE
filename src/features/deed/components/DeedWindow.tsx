@@ -163,7 +163,7 @@ export function DeedWindow({
 
       {/* Rent / info body */}
       <div
-        className="grid min-h-0 rounded-[10px] border px-3 py-3 self-stretch"
+        className="grid min-h-0 overflow-hidden rounded-[10px] border px-3 py-3 self-stretch"
         style={{
           gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : isSpecialCard ? '1fr' : 'auto 1fr',
           backgroundColor:  GAME_BOARD_COLORS.surface,
@@ -189,11 +189,11 @@ export function DeedWindow({
 
         {isDeed && deed ? (
           <div
-            className="flex min-h-0 h-full flex-col"
+            className="flex min-h-0 h-full flex-col overflow-hidden"
             style={{ color: GAME_BOARD_COLORS.tileText }}
           >
             <div
-              className="grid min-h-0 h-full gap-[5px]"
+              className="grid min-h-0 h-full gap-[5px] overflow-hidden"
               style={{
                 alignContent: renderBuildingsInsideInfo ? 'start' : (!showActions ? 'center' : 'center'),
               }}
