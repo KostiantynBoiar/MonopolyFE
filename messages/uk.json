@@ -243,6 +243,7 @@
     "clickToCopy": "Натисніть, щоб скопіювати",
     "invalidCode": "Неправильний код",
     "inviteCodePlaceholder": "TYC-XXXX",
+    "backToGame": "Повернутися до гри",
     "createGame": "Нова гра",
     "creating": "Створюємо…",
     "visibility": {
@@ -297,6 +298,7 @@
     "email": "Email",
     "memberSince": "Учасник з",
     "userId": "ID користувача",
+    "loading": "Завантаження…",
     "signOut": "Вийти",
     "goToLobby": "До лобі"
   },

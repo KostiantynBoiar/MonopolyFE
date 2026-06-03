@@ -31,7 +31,7 @@ export async function Hero({ onlineCount }: HeroProps) {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button as="a" href="/lobby/new" variant="gold">
+              <Button as="a" href="/lobby?panel=create" variant="gold">
                 {t('createGame')}
                 <Icon name="arrow" />
               </Button>

@@ -1,4 +1,5 @@
 export { JoinByCodeForm } from './components/JoinByCodeForm';
+export { CreateLobbyForm } from './components/CreateLobbyForm';
 export { SessionCard } from './components/SessionCard';
 export {
   WaitingActionsPanel,

@@ -98,7 +98,7 @@ export function TradeBuilder({
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+    <div className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-white">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
         <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>

@@ -81,8 +81,11 @@ export function ManagePropertiesOverlay({
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden"
-      style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
+      className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.surface,
+        borderColor: GAME_BOARD_COLORS.border,
+      }}
     >
       {/* Accent strip — blue = management */}
       <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyBlue, flexShrink: 0 }} />

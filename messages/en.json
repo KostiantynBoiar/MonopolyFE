@@ -260,6 +260,7 @@
     "clickToCopy": "Click to copy",
     "invalidCode": "Invalid code",
     "inviteCodePlaceholder": "TYC-XXXX",
+    "backToGame": "Back to game",
     "createGame": "New Game",
     "creating": "Creating…",
     "visibility": {
@@ -314,6 +315,7 @@
     "email": "Email",
     "memberSince": "Member since",
     "userId": "User ID",
+    "loading": "Loading…",
     "signOut": "Sign out",
     "goToLobby": "Go to lobby"
   },

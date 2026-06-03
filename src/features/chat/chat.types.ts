@@ -157,14 +157,3 @@ export interface TradeBuilderOverlayProps {
   onTradePropose?: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
   onCloseTradeBuilder?: () => void;
 }
-
-/** Combined props for the BoardCenterPanel component */
-export type BoardCenterPanelProps = LogAndActionsProps &
-  CardOverlayProps &
-  DeedOverlayProps &
-  JailOverlaySlotProps &
-  DebtOverlaySlotProps &
-  AuctionPanelSlotProps &
-  TradeWindowProps &
-  ManageOverlayProps &
-  TradeBuilderOverlayProps;

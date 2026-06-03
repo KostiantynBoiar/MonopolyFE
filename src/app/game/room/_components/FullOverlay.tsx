@@ -1,10 +1,8 @@
 'use client';
 
-import type { ReactElement } from 'react';
 import { ManagePropertiesOverlay, type ManageProperty } from '@/features/manage';
 import { TradeBuilder, type TradeAsset, type TradePlayer } from '@/features/trade/components/TradeBuilder';
 import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
-import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { TradeParticipant } from '@/features/trade/trade.types';
 import type { TradeOffer, TradeState } from '@/shared/protocol/game-state';
 import { TradeStatus } from '@/shared/protocol/game-state.enums';
@@ -46,20 +44,6 @@ export interface FullOverlayProps {
   onTradePropose: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
 }
 
-function OverlayShell({ children }: { children: ReactElement }) {
-  return (
-    <div
-      className="absolute inset-[6px] z-10 overflow-hidden rounded-[12px] border"
-      style={{
-        backgroundColor: GAME_BOARD_COLORS.surface,
-        borderColor: GAME_BOARD_COLORS.border,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
 export function FullOverlay({
   trade,
   tradeProposer,
@@ -84,62 +68,56 @@ export function FullOverlay({
   onSellProperty,
   onCloseOverlay,
   onTradePropose,
-}: FullOverlayProps): ReactElement | null {
+}: FullOverlayProps) {
   if (trade && trade.status === TradeStatus.PENDING && tradeProposer && tradeTarget) {
     return (
-      <OverlayShell>
-        <TradeOverlay
-          trade={trade}
-          proposer={tradeProposer}
-          target={tradeTarget}
-          viewerId={viewerPlayerId ?? ''}
-          onAccept={onTradeAccept}
-          onReject={onTradeReject}
-          onCancel={onTradeCancel}
-        />
-      </OverlayShell>
+      <TradeOverlay
+        trade={trade}
+        proposer={tradeProposer}
+        target={tradeTarget}
+        viewerId={viewerPlayerId ?? ''}
+        onAccept={onTradeAccept}
+        onReject={onTradeReject}
+        onCancel={onTradeCancel}
+      />
     );
   }
 
   if (activeOverlay === 'manage') {
     return (
-      <OverlayShell>
-        <ManagePropertiesOverlay
-          properties={manageProperties}
-          canBuildHouse={canBuildHouse}
-          canBuildHotel={canBuildHotel}
-          canMortgage={canMortgage}
-          canUnmortgage={canUnmortgage}
-          onBuildHouse={onBuildHouse}
-          onBuildHotel={onBuildHotel}
-          onSellHouse={onSellHouse}
-          onSellHotel={onSellHotel}
-          onMortgage={onMortgage}
-          onUnmortgage={onUnmortgage}
-          onSellProperty={onSellProperty}
-          onClose={onCloseOverlay}
-        />
-      </OverlayShell>
+      <ManagePropertiesOverlay
+        properties={manageProperties}
+        canBuildHouse={canBuildHouse}
+        canBuildHotel={canBuildHotel}
+        canMortgage={canMortgage}
+        canUnmortgage={canUnmortgage}
+        onBuildHouse={onBuildHouse}
+        onBuildHotel={onBuildHotel}
+        onSellHouse={onSellHouse}
+        onSellHotel={onSellHotel}
+        onMortgage={onMortgage}
+        onUnmortgage={onUnmortgage}
+        onSellProperty={onSellProperty}
+        onClose={onCloseOverlay}
+      />
     );
   }
 
   if (activeOverlay === 'trade-builder' && tradeBuilderData) {
     return (
-      <OverlayShell>
-        <TradeBuilder
-          me={tradeBuilderData.me}
-          others={tradeBuilderData.others}
-          myProperties={tradeBuilderData.myProperties}
-          myJailCards={tradeBuilderData.myJailCards}
-          propertiesOf={tradeBuilderData.propertiesOf}
-          jailCardsOf={tradeBuilderData.jailCardsOf}
-          onPropose={(targetId, offer, request) => {
-            onTradePropose(targetId, offer, request);
-            onCloseOverlay();
-          }}
-          onClose={onCloseOverlay}
-        />
-      </OverlayShell>
+      <TradeBuilder
+        me={tradeBuilderData.me}
+        others={tradeBuilderData.others}
+        myProperties={tradeBuilderData.myProperties}
+        myJailCards={tradeBuilderData.myJailCards}
+        propertiesOf={tradeBuilderData.propertiesOf}
+        jailCardsOf={tradeBuilderData.jailCardsOf}
+        onPropose={(targetId, offer, request) => {
+          onTradePropose(targetId, offer, request);
+          onCloseOverlay();
+        }}
+        onClose={onCloseOverlay}
+      />
     );
   }
 

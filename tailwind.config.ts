@@ -42,9 +42,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['var(--font-fraunces)', 'serif'],
-        sans: ['var(--font-hanken)', 'sans-serif'],
-        mono: ['var(--font-dm-mono)', 'monospace'],
+        display: ['var(--font-roboto-flex)', 'sans-serif'],
+        sans: ['var(--font-roboto-flex)', 'sans-serif'],
+        mono: ['var(--font-roboto-flex)', 'sans-serif'],
       },
       borderRadius: {
         sm: '6px',
