@@ -156,6 +156,8 @@
     "manage": "Управляти",
     "trade": "Обмін",
     "roll": "Кинути",
+    "yourTurn": "Ваш хід",
+    "round": "Раунд {number}",
     "gameLog": "Журнал гри",
     "messagePlaceholder": "Повідомлення…"
   },

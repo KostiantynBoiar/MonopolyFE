@@ -173,6 +173,8 @@
     "manage": "Manage",
     "trade": "Trade",
     "roll": "Roll",
+    "yourTurn": "Your turn",
+    "round": "Round {number}",
     "gameLog": "Game Log",
     "messagePlaceholder": "Message…"
   },

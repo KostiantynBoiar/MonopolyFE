@@ -457,7 +457,7 @@ export default function GameRoomPage() {
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
 
       {isWaitingSession ? (
-        <div className="h-full min-h-0 p-3 pt-14">
+        <div className="h-full min-h-0 p-[4px]">
           <BoardContainer
             centerContent={(
               <WaitingCenterGrid
@@ -478,7 +478,7 @@ export default function GameRoomPage() {
           />
         </div>
       ) : game.players.length === 0 ? (
-        <div className="h-full min-h-0 p-3 pt-14">
+        <div className="h-full min-h-0 p-[4px]">
           <BoardContainer
             centerContent={(
               <EmptyGameState

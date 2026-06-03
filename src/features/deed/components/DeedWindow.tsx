@@ -1,5 +1,6 @@
 'use client';
 
+import { useLayoutEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import { CornerVariant, SpaceType } from '@/features/game-board/game-board.enums';
@@ -112,6 +113,24 @@ export function DeedWindow({
   const headerColor    = getSpaceHeaderColor(activeSpace);
   const headerTextColor = getSpaceHeaderTextColor(activeSpace);
 
+  const headerTextRef = useRef<HTMLParagraphElement>(null);
+
+  useLayoutEffect(() => {
+    const el = headerTextRef.current;
+    if (!el) return;
+    el.style.fontSize = '';
+    const isMultiLine = () => {
+      const s = getComputedStyle(el);
+      const lh = s.lineHeight === 'normal' ? parseFloat(s.fontSize) * 1.2 : parseFloat(s.lineHeight);
+      return el.scrollHeight > Math.ceil(lh * 1.4);
+    };
+    if (!isMultiLine()) return;
+    for (const px of (compact ? [9, 8] : [15, 13, 11, 9])) {
+      el.style.fontSize = `${px}px`;
+      if (!isMultiLine()) break;
+    }
+  }, [spaceName, compact]);
+
   // Decision mode uses a gold accent border to signal urgency.
   const outerBorder = isDecisionMode ? BOARD_TILE_COLORS.propertyYellow : GAME_BOARD_COLORS.border;
 
@@ -123,30 +142,15 @@ export function DeedWindow({
           ? 'auto minmax(0,1fr)'
           : isDeed
           ? (showActions || (showBuildings && !renderBuildingsInsideInfo)
-            ? 'auto auto minmax(0,1fr) auto'
-            : 'auto auto minmax(0,1fr)')
-          : (isDecisionMode ? 'auto auto minmax(0,1fr)' : 'auto minmax(0,1fr)'),
+            ? 'auto minmax(0,1fr) auto'
+            : 'auto minmax(0,1fr)')
+          : 'auto minmax(0,1fr)',
         backgroundColor: GAME_BOARD_COLORS.panel,
         borderColor:     outerBorder,
         borderWidth:     isDecisionMode ? '2px' : '1px',
         color:           GAME_BOARD_COLORS.text,
       }}
     >
-      {/* Decision banner — only in decision mode */}
-      {isDecisionMode && (
-        <div
-          className="flex items-center justify-center rounded-[8px] px-2 py-1"
-          style={{
-            backgroundColor: BOARD_TILE_COLORS.propertyYellow,
-            color:           BOARD_TILE_COLORS.altText,
-          }}
-        >
-          <span className="font-mono text-[10px] font-black uppercase tracking-[0.22em]">
-            {t('yourMoveDecide')}
-          </span>
-        </div>
-      )}
-
       {/* Space name / color header */}
       <div
         className="relative overflow-hidden rounded-[10px] border px-3 py-2 text-center"
@@ -156,7 +160,7 @@ export function DeedWindow({
           color:           headerTextColor,
         }}
       >
-        <p className={`font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
+        <p ref={headerTextRef} className={`font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
           {spaceName}
         </p>
       </div>
@@ -175,7 +179,7 @@ export function DeedWindow({
             <p className={`font-semibold ${compact ? 'text-[10px]' : 'text-sm'}`} style={{ color: GAME_BOARD_COLORS.text }}>
               {isDeed && deed ? getRentTitle(deed, t) : cornerText?.eyebrow ?? t('status')}
             </p>
-            <p className={`mt-1 font-black leading-none ${compact ? 'text-xl' : 'text-4xl'}`} style={{ color: GAME_BOARD_COLORS.tileText }}>
+            <p className={`mt-1 font-black leading-none ${compact ? 'text-xl' : showActions ? 'text-2xl' : 'text-4xl'}`} style={{ color: GAME_BOARD_COLORS.tileText }}>
               {isDeed && headlineRent
                 ? `$${headlineRent.replace(/^M/, '')}`
                 : cornerText?.value ?? '--'}
