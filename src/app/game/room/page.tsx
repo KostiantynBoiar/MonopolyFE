@@ -18,6 +18,7 @@ import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
+import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import {
   getPlayerProperties,
   getPropertyRent,
@@ -468,7 +469,7 @@ export default function GameRoomPage() {
       id: walkState.playerId,
       currentPos: walkState.currentPos,
       tokenColor: player ? TOKEN_COLORS[player.token] : '#10182E',
-      fast: walkState.fast,
+      variant: walkState.variant ?? WalkingAnimationVariant.NORMAL,
     }];
   }, [game.players, walkState]);
 

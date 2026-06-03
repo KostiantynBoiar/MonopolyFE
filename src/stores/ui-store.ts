@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import type { DeedInfo } from '@/features/deed';
+import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { ActiveCard, DiceRoll } from '@/shared/protocol/game-state';
 
 // ── WalkState lives here so the game-dispatch hook and board consumers share
 //    one definition without a cross-feature import.
-export interface WalkState { playerId: string; currentPos: number; fast?: boolean }
+export interface WalkState { playerId: string; currentPos: number; variant?: WalkingAnimationVariant }
 export interface PendingAnimationInteraction {
   interactionId: string;
   affectedPlayerId: string;

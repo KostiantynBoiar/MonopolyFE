@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
+import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor, BoardTileSelectionTone } from './game-board.enums';
@@ -8,7 +9,7 @@ export interface WalkingPlayer {
   id: string;
   currentPos: number;
   tokenColor: string;
-  fast?: boolean;
+  variant?: WalkingAnimationVariant;
 }
 
 export interface BoardContainerProps {

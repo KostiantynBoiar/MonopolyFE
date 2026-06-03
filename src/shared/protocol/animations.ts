@@ -1,5 +1,11 @@
 import type { ActiveCard } from './game-state';
 
+export enum WalkingAnimationVariant {
+  NORMAL = 'normal',
+  FAST = 'fast',
+  DRAG = 'drag',
+}
+
 export type MoveAnimationSpeed = 'normal' | 'fast';
 export type MoveAnimationReason = 'dice' | 'card' | 'teleport' | 'jail';
 

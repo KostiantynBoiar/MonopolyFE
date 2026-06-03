@@ -27,8 +27,10 @@ export const bandColors: Record<PropertyColor, string> = {
 
 // ─── Walking animation ────────────────────────────────────────────────────────
 
-export const WALK_STEP_DURATION_MS      = 180; // CSS transition duration per board step (normal moves)
-export const CARD_WALK_STEP_DURATION_MS = 55;  // CSS transition + step interval for card-driven moves
+export const WALK_STEP_DURATION_MS = 180; // CSS transition duration per board step (normal moves)
+export const FAST_WALK_MULTIPLIER = 1.5;
+export const CARD_WALK_STEP_DURATION_MS = Math.round(WALK_STEP_DURATION_MS / FAST_WALK_MULTIPLIER);
+export const JAIL_CORNER_DRAG_DURATION_MS = 520;
 
 // ─── Card flip animation ──────────────────────────────────────────────────────
 
