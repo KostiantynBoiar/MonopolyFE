@@ -21,11 +21,7 @@ import { getDeedInfo } from '@/features/deed';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
-
-// How long each phase of the dice animation lasts (ms).
-// DICE_SPIN_MS must match DiceWindow's SPIN_MS constant (900 ms).
-const DICE_SPIN_MS    = 900;
-const DICE_LINGER_MS  = 900; // pause on the result before token moves
+import { DICE_SPIN_MS, DICE_LINGER_MS } from '@/shared/config/constants';
 
 // ─── Animation event listeners ────────────────────────────────────────────────
 

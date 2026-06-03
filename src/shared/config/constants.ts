@@ -87,9 +87,8 @@ export const JITTER_RATIO  = 0.2;   // ±20% randomization to spread reconnect s
 
 // ─── Dice Animation ───────────────────────────────────────────────────────────────────
 
-
-// Total CSS animation duration. timeline-executor's DICE_SPIN_MS must match.
-export const SPIN_MS = 900;
+export const DICE_SPIN_MS = 900;
 export const FAST_PHASE_MS       = 560;
 export const FAST_INTERVAL_MS    = 42;
 export const SLOW_INTERVAL_MS    = 130;
+export const DICE_LINGER_MS  = 900;

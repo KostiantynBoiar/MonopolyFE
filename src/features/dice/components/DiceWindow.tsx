@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
-import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, SPIN_MS } from '@/shared/config/constants';
+import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, DICE_SPIN_MS } from '@/shared/config/constants';
 
 interface DiceWindowProps {
   diceRoll?: DiceRoll | null;
@@ -45,7 +45,7 @@ function DieFace({
       style={{
         ['--die-rest-transform' as string]: tilt,
         animation: rolling
-          ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} ${SPIN_MS}ms cubic-bezier(.16,.84,.28,1)`
+          ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} ${DICE_SPIN_MS}ms cubic-bezier(.16,.84,.28,1)`
           : undefined,
         background: `${DIE_BG}, ${BOARD_TILE_COLORS.propertyRed}`,
         borderColor: 'rgba(255,255,255,0.10)',
@@ -146,7 +146,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
         setRolling(false);
         setJustSettled(true);
         later(() => setJustSettled(false), 340);
-      }, SPIN_MS - FAST_PHASE_MS);
+      }, DICE_SPIN_MS - FAST_PHASE_MS);
     }, FAST_PHASE_MS);
 
     return () => dispose.forEach((fn) => fn());
