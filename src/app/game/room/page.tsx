@@ -15,6 +15,7 @@ import type { TradeParticipant } from '@/features/trade/trade.types';
 import { BOARD } from '@/shared/config/board-layout';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
+import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import {
   getPlayerProperties,
@@ -105,6 +106,30 @@ function EmptyGameState({ sessionCode, status }: { sessionCode: string | null; s
   );
 }
 
+function FinishedGameState({
+  winnerName,
+  onLeave,
+  isLeaving,
+}: {
+  winnerName: string | null;
+  onLeave: () => void;
+  isLeaving: boolean;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 rounded-[18px] border border-line bg-surface px-5 text-center">
+      <div>
+        <p className="font-display text-lg font-semibold text-ink">Game finished</p>
+        <p className="mt-1 text-sm text-muted">
+          {winnerName ? `${winnerName} won the game.` : 'This game has ended.'}
+        </p>
+      </div>
+      <Button onClick={onLeave} variant="blue" disabled={isLeaving}>
+        {isLeaving ? 'Leaving…' : 'Back to lobby'}
+      </Button>
+    </div>
+  );
+}
+
 function NoActiveRoomState() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-4">
@@ -166,6 +191,7 @@ export default function GameRoomPage() {
   const sessionId = currentSession?.id ?? null;
   const canConnectSocket = Boolean(ready && sessionId && validatedSessionId === sessionId);
   const { sendChat, sendSticker } = useGameSocket(canConnectSocket ? sessionId : null);
+  const isScreenShaking = useOnWsError(wsError);
 
   useBoardSfx(game);
 
@@ -345,19 +371,28 @@ export default function GameRoomPage() {
   const pendingBuyPosition = game.turn.pendingBuyPosition;
   const pendingBuySpace = pendingBuyPosition != null ? (BOARD[pendingBuyPosition] ?? null) : null;
   const isViewerTurn = Boolean(viewerPlayerId && game.turn.currentPlayerId === viewerPlayerId);
-  const isBuyDecisionForViewer = Boolean(pendingBuySpace && isViewerTurn && permissions.canBuyProperty);
+  const isBuyDecisionForViewer = Boolean(pendingBuySpace && isViewerTurn);
   const selectedBoardPosition = selectedTile != null && BOARD[selectedTile] ? selectedTile : null;
   const deedBrowsePosition = selectedBoardPosition ?? pendingBuyPosition ?? viewerPlayer?.position ?? 0;
   const deedBrowseSpace = BOARD[deedBrowsePosition] ?? BOARD[0];
   const highlightedBoardPosition = isBuyDecisionForViewer ? pendingBuyPosition : deedBrowsePosition;
   const deedPanelSpace = isBuyDecisionForViewer && pendingBuySpace ? pendingBuySpace : deedBrowseSpace;
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling && !isTimelineRunning;
+  const canManagePendingBuyShortfall = Boolean(
+    pendingBuySpace &&
+    isViewerTurn &&
+    manageProperties.length > 0 &&
+    viewerPlayer &&
+    pendingBuySpace.price != null &&
+    viewerPlayer.balance < pendingBuySpace.price,
+  );
   const canManage =
     permissions.canBuildHouse ||
     permissions.canBuildHotel ||
     permissions.canMortgage ||
     permissions.canUnmortgage ||
-    manageProperties.length > 0;
+    manageProperties.length > 0 ||
+    canManagePendingBuyShortfall;
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
@@ -449,15 +484,26 @@ export default function GameRoomPage() {
   const isWaitingSession =
     currentSession.status === SessionStatus.WAITING ||
     (game.status === GameStatus.LOBBY && game.players.length === 0);
+  const isFinishedSession =
+    currentSession.status === SessionStatus.FINISHED ||
+    game.status === GameStatus.FINISHED;
+  const winnerName = game.winnerId
+    ? game.players.find((player) => player.id === game.winnerId)?.displayName ?? null
+    : null;
+
+  useEffect(() => {
+    if (!isFinishedSession) return;
+    useGameStore.persist.clearStorage();
+  }, [isFinishedSession]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <main className="relative h-screen min-h-0 w-full overflow-hidden bg-paper">
+    <main className={`relative h-screen min-h-0 w-full overflow-hidden bg-paper${isScreenShaking ? ' ws-error-screen-shake' : ''}`}>
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
 
       {isWaitingSession ? (
-        <div className="h-full min-h-0 p-3 pt-14">
+        <div className="h-full min-h-0 p-[4px]">
           <BoardContainer
             centerContent={(
               <WaitingCenterGrid
@@ -477,8 +523,26 @@ export default function GameRoomPage() {
             sidebarPlayers={waitingSidebarPlayers}
           />
         </div>
+      ) : isFinishedSession ? (
+        <div className="h-full min-h-0 p-[4px]">
+          <BoardContainer
+            centerContent={(
+              <FinishedGameState
+                winnerName={winnerName}
+                onLeave={handleLeaveRoom}
+                isLeaving={isLeaving}
+              />
+            )}
+            spaces={game.spaces}
+            players={boardPlayers}
+            sidebarPlayers={sidebarPlayers}
+            viewerId={viewerPlayerId ?? undefined}
+            createdAt={game.createdAt}
+            onSurrender={() => dispatchCommand(CommandType.Surrender)}
+          />
+        </div>
       ) : game.players.length === 0 ? (
-        <div className="h-full min-h-0 p-3 pt-14">
+        <div className="h-full min-h-0 p-[4px]">
           <BoardContainer
             centerContent={(
               <EmptyGameState
@@ -499,6 +563,7 @@ export default function GameRoomPage() {
               pendingBuySpace={pendingBuySpace}
               // Button states
               canRoll={canRoll}
+              canBuyProperty={permissions.canBuyProperty}
               canManage={canManage}
               canEndTurn={permissions.canEndTurn}
               canTrade={permissions.canTrade}

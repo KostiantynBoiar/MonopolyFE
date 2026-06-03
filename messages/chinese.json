@@ -155,6 +155,8 @@
     "manage": "管理",
     "trade": "交易",
     "roll": "掷骰",
+    "yourTurn": "你的回合",
+    "round": "第 {number} 轮",
     "gameLog": "游戏记录",
     "messagePlaceholder": "消息…"
   },

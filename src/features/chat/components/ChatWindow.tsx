@@ -236,32 +236,30 @@ function EmptyState({ label }: { label: string }) {
 
 function EventEntries({
   entries,
-  tableLabel,
 }: {
   entries: ChatWindowProps['log'];
-  tableLabel: string;
 }) {
   return (
-    <div className="grid gap-[3px]">
-      {entries.map((entry) => (
-        <article
-          key={entry.id}
-          className="grid min-w-0 gap-[1px] rounded-[8px] px-2 py-1.5"
-          style={MESSAGE_CARD_STYLE}
-        >
-          <p className="text-[13px] font-semibold uppercase tracking-[0.12em]" style={TIMESTAMP_TEXT_STYLE}>
-            {formatTime(new Date(entry.ts).getTime())}
-          </p>
-          <p
-            className="min-w-0 whitespace-pre-wrap text-center text-[15px] leading-[1.35]"
-            style={BODY_TEXT_STYLE}
+    <div className="flex flex-col gap-[2px] py-1">
+      {entries.map((entry) => {
+        return (
+          <div
+            key={entry.id}
+            className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 px-2 py-0.5 text-[13.5px] leading-snug"
+            style={{ color: GAME_BOARD_COLORS.text }}
           >
-            <span className="font-semibold">{entry.playerName ?? tableLabel}</span>
-            {': '}
-            {entry.text}
-          </p>
-        </article>
-      ))}
+            <span
+              className="shrink-0 font-mono text-[11px]"
+              style={TIMESTAMP_TEXT_STYLE}
+            >
+              [{formatTime(new Date(entry.ts).getTime())}]
+            </span>
+            <p className="min-w-0 flex-1 whitespace-pre-wrap" style={BODY_TEXT_STYLE}>
+              {entry.text}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -451,110 +449,99 @@ function Composer({
 
 export function ChatWindow({
   log,
-  initialMessages = [],
+  initialMessages: _initialMessages,
   externalMessages,
   viewerToken,
   onSendMessage,
   onSendSticker,
 }: ChatWindowProps) {
   const t = useTranslations('Chat');
-  const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
-  const [draft, setDraft] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [unreadCount, setUnreadCount] = useState(initialMessages.length);
+
+  const [activeTab,    setActiveTab]    = useState<ChatWindowTab>(ChatWindowTab.CHAT);
+  const [draft,        setDraft]        = useState('');
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
+  const [unreadCount,  setUnreadCount]  = useState(0);
   const [showStickers, setShowStickers] = useState(false);
-  const [packIndex, setPackIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [packIndex,    setPackIndex]    = useState(0);
+  const scrollRef  = useRef<HTMLDivElement>(null);
   const stickerPacks = useStickerPacks();
 
   const eventEntries = useMemo(
-    () => log.filter((entry) => entry.kind === LogKind.EVENT),
+    () => log.filter((e) => e.kind === LogKind.EVENT),
     [log],
   );
-  const activeEntries = activeTab === ChatWindowTab.EVENTS ? eventEntries : messages;
 
+  // Chat history derived from game log — persisted across reloads via game-store localStorage.
+  const serverChatEntries = useMemo(() =>
+    log
+      .filter((e) => e.kind === LogKind.CHAT || e.kind === LogKind.STICKER)
+      .map((e): ChatMessage => ({
+        id:     e.id,
+        kind:   'chat',
+        author: e.playerName,
+        token:  e.playerToken,
+        text:   e.stickerUrl ? `[sticker:${e.stickerUrl}]` : e.text,
+        ts:     Date.parse(e.ts),
+      })),
+    [log],
+  );
+
+  // Real-time socket messages not yet confirmed in the server log (no id overlap).
+  const realtimeOnly = useMemo(() => {
+    const serverIds = new Set(serverChatEntries.map((m) => m.id));
+    return (externalMessages ?? []).filter((m) => !serverIds.has(m.id));
+  }, [externalMessages, serverChatEntries]);
+
+  // Local optimistic sends not yet confirmed by server or real-time feed.
+  const pendingLocal = useMemo(() => {
+    const confirmedTexts = new Set(
+      [...serverChatEntries, ...realtimeOnly].map((m) => m.text + '|' + Math.floor(m.ts / 30_000)),
+    );
+    return localMessages.filter(
+      (local) => !confirmedTexts.has(local.text + '|' + Math.floor(local.ts / 30_000)),
+    );
+  }, [localMessages, serverChatEntries, realtimeOnly]);
+
+  const displayMessages = useMemo(
+    () => [...serverChatEntries, ...realtimeOnly, ...pendingLocal].sort((a, b) => a.ts - b.ts),
+    [serverChatEntries, realtimeOnly, pendingLocal],
+  );
+
+  // Unread badge: count new server chat messages while not on the chat tab.
+  const prevServerLenRef = useRef(serverChatEntries.length);
   useEffect(() => {
-    if (!externalMessages?.length) return;
-
-    setMessages((current) => {
-      const existingIds = new Set(current.map((message) => message.id));
-      const incoming = externalMessages.filter((message) => !existingIds.has(message.id));
-      if (incoming.length === 0) return current;
-
-      const matchedLocalIds = new Set<string>();
-      for (const message of incoming) {
-        if (message.author !== 'You') continue;
-
-        const localMatch = current.find((candidate) => (
-          (candidate.id.startsWith('local-') || candidate.id.startsWith('sticker-')) &&
-          candidate.author === 'You' &&
-          candidate.text === message.text &&
-          Math.abs(candidate.ts - message.ts) < 30_000
-        ));
-
-        if (localMatch) {
-          matchedLocalIds.add(localMatch.id);
-        }
-      }
-
-      const retainedLocal = current.filter((message) => (
-        (message.id.startsWith('local-') || message.id.startsWith('sticker-')) &&
-        !matchedLocalIds.has(message.id)
-      ));
-
-      if (activeTab !== ChatWindowTab.CHAT) {
-        setUnreadCount((count) => count + incoming.filter((message) => message.author !== 'You').length);
-      }
-
-      return [...externalMessages, ...retainedLocal].sort((a, b) => a.ts - b.ts);
-    });
-  }, [activeTab, externalMessages]);
-
-  useEffect(() => {
-    if (activeTab === ChatWindowTab.CHAT) {
-      setUnreadCount(0);
+    if (serverChatEntries.length > prevServerLenRef.current && activeTab !== ChatWindowTab.CHAT) {
+      setUnreadCount((c) => c + (serverChatEntries.length - prevServerLenRef.current));
     }
+    prevServerLenRef.current = serverChatEntries.length;
+  }, [serverChatEntries.length, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === ChatWindowTab.CHAT) setUnreadCount(0);
   }, [activeTab]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeTab, eventEntries.length, messages.length]);
+  }, [activeTab, eventEntries.length, displayMessages.length]);
+
 
   function handleSend() {
     const text = clampMessage(draft.trim());
     if (!text) return;
-
-    const nextMessage: ChatMessage = {
-      id: `local-${Date.now()}`,
-      kind: 'chat',
-      author: 'You',
-      token: viewerToken,
-      text,
-      ts: Date.now(),
-    };
-
-    setMessages((current) => [...current, nextMessage]);
-    if (activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + 1);
-    }
+    setLocalMessages((current) => [...current, {
+      id: `local-${Date.now()}`, kind: 'chat', author: 'You', token: viewerToken, text, ts: Date.now(),
+    }]);
+    if (activeTab !== ChatWindowTab.CHAT) setUnreadCount((c) => c + 1);
     setDraft('');
     onSendMessage?.(text);
   }
 
   function handleSticker(url: string) {
-    const nextMessage: ChatMessage = {
-      id: `sticker-${Date.now()}`,
-      kind: 'chat',
-      author: 'You',
-      token: viewerToken,
-      text: `[sticker:${url}]`,
-      ts: Date.now(),
-    };
-
-    setMessages((current) => [...current, nextMessage]);
-    if (activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + 1);
-    }
+    setLocalMessages((current) => [...current, {
+      id: `sticker-${Date.now()}`, kind: 'chat', author: 'You', token: viewerToken,
+      text: `[sticker:${url}]`, ts: Date.now(),
+    }]);
+    if (activeTab !== ChatWindowTab.CHAT) setUnreadCount((c) => c + 1);
     setShowStickers(false);
     onSendSticker?.(url);
   }
@@ -584,16 +571,18 @@ export function ChatWindow({
         style={PANEL_BORDER_STYLE}
       >
         <div className="flex h-full min-h-0 flex-col overflow-y-auto p-[3px]">
-          {activeEntries.length === 0 ? (
-            <EmptyState label={activeTab === ChatWindowTab.EVENTS ? t('noEventsYet') : t('noMessagesYet')} />
-          ) : activeTab === ChatWindowTab.EVENTS ? (
-            <EventEntries entries={eventEntries} tableLabel={t('table')} />
+          {activeTab === ChatWindowTab.EVENTS ? (
+            eventEntries.length === 0
+              ? <EmptyState label={t('noEventsYet')} />
+              : <EventEntries entries={eventEntries} />
           ) : (
-            <MessageEntries
-              entries={messages}
-              playerLabel={t('player')}
-              stickerAlt={t('stickerAlt')}
-            />
+            displayMessages.length === 0
+              ? <EmptyState label={t('noMessagesYet')} />
+              : <MessageEntries
+                  entries={displayMessages}
+                  playerLabel={t('player')}
+                  stickerAlt={t('stickerAlt')}
+                />
           )}
           <div ref={scrollRef} />
         </div>
@@ -608,7 +597,7 @@ export function ChatWindow({
         sendLabel={t('send')}
         onDraftChange={(value) => setDraft(clampMessage(value))}
         onKeyDown={handleKeyDown}
-        onToggleStickers={() => setShowStickers((value) => !value)}
+        onToggleStickers={() => setShowStickers((v) => !v)}
         onSend={handleSend}
       />
 

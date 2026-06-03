@@ -56,7 +56,7 @@ export function JailOverlay({
   onPayFine, onUseCard, onRoll,
 }: JailOverlayProps) {
   const t = useTranslations('Jail');
-  const triesLeft = Math.max(0, 3 - attempts);
+  const triesLeft = Math.max(0, attempts);
   const showDice = isRolling || diceRoll !== null;
   const accentColor = triesLeft > 0 ? BOARD_TILE_COLORS.propertyOrange : BOARD_TILE_COLORS.propertyRed;
 

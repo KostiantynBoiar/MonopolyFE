@@ -96,7 +96,7 @@ export function WaitingCenterGrid({
   ];
 
   return (
-    <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[6px]">
+    <div className="grid h-full w-full grid-cols-6 grid-rows-5" style={{ gap: 'clamp(3px,0.5vmin,6px)', padding: 'clamp(3px,0.5vmin,6px)' }}>
 
       {/* Empty top-left 2×2 — placeholder matching DiceWindow slot */}
       <div
@@ -105,23 +105,32 @@ export function WaitingCenterGrid({
       />
 
       {/* Actions — top-right 4×2 */}
-      <section className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-[6px]">
+      <section className="col-span-4 col-start-3 row-span-2 grid min-h-0 grid-rows-[minmax(0,1fr)_auto]" style={{ gap: 'clamp(3px,0.5vmin,6px)' }}>
         <button
           type="button"
           onClick={onStart}
           disabled={!canStart}
-          className="rounded-[12px] border px-4 font-display text-[22px] font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed"
+          className="rounded-[12px] border font-display font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed"
           style={canStart ? {
+            ...DISABLED_BUTTON,
+            fontSize: 'clamp(13px,2vmin,22px)',
+            paddingLeft: 'clamp(8px,1.2vmin,16px)',
+            paddingRight: 'clamp(8px,1.2vmin,16px)',
             backgroundColor: BOARD_TILE_COLORS.propertyGreen,
             borderColor: BOARD_TILE_COLORS.propertyGreen,
             color: BOARD_TILE_COLORS.altText,
             transition: TRANSITION,
-          } : DISABLED_BUTTON}
+          } : {
+            ...DISABLED_BUTTON,
+            fontSize: 'clamp(13px,2vmin,22px)',
+            paddingLeft: 'clamp(8px,1.2vmin,16px)',
+            paddingRight: 'clamp(8px,1.2vmin,16px)',
+          }}
         >
           {startLabel}
         </button>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-[6px]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center" style={{ gap: 'clamp(3px,0.5vmin,6px)' }}>
           <div
             className="rounded-[10px] border px-3 py-2"
             style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border }}
@@ -129,7 +138,7 @@ export function WaitingCenterGrid({
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: GAME_BOARD_COLORS.muted }}>
               {t('players')}
             </p>
-            <p className="font-mono text-[15px] font-bold" style={{ color: GAME_BOARD_COLORS.text }}>
+            <p className="font-mono font-bold" style={{ fontSize: 'clamp(11px,1.4vmin,15px)', color: GAME_BOARD_COLORS.text }}>
               {memberCount} / {maxPlayers}
             </p>
           </div>
@@ -171,10 +180,11 @@ export function WaitingCenterGrid({
         <button
           type="button"
           onClick={handleCopy}
-          className="mt-2 flex min-h-0 flex-1 items-center justify-center rounded-[10px] border px-2 text-center font-mono text-[24px] font-black tracking-[0.14em]"
+          className="mt-2 flex min-h-0 flex-1 items-center justify-center rounded-[10px] border px-2 text-center font-mono font-black tracking-[0.14em]"
           title={t('copyInviteCode')}
           aria-label={t('copyInviteCodeWithValue', { code: inviteCode })}
           style={{
+            fontSize: 'clamp(14px,2.4vmin,24px)',
             backgroundColor: GAME_BOARD_COLORS.tile ?? GAME_BOARD_COLORS.surface,
             borderColor: GAME_BOARD_COLORS.border,
             color: GAME_BOARD_COLORS.text,

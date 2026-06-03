@@ -76,6 +76,34 @@ export function getWalkSteps(from: number, to: number): number[] {
   return steps;
 }
 
+const OUTER_MARGIN = 0.35; // grid units inward from the board's outer border
+
+/** Returns the outer-edge position of a board tile as percentages of the 13-unit board grid.
+ *  Used to place absolutely-positioned overlay tokens on the board perimeter. */
+export function getTileOuterEdgePct(pos: number): { x: number; y: number } {
+  const { col, row } = getGridPos(pos);
+
+  const cx = col === 0 ? 1 : col === 10 ? 12 : col + 1.5;
+  const cy = row === 0 ? 1 : row === 10 ? 12 : row + 1.5;
+
+  const lo = OUTER_MARGIN;
+  const hi = 13 - OUTER_MARGIN;
+
+  let x: number;
+  let y: number;
+
+  if      (col === 10 && row === 10) { x = hi; y = hi; }
+  else if (col === 0  && row === 10) { x = lo; y = hi; }
+  else if (col === 0  && row === 0 ) { x = lo; y = lo; }
+  else if (col === 10 && row === 0 ) { x = hi; y = lo; }
+  else if (row === 10) { x = cx; y = hi; }
+  else if (col === 0 ) { x = lo; y = cy; }
+  else if (row === 0 ) { x = cx; y = lo; }
+  else                 { x = hi; y = cy; }
+
+  return { x: (x / 13) * 100, y: (y / 13) * 100 };
+}
+
 /** Returns the pixel center of a board tile in the unscaled 686px coordinate space. */
 export function getTileCenter(pos: number): { x: number; y: number } {
   const { col, row } = getGridPos(pos);
