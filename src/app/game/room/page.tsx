@@ -15,6 +15,7 @@ import type { TradeParticipant } from '@/features/trade/trade.types';
 import { BOARD } from '@/shared/config/board-layout';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
+import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import {
   getPlayerProperties,
@@ -190,6 +191,7 @@ export default function GameRoomPage() {
   const sessionId = currentSession?.id ?? null;
   const canConnectSocket = Boolean(ready && sessionId && validatedSessionId === sessionId);
   const { sendChat, sendSticker } = useGameSocket(canConnectSocket ? sessionId : null);
+  const isScreenShaking = useOnWsError(wsError);
 
   useBoardSfx(game);
 
@@ -497,7 +499,7 @@ export default function GameRoomPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <main className="relative h-screen min-h-0 w-full overflow-hidden bg-paper">
+    <main className={`relative h-screen min-h-0 w-full overflow-hidden bg-paper${isScreenShaking ? ' ws-error-screen-shake' : ''}`}>
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
 
       {isWaitingSession ? (

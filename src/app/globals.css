@@ -180,12 +180,24 @@
   animation: die-settle 340ms ease-out both;
 }
 
+@keyframes ws-error-screen-shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  20% { transform: translate3d(-10px, 0, 0); }
+  40% { transform: translate3d(10px, 0, 0); }
+  60% { transform: translate3d(-7px, 0, 0); }
+  80% { transform: translate3d(7px, 0, 0); }
+}
+
+.ws-error-screen-shake {
+  animation: ws-error-screen-shake 450ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .status-dot-ping {
     animation: none !important;
   }
 
-  .monopoly-die, .token-walking, .die-settled {
+  .monopoly-die, .token-walking, .die-settled, .ws-error-screen-shake {
     animation: none !important;
   }
 }
