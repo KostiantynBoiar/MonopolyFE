@@ -49,15 +49,8 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
   canDeclareBankruptcy: false,
 };
 
-// ======================================================
-// GAME SNAPSHOT
-// The unit the frontend stores and the mock server emits.
-// ======================================================
-
 export interface GameSnapshot {
   game:        GameState;
   permissions: PlayerPermissions;
-  // Ordered animation instructions emitted by the backend describing how this state was
-  // reached; replayed by the timeline-executor. Empty for reconnect/system frames.
   animationTimeline: AnimationInstruction[];
 }

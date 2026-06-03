@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { GameSnapshot } from '@/shared/protocol/permissions';
 import type { GameState } from '@/shared/protocol/game-state';
+import { GameStatus } from '@/shared/protocol/game-state.enums';
 import { emptySnapshot } from '@/shared/transport/state-adapter';
 
 interface GameStore {
@@ -21,6 +22,10 @@ type PersistedSlice = {
     };
   };
 };
+
+function shouldPersistSnapshot(snapshot: GameSnapshot): boolean {
+  return snapshot.game.status !== GameStatus.FINISHED;
+}
 
 // Debounce localStorage writes so rapid setSnapshot calls during gameplay
 // don't serialize on every frame — only flush after 2 s of inactivity.
@@ -59,25 +64,35 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'tycoon-game',
       storage: createJSONStorage(() => debouncedStorage),
-      partialize: (s) => ({
-        snapshot: {
-          game: {
-            gameId: s.snapshot.game.gameId,
-            log:    s.snapshot.game.log,
-          },
-        },
-      }),
+      partialize: (s) => (
+        shouldPersistSnapshot(s.snapshot)
+          ? {
+              snapshot: {
+                game: {
+                  gameId: s.snapshot.game.gameId,
+                  log:    s.snapshot.game.log,
+                },
+              },
+            }
+          : {}
+      ),
       merge: (persisted, current) => {
         const p = persisted as PersistedSlice;
+        if (!shouldPersistSnapshot(current.snapshot)) {
+          return current;
+        }
         const log    = p.snapshot?.game?.log;
         const gameId = p.snapshot?.game?.gameId;
-        // Reject stale log from a different (or missing) game session.
-        if (!log?.length || gameId !== current.snapshot.game.gameId) return current;
+        const currentGameId = current.snapshot.game.gameId;
+        // During hydration the live snapshot is still empty, so allow the persisted
+        // log through; the first authoritative server frame will replace it.
+        if (!log?.length || !gameId) return current;
+        if (currentGameId && gameId !== currentGameId) return current;
         return {
           ...current,
           snapshot: {
             ...current.snapshot,
-            game: { ...current.snapshot.game, log },
+            game: { ...current.snapshot.game, gameId: currentGameId || gameId, log },
           },
         };
       },

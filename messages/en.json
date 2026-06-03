@@ -1,4 +1,33 @@
 {
+  "EventLog": {
+    "turn_started":    "<player>{playerName}</player>'s turn.",
+    "round_started":   "Round {roundNumber}.",
+    "dice_rolled":     "<player>{playerName}</player> rolled {die1} + {die2} = {total}{doubles, select, yes { (doubles!)} other {}}.",
+    "player_moved":    "<player>{playerName}</player> moved to {toName}.",
+    "passed_go":       "<player>{playerName}</player> passed GO and collected <amount>{amount}</amount>.",
+    "property_bought": "<player>{playerName}</player> bought <property>{propertyName}</property> for <amount>{price}</amount>.",
+    "property_sold":   "<player>{playerName}</player> sold <property>{propertyName}</property> to the bank for <amount>{refund}</amount>.",
+    "rent_paid":       "<player>{payerName}</player> paid <amount>{amount}</amount> rent to <player>{ownerName}</player> for <property>{propertyName}</property>.",
+    "tax_paid":        "<player>{playerName}</player> paid <amount>{amount}</amount> — {taxName}.",
+    "card_drawn":      "<player>{playerName}</player> drew: \"{text}\"",
+    "sent_to_jail":    "<player>{playerName}</player> was sent to Jail.",
+    "left_jail":       "<player>{playerName}</player> {method, select, fine {paid M50 to get out of jail} card {used a Get Out of Jail Free card} other {rolled doubles and left jail}}.",
+    "house_built":     "<player>{playerName}</player> built a house on <property>{propertyName}</property> (<amount>{cost}</amount>).",
+    "hotel_built":     "<player>{playerName}</player> upgraded <property>{propertyName}</property> to a hotel (<amount>{cost}</amount>).",
+    "house_sold":      "<player>{playerName}</player> sold a house on <property>{propertyName}</property> for <amount>{refund}</amount>.",
+    "hotel_sold":      "<player>{playerName}</player> sold the hotel on <property>{propertyName}</property> for <amount>{refund}</amount>.",
+    "mortgaged":       "<player>{playerName}</player> mortgaged <property>{propertyName}</property> for <amount>{amount}</amount>.",
+    "unmortgaged":     "<player>{playerName}</player> unmortgaged <property>{propertyName}</property> for <amount>{cost}</amount>.",
+    "auction_started": "<property>{propertyName}</property> goes to auction!",
+    "auction_bid":     "<player>{playerName}</player> bids <amount>{amount}</amount>.",
+    "auction_won":     "{haswinner, select, yes {<player>{winnerName}</player> won the auction for <amount>{amount}</amount>.} other {No bids. Property returns to the bank.}}",
+    "trade_proposed":  "<player>{proposerName}</player> proposed a trade to <player>{targetName}</player>.",
+    "trade_resolved":  "{accepted, select, yes {Trade accepted.} other {Trade rejected.}}",
+    "debt_incurred":   "<player>{debtorName}</player> owes <amount>{amount}</amount> and must raise cash.",
+    "bankrupted":      "<player>{playerName}</player> went bankrupt.",
+    "game_over":       "<player>{winnerName}</player> wins the game!"
+  },
+
   "Corner": {
     "go": {
       "label": "START",

@@ -15,6 +15,7 @@ interface GameCenterGridProps extends CenterPanelProps, FullOverlayProps {
   deedPanelSpace: BoardSpace;
   pendingBuySpace: BoardSpace | null;
   canRoll: boolean;
+  canBuyProperty: boolean;
   canManage: boolean;
   canEndTurn: boolean;
   canTrade: boolean;
@@ -44,6 +45,7 @@ export function GameCenterGrid({
   pendingBuySpace,
   // Button states
   canRoll,
+  canBuyProperty,
   canManage,
   canEndTurn,
   canTrade,
@@ -137,13 +139,21 @@ export function GameCenterGrid({
             onClick={onRoll}
             disabled={!canRoll}
             className="col-span-2 rounded-[12px] border px-3 font-display font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed"
-            style={{ fontSize: 'clamp(12px,1.8vmin,20px)', paddingTop: 'clamp(4px,0.6vmin,8px)', paddingBottom: 'clamp(4px,0.6vmin,8px)' }}
             style={canRoll ? {
+              ...DISABLED_BUTTON,
+              fontSize: 'clamp(12px,1.8vmin,20px)',
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
               backgroundColor: BOARD_TILE_COLORS.propertyGreen,
               borderColor: BOARD_TILE_COLORS.propertyGreen,
               color: BOARD_TILE_COLORS.altText,
               transition: TRANSITION,
-            } : DISABLED_BUTTON}
+            } : {
+              ...DISABLED_BUTTON,
+              fontSize: 'clamp(12px,1.8vmin,20px)',
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
+            }}
           >
             {isRolling ? t('rolling') : t('roll')}
           </button>
@@ -153,13 +163,19 @@ export function GameCenterGrid({
             onClick={onEndTurn}
             disabled={!canEndTurn}
             className="rounded-[12px] border px-3 font-display text-sm font-black uppercase tracking-[0.1em] disabled:cursor-not-allowed"
-            style={{ paddingTop: 'clamp(4px,0.6vmin,8px)', paddingBottom: 'clamp(4px,0.6vmin,8px)' }}
             style={canEndTurn ? {
+              ...DISABLED_BUTTON,
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
               backgroundColor: BOARD_TILE_COLORS.propertyRed,
               borderColor: BOARD_TILE_COLORS.propertyRed,
               color: BOARD_TILE_COLORS.altText,
               transition: TRANSITION,
-            } : DISABLED_BUTTON}
+            } : {
+              ...DISABLED_BUTTON,
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
+            }}
           >
             {t('endTurn')}
           </button>
@@ -169,13 +185,19 @@ export function GameCenterGrid({
             onClick={onManageOpen}
             disabled={!canManage}
             className="rounded-[12px] border px-3 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed"
-            style={{ paddingTop: 'clamp(4px,0.6vmin,8px)', paddingBottom: 'clamp(4px,0.6vmin,8px)' }}
             style={canManage ? {
+              ...DISABLED_BUTTON,
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
               backgroundColor: GAME_BOARD_COLORS.surface,
               borderColor: GAME_BOARD_COLORS.border,
               color: GAME_BOARD_COLORS.text,
               transition: TRANSITION,
-            } : DISABLED_BUTTON}
+            } : {
+              ...DISABLED_BUTTON,
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
+            }}
           >
             {t('manage')}
           </button>
@@ -185,13 +207,19 @@ export function GameCenterGrid({
             onClick={onTradeOpen}
             disabled={!canTrade || !hasOtherTraders}
             className="rounded-[12px] border px-3 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed"
-            style={{ paddingTop: 'clamp(4px,0.6vmin,8px)', paddingBottom: 'clamp(4px,0.6vmin,8px)' }}
             style={(canTrade && hasOtherTraders) ? {
+              ...DISABLED_BUTTON,
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
               backgroundColor: GAME_BOARD_COLORS.surface,
               borderColor: GAME_BOARD_COLORS.border,
               color: GAME_BOARD_COLORS.text,
               transition: TRANSITION,
-            } : DISABLED_BUTTON}
+            } : {
+              ...DISABLED_BUTTON,
+              paddingTop: 'clamp(4px,0.6vmin,8px)',
+              paddingBottom: 'clamp(4px,0.6vmin,8px)',
+            }}
           >
             {t('trade')}
           </button>
@@ -251,6 +279,7 @@ export function GameCenterGrid({
             space={deedPanelSpace}
             decisionSpace={isBuyDecisionForViewer ? pendingBuySpace : null}
             canAct={isBuyDecisionForViewer}
+            canBuy={canBuyProperty}
             onBuy={onBuy}
             onAuction={onAuction}
             viewOnly={!isBuyDecisionForViewer}

@@ -1,10 +1,70 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
+import { BOARD, getGridPos, getTileEdge, getTileOuterEdgePct } from '@/shared/config/board-layout';
+import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
-import type { BoardContainerProps } from '../game-board.types';
+import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
 import { BoardTile } from './BoardTile';
 import { PlayerPanel } from './PlayerPanel';
+
+// ─── Animated overlay token ───────────────────────────────────────────────────
+
+const ANIM = {
+  slow: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: WALK_STEP_DURATION_MS },
+  fast: { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: CARD_WALK_STEP_DURATION_MS },
+} as const;
+
+function AnimatedBoardToken({ id, currentPos, tokenColor, fast }: WalkingPlayer) {
+  const prevPosRef            = useRef(currentPos);
+  const [animate, setAnimate] = useState(true);
+
+  useEffect(() => {
+    const prev  = prevPosRef.current;
+    const delta = Math.abs(currentPos - prev);
+    if (delta > 20) {
+      // Wraparound — teleport without transition, then re-enable for next step
+      setAnimate(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
+    } else {
+      setAnimate(true);
+    }
+    prevPosRef.current = currentPos;
+  }, [currentPos]);
+
+  const { x, y }             = getTileOuterEdgePct(currentPos);
+  const { easing, duration } = fast ? ANIM.fast : ANIM.slow;
+
+  return (
+    <div
+      key={id}
+      aria-hidden="true"
+      style={{
+        position:        'absolute',
+        left:            `${x}%`,
+        top:             `${y}%`,
+        transform:       'translate(-50%, -50%)',
+        transition:      animate
+          ? `left ${duration}ms ${easing}, top ${duration}ms ${easing}`
+          : 'none',
+        width:           'clamp(20px, 2.6vmin, 38px)',
+        aspectRatio:     '1 / 1',
+        borderRadius:    '50%',
+        backgroundColor: tokenColor,
+        outline:         '2.5px solid rgba(255,255,255,0.94)',
+        outlineOffset:   '0px',
+        boxShadow:       '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 10px rgba(0,0,0,0.65)',
+        zIndex:          60,
+        pointerEvents:   'none',
+        willChange:      'left, top',
+      }}
+    />
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
 const BOARD_ROWS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
@@ -61,16 +121,6 @@ export function BoardContainer({
     playersByPosition.set(player.position, [...(playersByPosition.get(player.position) ?? []), player]);
   }
 
-  for (const player of walkingPlayers ?? []) {
-    const boardPlayer = {
-      id: player.id,
-      position: player.currentPos,
-      tokenColor: player.tokenColor,
-      isBankrupt: false,
-      avatarUrl: null,
-    };
-    playersByPosition.set(player.currentPos, [...(playersByPosition.get(player.currentPos) ?? []), boardPlayer]);
-  }
   // ─── Layout ─────────────────────────────────────────────────────────────────
 
   return (
@@ -86,7 +136,7 @@ export function BoardContainer({
         <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
           <div className="aspect-square h-full max-h-full w-full max-w-full">
             <div
-              className="grid h-full w-full"
+              className="relative grid h-full w-full"
               style={{
                 ['--board-unit' as string]: 'calc(100% / 13)',
                 ['--board-tile-width' as string]: 'var(--board-unit)',
@@ -166,6 +216,11 @@ export function BoardContainer({
                   )}
                 </div>
               </div>
+
+              {/* Animated overlay tokens for walking players */}
+              {(walkingPlayers ?? []).map((player) => (
+                <AnimatedBoardToken key={player.id} {...player} />
+              ))}
             </div>
           </div>
         </div>

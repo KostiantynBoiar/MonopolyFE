@@ -5,6 +5,8 @@ import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '@/features/game-board/game-board.enums';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { BoardTile } from '@/features/game-board/components/BoardTile';
+import type { BoardPlayer } from '@/features/game-board/game-board.types';
+import type { PropertyState } from '@/shared/protocol/game-state';
 
 // ─── Board layout helpers ─────────────────────────────────────────────────────
 
@@ -58,8 +60,28 @@ function getTileOuterEdgePct(pos: number): { x: number; y: number } {
 
 // ─── Animation constants ──────────────────────────────────────────────────────
 
-const EASING   = 'cubic-bezier(0.38, 1.21, 0.22, 1.00)';
-const DURATION = 500; // ms
+const ANIM = {
+  slow: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: 650 },
+  fast: { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: 350 },
+} as const;
+
+// ─── Static board state ───────────────────────────────────────────────────────
+
+function houses(position: number): PropertyState {
+  return { position, ownerId: null, houses: 4, hotel: false, isMortgaged: false };
+}
+
+const STATIC_OWNERSHIP = new Map<number, PropertyState>([
+  [2,  houses(2)],
+  [18, houses(18)],
+  [23, houses(23)],
+  [39, houses(39)],
+]);
+
+const STATIC_PLAYERS = new Map<number, BoardPlayer[]>([
+  [0,  [{ id: 'still-a', position: 0,  tokenColor: '#F59E0B', isBankrupt: false }]],
+  [20, [{ id: 'still-b', position: 20, tokenColor: '#A855F7', isBankrupt: false }]],
+]);
 
 // ─── Token definitions ────────────────────────────────────────────────────────
 
@@ -72,10 +94,10 @@ const TOKENS = [
 const START_OFFSETS = [0, 13, 27];
 
 const SPEEDS = [
-  { label: '½×', ms: 1200 },
-  { label: '1×', ms: 600  },
-  { label: '2×', ms: 300  },
-  { label: '4×', ms: 150  },
+  { label: '½×', ms: 1200, fast: false },
+  { label: '1×', ms: 600,  fast: false },
+  { label: '2×', ms: 300,  fast: true  },
+  { label: '4×', ms: 150,  fast: true  },
 ];
 
 // ─── Animated token ───────────────────────────────────────────────────────────
@@ -86,10 +108,11 @@ const SPEEDS = [
 interface AnimatedTokenProps {
   tokenColor: string;
   pos:        number;
+  fast:       boolean;
 }
 
-function AnimatedToken({ tokenColor, pos }: AnimatedTokenProps) {
-  const prevPosRef          = useRef(pos);
+function AnimatedToken({ tokenColor, pos, fast }: AnimatedTokenProps) {
+  const prevPosRef            = useRef(pos);
   const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
@@ -100,9 +123,7 @@ function AnimatedToken({ tokenColor, pos }: AnimatedTokenProps) {
       // Wraparound jump — teleport without transition, then re-enable
       setAnimate(false);
       requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          setAnimate(true);
-        }),
+        requestAnimationFrame(() => setAnimate(true)),
       );
     } else {
       setAnimate(true);
@@ -110,7 +131,8 @@ function AnimatedToken({ tokenColor, pos }: AnimatedTokenProps) {
     prevPosRef.current = pos;
   }, [pos]);
 
-  const { x, y } = getTileOuterEdgePct(pos);
+  const { x, y }           = getTileOuterEdgePct(pos);
+  const { easing, duration } = fast ? ANIM.fast : ANIM.slow;
 
   return (
     <div
@@ -121,7 +143,7 @@ function AnimatedToken({ tokenColor, pos }: AnimatedTokenProps) {
         top:             `${y}%`,
         transform:       'translate(-50%, -50%)',
         transition:      animate
-          ? `left ${DURATION}ms ${EASING}, top ${DURATION}ms ${EASING}`
+          ? `left ${duration}ms ${easing}, top ${duration}ms ${easing}`
           : 'none',
         width:           'clamp(20px, 2.6vmin, 38px)',
         aspectRatio:     '1 / 1',
@@ -145,7 +167,7 @@ export default function DebugPage() {
   const [playing, setPlaying]   = useState(true);
   const [speedIdx, setSpeedIdx] = useState(1);
 
-  const ms = SPEEDS[speedIdx].ms;
+  const { ms, fast } = SPEEDS[speedIdx];
 
   useEffect(() => {
     if (!playing) return;
@@ -186,7 +208,8 @@ export default function DebugPage() {
                     space={space}
                     edge={getTileEdge(space.pos)}
                     flavor={getTileFlavor(space.type)}
-                    ownership={null}
+                    ownership={STATIC_OWNERSHIP.get(space.pos) ?? null}
+                    players={STATIC_PLAYERS.get(space.pos) ?? []}
                   />
                 </div>
               );
@@ -210,6 +233,7 @@ export default function DebugPage() {
                 key={token.id}
                 tokenColor={token.tokenColor}
                 pos={positions[i]}
+                fast={fast}
               />
             ))}
           </div>

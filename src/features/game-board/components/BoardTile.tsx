@@ -217,9 +217,6 @@ export function BoardTile({
   isDimmed = false,
   onSelect,
 }: BoardTileProps) {
-  // Dynamic key lookup for board position — eslint-disable-next-line needed
-  // because next-intl's type system only accepts literal string keys.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tBoard    = useTranslations('Board') as unknown as (key: string) => string;
   const tileName  = tBoard(`tiles.p${space.pos}`);
   const justVisit = tBoard('justVisiting');

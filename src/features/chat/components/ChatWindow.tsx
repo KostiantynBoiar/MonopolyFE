@@ -1,10 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TOKEN_COLORS } from '@/shared/config/constants';
-import { LogKind } from '@/shared/protocol/game-state.enums';
+import type { GameEvent, LogEntry } from '@/shared/protocol/game-state';
+import { GameEventType, LogKind } from '@/shared/protocol/game-state.enums';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { ChatWindowTab } from '../chat.enums';
 import type { ChatMessage, ChatWindowProps, StickerPack } from '../chat.types';
@@ -25,6 +27,237 @@ const BODY_TEXT_STYLE = {
   color: GAME_BOARD_COLORS.text,
   overflowWrap: 'anywhere' as const,
 } as const;
+
+type PlayerVisual = {
+  color: string;
+};
+
+type EventLogTranslator = ReturnType<typeof useTranslations<'EventLog'>>;
+type RichTranslationValues = Parameters<EventLogTranslator['rich']>[1];
+
+function nodeText(node: ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(nodeText).join('');
+  return '';
+}
+
+function formatMoney(value: number) {
+  return `M${value}`;
+}
+
+function PlayerEntity({
+  label,
+  visual,
+}: {
+  label: string;
+  visual?: PlayerVisual;
+}) {
+  return (
+    <span className="inline-flex items-baseline gap-1 align-baseline">
+      {visual && (
+        <span
+          className="mt-[1px] inline-block h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: visual.color }}
+          aria-hidden="true"
+        />
+      )}
+      <span style={{ color: visual?.color ?? GAME_BOARD_COLORS.text, fontWeight: 700 }}>
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function PropertyEntity({ label }: { label: string }) {
+  return (
+    <span style={{ color: GAME_BOARD_COLORS.special, fontWeight: 600 }}>
+      {label}
+    </span>
+  );
+}
+
+function AmountEntity({ label }: { label: string }) {
+  return <strong>{label}</strong>;
+}
+
+function renderLegacyEventText(
+  text: string,
+  playerVisuals: ReadonlyMap<string, PlayerVisual>,
+): ReactNode {
+  const tokens = [...playerVisuals.keys()]
+    .sort((a, b) => b.length - a.length)
+    .map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+  const pattern = tokens.length > 0
+    ? new RegExp(`(${tokens.join('|')}|M\\d+)`, 'g')
+    : /(M\d+)/g;
+
+  return text.split(pattern).map((part, index) => {
+    if (!part) return null;
+
+    const visual = playerVisuals.get(part);
+    if (visual) {
+      return <PlayerEntity key={`${part}-${index}`} label={part} visual={visual} />;
+    }
+
+    if (/^M\d+$/.test(part)) {
+      return <AmountEntity key={`${part}-${index}`} label={part} />;
+    }
+
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
+function renderEventContent(
+  entry: LogEntry,
+  t: EventLogTranslator,
+  playerVisuals: ReadonlyMap<string, PlayerVisual>,
+): ReactNode {
+  if (!entry.event) return renderLegacyEventText(entry.text.replace(/\$(\d+)/g, 'M$1'), playerVisuals);
+
+  const richValues = {
+    player: (chunks: ReactNode) => <PlayerEntity label={nodeText(chunks)} visual={playerVisuals.get(nodeText(chunks))} />,
+    property: (chunks: ReactNode) => <PropertyEntity label={nodeText(chunks)} />,
+    amount: (chunks: ReactNode) => <AmountEntity label={nodeText(chunks)} />,
+  };
+
+  return renderLocalizedEvent(entry.event, t, richValues, playerVisuals);
+}
+
+function renderLocalizedEvent(
+  event: GameEvent,
+  t: EventLogTranslator,
+  richValues: RichTranslationValues,
+  playerVisuals: ReadonlyMap<string, PlayerVisual>,
+): ReactNode {
+  switch (event.type) {
+    case GameEventType.TurnStarted:
+      return t.rich('turn_started', { ...richValues, playerName: event.playerName });
+    case GameEventType.RoundStarted:
+      return t.rich('round_started', { roundNumber: event.roundNumber });
+    case GameEventType.DiceRolled:
+      return t.rich('dice_rolled', {
+        ...richValues,
+        playerName: event.playerName,
+        die1: event.die1,
+        die2: event.die2,
+        total: event.die1 + event.die2,
+        doubles: event.isDoubles ? 'yes' : 'no',
+      });
+    case GameEventType.PlayerMoved:
+      return t.rich('player_moved', { ...richValues, playerName: event.playerName, toName: event.toName });
+    case GameEventType.PassedGo:
+      return t.rich('passed_go', { ...richValues, playerName: event.playerName, amount: formatMoney(event.amount) });
+    case GameEventType.PropertyBought:
+      return t.rich('property_bought', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        price: formatMoney(event.price),
+      });
+    case GameEventType.PropertySold:
+      return t.rich('property_sold', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        refund: formatMoney(event.refund),
+      });
+    case GameEventType.RentPaid:
+      return t.rich('rent_paid', {
+        ...richValues,
+        payerName: event.payerName,
+        ownerName: event.ownerName,
+        propertyName: event.propertyName,
+        amount: formatMoney(event.amount),
+      });
+    case GameEventType.TaxPaid:
+      return t.rich('tax_paid', {
+        ...richValues,
+        playerName: event.playerName,
+        taxName: event.taxName,
+        amount: formatMoney(event.amount),
+      });
+    case GameEventType.CardDrawn:
+      return t.rich('card_drawn', { ...richValues, playerName: event.playerName, text: event.text });
+    case GameEventType.CardResolved:
+      return renderLegacyEventText(event.text.replace(/\$(\d+)/g, 'M$1'), playerVisuals);
+    case GameEventType.SentToJail:
+      return t.rich('sent_to_jail', { ...richValues, playerName: event.playerName });
+    case GameEventType.LeftJail:
+      return t.rich('left_jail', { ...richValues, playerName: event.playerName, method: event.method });
+    case GameEventType.HouseBuilt:
+      return t.rich('house_built', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        cost: formatMoney(event.cost),
+      });
+    case GameEventType.HotelBuilt:
+      return t.rich('hotel_built', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        cost: formatMoney(event.cost),
+      });
+    case GameEventType.HouseSold:
+      return t.rich('house_sold', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        refund: formatMoney(event.refund),
+      });
+    case GameEventType.HotelSold:
+      return t.rich('hotel_sold', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        refund: formatMoney(event.refund),
+      });
+    case GameEventType.Mortgaged:
+      return t.rich('mortgaged', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        amount: formatMoney(event.amount),
+      });
+    case GameEventType.Unmortgaged:
+      return t.rich('unmortgaged', {
+        ...richValues,
+        playerName: event.playerName,
+        propertyName: event.propertyName,
+        cost: formatMoney(event.cost),
+      });
+    case GameEventType.AuctionStarted:
+      return t.rich('auction_started', { ...richValues, propertyName: event.propertyName });
+    case GameEventType.AuctionBid:
+      return t.rich('auction_bid', { ...richValues, playerName: event.playerName, amount: formatMoney(event.amount) });
+    case GameEventType.AuctionWon:
+      return t.rich('auction_won', {
+        ...richValues,
+        haswinner: event.winnerId ? 'yes' : 'no',
+        winnerName: event.winnerName,
+        amount: formatMoney(event.amount),
+      });
+    case GameEventType.TradeProposed:
+      return t.rich('trade_proposed', {
+        ...richValues,
+        proposerName: event.proposerName,
+        targetName: event.targetName,
+      });
+    case GameEventType.TradeResolved:
+      return t.rich('trade_resolved', { accepted: event.accepted ? 'yes' : 'no' });
+    case GameEventType.DebtIncurred:
+      return t.rich('debt_incurred', {
+        ...richValues,
+        debtorName: event.debtorName,
+        amount: formatMoney(event.amount),
+      });
+    case GameEventType.Bankrupted:
+      return t.rich('bankrupted', { ...richValues, playerName: event.playerName });
+    case GameEventType.GameOver:
+      return t.rich('game_over', { ...richValues, winnerName: event.winnerName });
+  }
+}
 
 function formatTime(ts: number) {
   return new Intl.DateTimeFormat('en-GB', {
@@ -236,32 +469,34 @@ function EmptyState({ label }: { label: string }) {
 
 function EventEntries({
   entries,
-  tableLabel,
+  eventT,
+  playerVisuals,
 }: {
   entries: ChatWindowProps['log'];
-  tableLabel: string;
+  eventT: EventLogTranslator;
+  playerVisuals: ReadonlyMap<string, PlayerVisual>;
 }) {
   return (
-    <div className="grid gap-[3px]">
-      {entries.map((entry) => (
-        <article
-          key={entry.id}
-          className="grid min-w-0 gap-[1px] rounded-[8px] px-2 py-1.5"
-          style={MESSAGE_CARD_STYLE}
-        >
-          <p className="text-[13px] font-semibold uppercase tracking-[0.12em]" style={TIMESTAMP_TEXT_STYLE}>
-            {formatTime(new Date(entry.ts).getTime())}
-          </p>
-          <p
-            className="min-w-0 whitespace-pre-wrap text-center text-[15px] leading-[1.35]"
-            style={BODY_TEXT_STYLE}
+    <div className="flex flex-col gap-[2px] py-1">
+      {entries.map((entry) => {
+        return (
+          <div
+            key={entry.id}
+            className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 px-2 py-0.5 text-[13.5px] leading-snug"
+            style={{ color: GAME_BOARD_COLORS.text }}
           >
-            <span className="font-semibold">{entry.playerName ?? tableLabel}</span>
-            {': '}
-            {entry.text}
-          </p>
-        </article>
-      ))}
+            <span
+              className="shrink-0 font-mono text-[11px]"
+              style={TIMESTAMP_TEXT_STYLE}
+            >
+              [{formatTime(new Date(entry.ts).getTime())}]
+            </span>
+            <p className="min-w-0 flex-1" style={BODY_TEXT_STYLE}>
+              {renderEventContent(entry, eventT, playerVisuals)}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -451,110 +686,110 @@ function Composer({
 
 export function ChatWindow({
   log,
-  initialMessages = [],
+  initialMessages: _initialMessages,
   externalMessages,
   viewerToken,
   onSendMessage,
   onSendSticker,
 }: ChatWindowProps) {
   const t = useTranslations('Chat');
-  const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
-  const [draft, setDraft] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [unreadCount, setUnreadCount] = useState(initialMessages.length);
+  const eventT = useTranslations('EventLog');
+
+  const [activeTab,    setActiveTab]    = useState<ChatWindowTab>(ChatWindowTab.CHAT);
+  const [draft,        setDraft]        = useState('');
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
+  const [unreadCount,  setUnreadCount]  = useState(0);
   const [showStickers, setShowStickers] = useState(false);
-  const [packIndex, setPackIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [packIndex,    setPackIndex]    = useState(0);
+  const scrollRef  = useRef<HTMLDivElement>(null);
   const stickerPacks = useStickerPacks();
 
   const eventEntries = useMemo(
-    () => log.filter((entry) => entry.kind === LogKind.EVENT),
+    () => log.filter((e) => e.kind === LogKind.EVENT),
     [log],
   );
-  const activeEntries = activeTab === ChatWindowTab.EVENTS ? eventEntries : messages;
 
-  useEffect(() => {
-    if (!externalMessages?.length) return;
-
-    setMessages((current) => {
-      const existingIds = new Set(current.map((message) => message.id));
-      const incoming = externalMessages.filter((message) => !existingIds.has(message.id));
-      if (incoming.length === 0) return current;
-
-      const matchedLocalIds = new Set<string>();
-      for (const message of incoming) {
-        if (message.author !== 'You') continue;
-
-        const localMatch = current.find((candidate) => (
-          (candidate.id.startsWith('local-') || candidate.id.startsWith('sticker-')) &&
-          candidate.author === 'You' &&
-          candidate.text === message.text &&
-          Math.abs(candidate.ts - message.ts) < 30_000
-        ));
-
-        if (localMatch) {
-          matchedLocalIds.add(localMatch.id);
-        }
+  const playerVisuals = useMemo(() => {
+    const map = new Map<string, PlayerVisual>();
+    for (const entry of log) {
+      if (entry.playerName && entry.playerToken) {
+        map.set(entry.playerName, { color: TOKEN_COLORS[entry.playerToken] });
       }
-
-      const retainedLocal = current.filter((message) => (
-        (message.id.startsWith('local-') || message.id.startsWith('sticker-')) &&
-        !matchedLocalIds.has(message.id)
-      ));
-
-      if (activeTab !== ChatWindowTab.CHAT) {
-        setUnreadCount((count) => count + incoming.filter((message) => message.author !== 'You').length);
-      }
-
-      return [...externalMessages, ...retainedLocal].sort((a, b) => a.ts - b.ts);
-    });
-  }, [activeTab, externalMessages]);
-
-  useEffect(() => {
-    if (activeTab === ChatWindowTab.CHAT) {
-      setUnreadCount(0);
     }
+    return map;
+  }, [log]);
+
+  // Chat history derived from game log — persisted across reloads via game-store localStorage.
+  const serverChatEntries = useMemo(() =>
+    log
+      .filter((e) => e.kind === LogKind.CHAT || e.kind === LogKind.STICKER)
+      .map((e): ChatMessage => ({
+        id:     e.id,
+        kind:   'chat',
+        author: e.playerName,
+        token:  e.playerToken,
+        text:   e.stickerUrl ? `[sticker:${e.stickerUrl}]` : e.text,
+        ts:     Date.parse(e.ts),
+      })),
+    [log],
+  );
+
+  // Real-time socket messages not yet confirmed in the server log (no id overlap).
+  const realtimeOnly = useMemo(() => {
+    const serverIds = new Set(serverChatEntries.map((m) => m.id));
+    return (externalMessages ?? []).filter((m) => !serverIds.has(m.id));
+  }, [externalMessages, serverChatEntries]);
+
+  // Local optimistic sends not yet confirmed by server or real-time feed.
+  const pendingLocal = useMemo(() => {
+    const confirmedTexts = new Set(
+      [...serverChatEntries, ...realtimeOnly].map((m) => m.text + '|' + Math.floor(m.ts / 30_000)),
+    );
+    return localMessages.filter(
+      (local) => !confirmedTexts.has(local.text + '|' + Math.floor(local.ts / 30_000)),
+    );
+  }, [localMessages, serverChatEntries, realtimeOnly]);
+
+  const displayMessages = useMemo(
+    () => [...serverChatEntries, ...realtimeOnly, ...pendingLocal].sort((a, b) => a.ts - b.ts),
+    [serverChatEntries, realtimeOnly, pendingLocal],
+  );
+
+  // Unread badge: count new server chat messages while not on the chat tab.
+  const prevServerLenRef = useRef(serverChatEntries.length);
+  useEffect(() => {
+    if (serverChatEntries.length > prevServerLenRef.current && activeTab !== ChatWindowTab.CHAT) {
+      setUnreadCount((c) => c + (serverChatEntries.length - prevServerLenRef.current));
+    }
+    prevServerLenRef.current = serverChatEntries.length;
+  }, [serverChatEntries.length, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === ChatWindowTab.CHAT) setUnreadCount(0);
   }, [activeTab]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeTab, eventEntries.length, messages.length]);
+  }, [activeTab, eventEntries.length, displayMessages.length]);
+
 
   function handleSend() {
     const text = clampMessage(draft.trim());
     if (!text) return;
-
-    const nextMessage: ChatMessage = {
-      id: `local-${Date.now()}`,
-      kind: 'chat',
-      author: 'You',
-      token: viewerToken,
-      text,
-      ts: Date.now(),
-    };
-
-    setMessages((current) => [...current, nextMessage]);
-    if (activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + 1);
-    }
+    setLocalMessages((current) => [...current, {
+      id: `local-${Date.now()}`, kind: 'chat', author: 'You', token: viewerToken, text, ts: Date.now(),
+    }]);
+    if (activeTab !== ChatWindowTab.CHAT) setUnreadCount((c) => c + 1);
     setDraft('');
     onSendMessage?.(text);
   }
 
   function handleSticker(url: string) {
-    const nextMessage: ChatMessage = {
-      id: `sticker-${Date.now()}`,
-      kind: 'chat',
-      author: 'You',
-      token: viewerToken,
-      text: `[sticker:${url}]`,
-      ts: Date.now(),
-    };
-
-    setMessages((current) => [...current, nextMessage]);
-    if (activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + 1);
-    }
+    setLocalMessages((current) => [...current, {
+      id: `sticker-${Date.now()}`, kind: 'chat', author: 'You', token: viewerToken,
+      text: `[sticker:${url}]`, ts: Date.now(),
+    }]);
+    if (activeTab !== ChatWindowTab.CHAT) setUnreadCount((c) => c + 1);
     setShowStickers(false);
     onSendSticker?.(url);
   }
@@ -584,16 +819,22 @@ export function ChatWindow({
         style={PANEL_BORDER_STYLE}
       >
         <div className="flex h-full min-h-0 flex-col overflow-y-auto p-[3px]">
-          {activeEntries.length === 0 ? (
-            <EmptyState label={activeTab === ChatWindowTab.EVENTS ? t('noEventsYet') : t('noMessagesYet')} />
-          ) : activeTab === ChatWindowTab.EVENTS ? (
-            <EventEntries entries={eventEntries} tableLabel={t('table')} />
+          {activeTab === ChatWindowTab.EVENTS ? (
+            eventEntries.length === 0
+              ? <EmptyState label={t('noEventsYet')} />
+              : <EventEntries
+                  entries={eventEntries}
+                  eventT={eventT}
+                  playerVisuals={playerVisuals}
+                />
           ) : (
-            <MessageEntries
-              entries={messages}
-              playerLabel={t('player')}
-              stickerAlt={t('stickerAlt')}
-            />
+            displayMessages.length === 0
+              ? <EmptyState label={t('noMessagesYet')} />
+              : <MessageEntries
+                  entries={displayMessages}
+                  playerLabel={t('player')}
+                  stickerAlt={t('stickerAlt')}
+                />
           )}
           <div ref={scrollRef} />
         </div>
@@ -608,7 +849,7 @@ export function ChatWindow({
         sendLabel={t('send')}
         onDraftChange={(value) => setDraft(clampMessage(value))}
         onKeyDown={handleKeyDown}
-        onToggleStickers={() => setShowStickers((value) => !value)}
+        onToggleStickers={() => setShowStickers((v) => !v)}
         onSend={handleSend}
       />
 

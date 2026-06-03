@@ -22,6 +22,7 @@ interface DeedWindowProps {
   onBuy?: () => void;
   onAuction?: () => void;
   canAct?: boolean;              // true only for the viewer who may answer a buy decision
+  canBuy?: boolean;
   viewOnly?: boolean;
   compact?: boolean;              // smaller typography to fit constrained height containers
   ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
@@ -84,6 +85,7 @@ export function DeedWindow({
   onBuy,
   onAuction,
   canAct = true,
+  canBuy = true,
   viewOnly = false,
   compact = false,
   ownership,
@@ -273,7 +275,8 @@ export function DeedWindow({
           <button
             type="button"
             onClick={onBuy}
-            className="rounded-[6px] border px-1.5 py-0.5 text-sm font-black uppercase tracking-[0.04em]"
+            disabled={!canBuy}
+            className="rounded-[6px] border px-1.5 py-0.5 text-sm font-black uppercase tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-40"
             style={{
               backgroundColor: BOARD_TILE_COLORS.propertyGreen,
               borderColor:     BOARD_TILE_COLORS.propertyGreen,

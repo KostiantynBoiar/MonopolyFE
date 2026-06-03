@@ -13,6 +13,7 @@
 
 import type {
   GameState,
+  GameEvent,
   PlayerState,
   PropertyState,
   TurnState,
@@ -154,6 +155,7 @@ interface BeLogEntry {
   player_name?: string | null;
   player_token?: string | null;
   sticker_url?: string | null;
+  event?: Record<string, unknown>;
 }
 
 interface BeRollDiceAnimation {
@@ -350,18 +352,72 @@ function mapBankruptcyToDebt(b: BeBankruptcy | null | undefined): DebtState | nu
   };
 }
 
+/**
+ * Converts a raw backend event object (snake_case) to the FE GameEvent shape
+ * (camelCase). The backend field names mirror the FE type names, just in
+ * snake_case. We only remap the keys the FE actually reads; anything unknown
+ * is left as-is via the spread.
+ *
+ * Returns undefined if there is no event or the type field is missing.
+ */
+function mapEvent(raw: Record<string, unknown> | undefined): GameEvent | undefined {
+  if (!raw?.type) return undefined;
+  return {
+    ...raw,
+    // snake_case → camelCase for every field renderEventLocalized touches
+    playerId:      raw.player_id,
+    playerName:    raw.player_name,
+    payerId:       raw.payer_id,
+    payerName:     raw.payer_name,
+    ownerId:       raw.owner_id,
+    ownerName:     raw.owner_name,
+    propertyName:  raw.property_name,
+    proposerId:    raw.proposer_id,
+    proposerName:  raw.proposer_name,
+    targetId:      raw.target_id,
+    targetName:    raw.target_name,
+    debtorId:      raw.debtor_id,
+    debtorName:    raw.debtor_name,
+    winnerId:      raw.winner_id,
+    winnerName:    raw.winner_name,
+    roundNumber:   raw.round_number,
+    isDoubles:     raw.is_doubles,
+    passedGo:      raw.passed_go,
+    taxName:       raw.tax_name,
+    cardKind:      raw.card_kind,
+    tradeId:       raw.trade_id,
+    creditorId:    raw.creditor_id,
+  } as unknown as GameEvent;
+}
+
 function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
   if (!entries) return [];
+
+  if (process.env.NODE_ENV === 'development') {
+    const sample = entries.slice(0, 3);
+    console.debug(
+      '[GameLog] raw entries (first 3):',
+      sample.map((e) => ({
+        kind: e.kind,
+        text: e.text,
+        hasEvent: !!e.event,
+        eventType: e.event?.type,
+        playerName: e.player_name,
+        playerToken: e.player_token,
+      })),
+    );
+  }
+
   return entries.map((e) => ({
-    id: e.id,
-    kind: e.kind as LogKind,
-    playerId: e.player_id ?? undefined,
-    playerName: e.player_name ?? undefined,
+    id:          e.id,
+    kind:        e.kind as LogKind,
+    playerId:    e.player_id ?? undefined,
+    playerName:  e.player_name ?? undefined,
     playerToken: (e.player_token ?? undefined) as TokenColor | undefined,
-    text: e.text,
-    stickerUrl: e.sticker_url ?? undefined,
-    ts: e.ts,
-    // BE log is text-only; no machine-readable `event` payload.
+    text:        e.text,
+    stickerUrl:  e.sticker_url ?? undefined,
+    ts:          e.ts,
+    event:       mapEvent(e.event),
   }));
 }
 
