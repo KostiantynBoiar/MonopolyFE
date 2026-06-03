@@ -42,8 +42,11 @@ export function AuctionOverlay({
 
   return (
     <div
-      className="flex h-full flex-col overflow-hidden"
-      style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
+      className="flex h-full flex-col overflow-hidden rounded-[16px] border"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.surface,
+        borderColor: GAME_BOARD_COLORS.border,
+      }}
     >
       {/* Accent strip — yellow = value/auction */}
       <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyYellow, flexShrink: 0 }} />

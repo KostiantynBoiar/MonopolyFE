@@ -62,8 +62,11 @@ export function JailOverlay({
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-y-auto"
-      style={{ backgroundColor: GAME_BOARD_COLORS.surface }}
+      className="flex h-full w-full flex-col overflow-y-auto rounded-[16px] border"
+      style={{
+        backgroundColor: GAME_BOARD_COLORS.surface,
+        borderColor: GAME_BOARD_COLORS.border,
+      }}
     >
       {/* Accent strip — matches jail corner tile color */}
       <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyOrange, flexShrink: 0 }} />

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { useSessionStore } from '@/stores/session-store';
+import { useSocketStore } from '@/stores/socket-store';
 import { SessionVisibility } from '../lobby.enums';
 import { createSession } from '../api';
 
@@ -17,6 +18,7 @@ export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
   const tLobby = useTranslations('Lobby');
   const router = useRouter();
   const setSession = useSessionStore((s) => s.setSession);
+  const resetSocket = useSocketStore((s) => s.reset);
 
   const [visibility, setVisibility] = useState<SessionVisibility>(SessionVisibility.PUBLIC);
   const [loading, setLoading] = useState(false);
@@ -29,6 +31,7 @@ export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
 
     try {
       const { session } = await createSession({ visibility });
+      resetSocket();
       setSession(session);
       router.push('/game/room');
     } catch (err) {

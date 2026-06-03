@@ -120,7 +120,7 @@ export function GameCenterGrid({
       <div className="grid h-full w-full grid-cols-6 grid-rows-5 gap-[6px] p-[6px]">
 
         {/* Dice window — top-left 2×2 */}
-        <div className="col-span-2 row-span-2 min-h-0 overflow-hidden rounded-[12px]" style={dimStyle}>
+        <div className="col-span-2 row-span-2 min-h-0" style={dimStyle}>
           <DiceWindow diceRoll={diceRoll} rollId={animatedDiceRollId} />
         </div>
 
@@ -203,7 +203,7 @@ export function GameCenterGrid({
 
         {/* Center panel — bottom-left 4×3 */}
         <div
-          className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0 overflow-hidden rounded-[12px]"
+          className="col-span-4 col-start-1 row-span-3 row-start-3 min-h-0"
           style={dimStyle}
         >
           <CenterPanel
@@ -239,7 +239,7 @@ export function GameCenterGrid({
         </div>
 
         {/* Deed window — bottom-right 2×3 */}
-        <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0 overflow-hidden">
+        <div className="col-span-2 col-start-5 row-span-3 row-start-3 min-h-0">
           <DeedWindow
             space={deedPanelSpace}
             decisionSpace={isBuyDecisionForViewer ? pendingBuySpace : null}

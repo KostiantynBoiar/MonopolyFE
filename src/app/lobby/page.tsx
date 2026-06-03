@@ -7,6 +7,7 @@ import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useLobby, SessionCard, JoinByCodeForm, CreateLobbyForm } from '@/features/lobby';
 import { useSessionStore } from '@/stores/session-store';
+import { useSocketStore } from '@/stores/socket-store';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/shared/ui/Button';
 import { cn } from '@/shared/lib/cn';
@@ -24,6 +25,7 @@ export default function LobbyPage() {
 
   const { ready } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
+  const resetSocket = useSocketStore((s) => s.reset);
   const currentSession = useSessionStore((s) => s.currentSession);
   const hasSessionHydrated = useSessionStore((s) => s._hasHydrated);
 
@@ -42,6 +44,7 @@ export default function LobbyPage() {
     setJoinError(null);
     try {
       const session = await join(sessionId);
+      resetSocket();
       setSession(session);
       router.push('/game/room');
     } catch (err) {
@@ -51,6 +54,7 @@ export default function LobbyPage() {
 
   async function handleJoinByCode(code: string) {
     const session = await joinWithCode(code);
+    resetSocket();
     setSession(session);
     router.push('/game/room');
   }

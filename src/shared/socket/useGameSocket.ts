@@ -28,7 +28,7 @@ export function useGameSocket(sessionId: string | null) {
   const viewerId = useAuthStore((s) => s.user?.id);
 
   const {
-    setStatus, setWsError, setWasKicked, addMessage,
+    bindSession, setStatus, setWsError, setWasKicked, addMessage,
     incrementReconnect, resetReconnect,
   } = useSocketStore();
   const setSendCommand = useCommandBus((s) => s.setSendCommand);
@@ -41,6 +41,7 @@ export function useGameSocket(sessionId: string | null) {
   useEffect(() => { viewerIdRef.current = viewerId; }, [viewerId]);
 
   useEffect(() => {
+    bindSession(sessionId);
     if (!sessionId || !token) return;
 
     const socket = new GameSocket(sessionId, token, env.wsUrl);
@@ -152,8 +153,7 @@ export function useGameSocket(sessionId: string | null) {
       setSendCommand(null);
       resetSnapshotPipeline();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, token]);
+  }, [bindSession, incrementReconnect, resetReconnect, sessionId, setSendCommand, setSession, setStatus, setWasKicked, setWsError, addMessage, token]);
 
   const sendChat    = useCallback((text: string) => socketRef.current?.sendChat(text),   []);
   const sendSticker = useCallback((url: string)  => socketRef.current?.sendSticker(url), []);

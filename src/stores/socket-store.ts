@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { SocketStatus } from '@/shared/socket/GameSocket';
 import type { WsErrorPayload } from '@/shared/protocol/messages.schema';
 
@@ -9,6 +8,7 @@ export type WsChatEntry =
   | { kind: 'sticker'; id: string; from_user_id: string; display_name: string; sticker_url: string; ts: string };
 
 interface SocketStore {
+  activeSessionId: string | null;
   // Connection
   status:            SocketStatus;
   latency:           number | null;    // last ping-pong round-trip in ms
@@ -24,6 +24,7 @@ interface SocketStore {
   // Actions
   setStatus:          (status: SocketStatus) => void;
   setLatency:         (ms: number | null) => void;
+  bindSession:        (sessionId: string | null) => void;
   incrementReconnect: () => void;
   resetReconnect:     () => void;
   setWsError:         (err: WsErrorPayload | null) => void;
@@ -34,8 +35,9 @@ interface SocketStore {
 }
 
 const INITIAL: Pick<SocketStore,
-  'status' | 'latency' | 'reconnectAttempts' | 'wsError' | 'wasKicked' | 'messages'
+  'activeSessionId' | 'status' | 'latency' | 'reconnectAttempts' | 'wsError' | 'wasKicked' | 'messages'
 > = {
+  activeSessionId:   null,
   status:            'connecting',
   latency:           null,
   reconnectAttempts: 0,
@@ -44,24 +46,24 @@ const INITIAL: Pick<SocketStore,
   messages:          [],
 };
 
-export const useSocketStore = create<SocketStore>()(
-  persist(
-    (set) => ({
-      ...INITIAL,
+export const useSocketStore = create<SocketStore>()((set) => ({
+  ...INITIAL,
 
-      setStatus:          (status) => set({ status }),
-      setLatency:         (ms)     => set({ latency: ms }),
-      incrementReconnect: ()       => set((s) => ({ reconnectAttempts: s.reconnectAttempts + 1 })),
-      resetReconnect:     ()       => set({ reconnectAttempts: 0 }),
-      setWsError:         (err)    => set({ wsError: err }),
-      clearWsError:       ()       => set({ wsError: null }),
-      setWasKicked:       (kicked) => set({ wasKicked: kicked }),
-      addMessage:         (msg)    => set((s) => ({ messages: [...s.messages, msg] })),
-      reset:              ()       => set({ ...INITIAL }),
-    }),
-    {
-      name: 'tycoon-chat',
-      partialize: (s) => ({ messages: s.messages }),
-    },
-  ),
-);
+  setStatus:          (status) => set({ status }),
+  setLatency:         (ms)     => set({ latency: ms }),
+  bindSession:        (sessionId) => set((state) => (
+    state.activeSessionId === sessionId
+      ? state
+      : {
+          ...INITIAL,
+          activeSessionId: sessionId,
+        }
+  )),
+  incrementReconnect: ()       => set((s) => ({ reconnectAttempts: s.reconnectAttempts + 1 })),
+  resetReconnect:     ()       => set({ reconnectAttempts: 0 }),
+  setWsError:         (err)    => set({ wsError: err }),
+  clearWsError:       ()       => set({ wsError: null }),
+  setWasKicked:       (kicked) => set({ wasKicked: kicked }),
+  addMessage:         (msg)    => set((s) => ({ messages: [...s.messages, msg] })),
+  reset:              ()       => set({ ...INITIAL }),
+}));

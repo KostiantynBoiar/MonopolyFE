@@ -106,6 +106,8 @@ export function DeedWindow({
   const showActions    = canAct && (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
   // Buildings strip: only in viewOnly when ownership data is supplied and there's something to show.
   const showBuildings  = viewOnly && isDeed && ownership != null && (ownership.hotel || ownership.houses > 0);
+  const useViewOnlyDeedShell = viewOnly && isDeed && !isDecisionMode;
+  const renderBuildingsInsideInfo = showBuildings && !showActions;
   const nonDeedTitle   = cornerText?.title ?? specialText ?? t('special.default');
   const headerColor    = getSpaceHeaderColor(activeSpace);
   const headerTextColor = getSpaceHeaderTextColor(activeSpace);
@@ -117,8 +119,12 @@ export function DeedWindow({
     <section
       className="grid h-full min-h-0 gap-[3px] overflow-hidden rounded-[16px] border p-[6px]"
       style={{
-        gridTemplateRows: isDeed
-          ? (showActions || showBuildings ? 'auto auto minmax(0,1fr) auto' : 'auto auto minmax(0,1fr)')
+        gridTemplateRows: useViewOnlyDeedShell
+          ? 'auto minmax(0,1fr)'
+          : isDeed
+          ? (showActions || (showBuildings && !renderBuildingsInsideInfo)
+            ? 'auto auto minmax(0,1fr) auto'
+            : 'auto auto minmax(0,1fr)')
           : (isDecisionMode ? 'auto auto minmax(0,1fr)' : 'auto minmax(0,1fr)'),
         backgroundColor: GAME_BOARD_COLORS.panel,
         borderColor:     outerBorder,
@@ -157,7 +163,7 @@ export function DeedWindow({
 
       {/* Rent / info body */}
       <div
-        className="grid min-h-0 rounded-[10px] border px-3 py-3"
+        className="grid min-h-0 rounded-[10px] border px-3 py-3 self-stretch"
         style={{
           gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : isSpecialCard ? '1fr' : 'auto 1fr',
           backgroundColor:  GAME_BOARD_COLORS.surface,
@@ -182,24 +188,68 @@ export function DeedWindow({
         )}
 
         {isDeed && deed ? (
-          <div className="grid min-h-0 content-center gap-[5px]" style={{ color: GAME_BOARD_COLORS.tileText }}>
-            {deed.rentRows.slice(1).map((row) => (
+          <div
+            className="flex min-h-0 h-full flex-col"
+            style={{ color: GAME_BOARD_COLORS.tileText }}
+          >
+            <div
+              className="grid min-h-0 h-full gap-[5px]"
+              style={{
+                alignContent: renderBuildingsInsideInfo ? 'start' : (!showActions ? 'center' : 'center'),
+              }}
+            >
+              {deed.rentRows.slice(1).map((row) => (
+                <div
+                  key={row.labelKey}
+                  className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[10px]' : 'text-sm'}`}
+                >
+                  <span className="font-medium leading-[1.2] tracking-[0.01em]">
+                    {formatLabel(row.labelKey, t)}
+                  </span>
+                  <span
+                    className="block translate-y-[-1px] border-b border-dotted"
+                    style={{ borderColor: GAME_BOARD_COLORS.border }}
+                  />
+                  <span className="text-right font-bold tabular-nums leading-none">
+                    ${row.amount.replace(/^M/, '')}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {renderBuildingsInsideInfo && ownership && (
               <div
-                key={row.labelKey}
-                className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[10px]' : 'text-sm'}`}
+                className="mt-auto flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
+                style={{ backgroundColor: headerColor }}
               >
-                <span className="font-medium leading-[1.2] tracking-[0.01em]">
-                  {formatLabel(row.labelKey, t)}
-                </span>
-                <span
-                  className="block translate-y-[-1px] border-b border-dotted"
-                  style={{ borderColor: GAME_BOARD_COLORS.border }}
-                />
-                <span className="text-right font-bold tabular-nums leading-none">
-                  ${row.amount.replace(/^M/, '')}
-                </span>
+                {ownership.hotel ? (
+                  <div
+                    title={t('building.hotel')}
+                    style={{
+                      width: 16, height: 16,
+                      backgroundColor: '#8B2020',
+                      borderRadius: 3,
+                      border: '1.5px solid rgba(255,255,255,0.88)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                    }}
+                  />
+                ) : (
+                  Array.from({ length: ownership.houses }).map((_, i) => (
+                    <div
+                      key={i}
+                      title={t('building.houseNumber', { count: i + 1 })}
+                      style={{
+                        width: 12, height: 12,
+                        backgroundColor: '#1A6B3A',
+                        borderRadius: 2,
+                        border: '1.5px solid rgba(255,255,255,0.88)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                      }}
+                    />
+                  ))
+                )}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-center">
@@ -244,7 +294,7 @@ export function DeedWindow({
       )}
 
       {/* Buildings strip — shown in viewOnly mode when ownership data is provided */}
-      {showBuildings && ownership && (
+      {showBuildings && ownership && !renderBuildingsInsideInfo && (
         <div
           className="flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
           style={{ backgroundColor: headerColor }}

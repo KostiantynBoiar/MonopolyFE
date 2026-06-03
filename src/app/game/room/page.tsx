@@ -9,7 +9,6 @@ import {
 } from '@/features/game-board';
 import { getSession, joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import { SessionStatus } from '@/features/lobby';
-import { WaitingCenterPanel } from '@/features/lobby/components/WaitingCenterPanel';
 import type { ManageProperty } from '@/features/manage';
 import type { TradeAsset, TradePlayer } from '@/features/trade/components/TradeBuilder';
 import type { TradeParticipant } from '@/features/trade/trade.types';
@@ -38,6 +37,7 @@ import { useUiStore } from '@/stores/ui-store';
 import { useGameDispatch } from './useGameDispatch';
 import type { ActiveOverlay, TradeBuilderData } from './_components/FullOverlay';
 import { GameCenterGrid } from './_components/GameCenterGrid';
+import { WaitingCenterGrid } from './_components/WaitingCenterGrid';
 
 const SESSION_RESTORE_TIMEOUT_MS = 5_000;
 const ROOM_BOOT_TIMEOUT_MS = 7_000;
@@ -189,7 +189,7 @@ export default function GameRoomPage() {
 
     setIsJoiningByCode(true);
     joinByCode({ invite_code: code })
-      .then(({ session }) => { setSession(session); setJoinError(null); router.replace('/game/room'); })
+      .then(({ session }) => { resetSocket(); setSession(session); setJoinError(null); router.replace('/game/room'); })
       .catch((error) => setJoinError((error as Error).message))
       .finally(() => setIsJoiningByCode(false));
   }, [currentSession, isJoiningByCode, ready, router, sessionHydrated, setSession]);
@@ -460,15 +460,18 @@ export default function GameRoomPage() {
         <div className="h-full min-h-0 p-3 pt-14">
           <BoardContainer
             centerContent={(
-              <WaitingCenterPanel
-                session={currentSession}
+              <WaitingCenterGrid
+                inviteCode={currentSession.invite_code}
+                memberCount={currentSession.member_count}
+                maxPlayers={currentSession.max_players}
+                yourRole={currentSession.your_role}
                 messages={lobbyMessages}
                 onSendMessage={sendChat}
+                onSendSticker={sendSticker}
                 onLeave={handleLeaveRoom}
                 onStart={handleStartGame}
                 isLeaving={isLeaving}
                 isStarting={isStarting}
-                socketStatus={status}
               />
             )}
             sidebarPlayers={waitingSidebarPlayers}

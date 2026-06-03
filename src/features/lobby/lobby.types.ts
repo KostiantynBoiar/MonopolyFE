@@ -1,5 +1,3 @@
-import type { SocketStatus } from '@/shared/socket';
-import type { ChatMessage } from '../chat/chat.types';
 import type { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums';
 
 export interface LobbyHost {
@@ -46,23 +44,3 @@ export interface LobbyListResponse {
 export interface SessionResponse {
   session: SessionDetail;
 }
-
-export interface WaitingActionsPanelProps {
-  session: SessionDetail;
-  onLeave?: () => void;
-  onStart: () => void;
-  isLeaving?: boolean;
-  isStarting?: boolean;
-}
-
-export interface WaitingChatPanelProps {
-  messages: ChatMessage[];
-  onSendMessage?: (text: string) => void;
-  socketStatus?: SocketStatus;
-}
-
-export interface WaitingInviteCodePanelProps {
-  session: SessionDetail;
-}
-
-export interface WaitingCenterPanelProps extends WaitingActionsPanelProps, WaitingChatPanelProps {}
