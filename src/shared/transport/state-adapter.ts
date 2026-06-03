@@ -55,6 +55,7 @@ interface BeActionSet {
   can_use_jail_card?: boolean;
   can_bid?: boolean;
   can_declare_bankruptcy?: boolean;
+  can_surrender?: boolean;
 }
 
 interface BeDiceRoll {
@@ -82,6 +83,7 @@ interface BePlayer {
   is_bankrupt?: boolean;
   is_connected?: boolean;
   net_worth?: number;
+  afk_strikes?: number;
 }
 
 interface BeSpace {
@@ -101,6 +103,7 @@ interface BeTurn {
   doubles_streak?: number;
   actions_available?: BeActionSet;
   pending_buy_position?: number | null;
+  turn_deadline_ms?: number | null;
 }
 
 interface BeAuctionBid {
@@ -241,6 +244,7 @@ function mapPlayer(p: BePlayer): PlayerState {
     jailStatus: p.jail_status ? { attempts: p.jail_status.turns_remaining } : null,
     isBankrupt: p.is_bankrupt ?? false,
     isConnected: p.is_connected ?? true,
+    afkStrikes: p.afk_strikes ?? 0,
   };
 }
 
@@ -269,6 +273,7 @@ function mapTurn(t: BeTurn): TurnState {
     // The backend re-rolls on doubles implicitly; surface it for UI affordances.
     extraTurn: (t.doubles_streak ?? 0) > 0,
     pendingBuyPosition: t.pending_buy_position ?? null,
+    turnDeadlineMs: t.turn_deadline_ms ?? null,
   };
 }
 
@@ -453,6 +458,7 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
     canRollInJail: !!a.can_roll && inJail,
     canPayDebt: !!a.can_end_turn && state.turn.phase === TurnPhase.MUST_PAY_RENT,
     canDeclareBankruptcy: !!a.can_declare_bankruptcy,
+    canSurrender: !!a.can_surrender,
   };
 }
 
@@ -515,6 +521,7 @@ export function emptySnapshot(): GameSnapshot {
       doublesStreak: 0,
       extraTurn: false,
       pendingBuyPosition: null,
+      turnDeadlineMs: null,
     },
     bank: { availableHouses: 0, availableHotels: 0 },
     spaces: [],

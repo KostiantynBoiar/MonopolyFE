@@ -275,6 +275,16 @@ export default function GameRoomPage() {
     router.replace('/lobby?kicked=1');
   }, [clearSession, resetSocket, router, wasKicked]);
 
+  // Clear the persisted game store once the session is finished. Kept up here with the
+  // other hooks (NOT after the boot-guard early returns below) so the hook order stays
+  // stable — otherwise React throws "rendered fewer hooks than expected" (#310).
+  useEffect(() => {
+    const finished =
+      currentSession?.status === SessionStatus.FINISHED ||
+      game.status === GameStatus.FINISHED;
+    if (finished) useGameStore.persist.clearStorage();
+  }, [currentSession?.status, game.status]);
+
   // ─── Derived values ────────────────────────────────────────────────────────
 
   const viewerPlayer = useMemo(() => getViewerPlayer(game, user?.id), [game, user?.id]);
@@ -454,6 +464,7 @@ export default function GameRoomPage() {
 
   // ─── Boot guards ──────────────────────────────────────────────────────────
 
+
   if (
     !roomBootTimedOut &&
     (!ready || !sessionHydrated || isJoiningByCode || isValidatingSession ||
@@ -490,11 +501,6 @@ export default function GameRoomPage() {
   const winnerName = game.winnerId
     ? game.players.find((player) => player.id === game.winnerId)?.displayName ?? null
     : null;
-
-  useEffect(() => {
-    if (!isFinishedSession) return;
-    useGameStore.persist.clearStorage();
-  }, [isFinishedSession]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -571,6 +577,8 @@ export default function GameRoomPage() {
               isRolling={isRolling}
               isViewerTurn={isViewerTurn}
               roundNumber={game.turn.roundNumber}
+              turnDeadlineMs={game.turn.turnDeadlineMs}
+              canSurrender={permissions.canSurrender}
               // Button handlers
               onRoll={handleRoll}
               onEndTurn={() => dispatchCommand(CommandType.EndTurn)}
@@ -578,6 +586,7 @@ export default function GameRoomPage() {
               onTradeOpen={() => setActiveOverlay('trade-builder')}
               onBuy={handleBuy}
               onAuction={handlePassBuy}
+              onSurrender={() => dispatchCommand(CommandType.Surrender)}
               // CenterPanel props
               activeCard={activeCard}
               pendingInteractionPlayerId={pendingAnimationInteraction?.affectedPlayerId ?? null}

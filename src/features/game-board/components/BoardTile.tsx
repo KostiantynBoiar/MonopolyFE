@@ -365,6 +365,14 @@ export function BoardTile({
       {propertyColor && (
         <div className={cn(EDGE_HEADER[edge], 'z-[45]')} style={getHeaderStyle(edge, propertyColor)} />
       )}
+      {/* Ownership marker — frame the tile in the owning player's token color. */}
+      {ownerColor && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[12px]"
+          style={{ border: `2.5px solid ${ownerColor}`, zIndex: 15 }}
+        />
+      )}
       <BuildingsMarker ownership={ownership} edge={edge} />
       <PlayerMarker players={players} edge={edge} />
 

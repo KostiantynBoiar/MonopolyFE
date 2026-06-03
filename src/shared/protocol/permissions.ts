@@ -29,6 +29,7 @@ export interface PlayerPermissions {
 
   readonly canPayDebt:           boolean;
   readonly canDeclareBankruptcy: boolean;
+  readonly canSurrender:         boolean;
 }
 
 export const EMPTY_PERMISSIONS: PlayerPermissions = {
@@ -47,6 +48,7 @@ export const EMPTY_PERMISSIONS: PlayerPermissions = {
   canRollInJail:  false,
   canPayDebt:           false,
   canDeclareBankruptcy: false,
+  canSurrender:         false,
 };
 
 export interface GameSnapshot {

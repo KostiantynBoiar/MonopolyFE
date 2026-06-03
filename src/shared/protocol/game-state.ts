@@ -129,6 +129,7 @@ export interface PlayerState {
   jailStatus:         JailStatus | null;
   isBankrupt:         boolean;
   isConnected:        boolean;
+  afkStrikes:         number;
 }
 
 // ======================================================
@@ -150,6 +151,8 @@ export interface TurnState {
   doublesStreak:      number;
   extraTurn:          boolean;
   pendingBuyPosition: number | null;
+  /** Absolute epoch-ms deadline for the current player's next move (turn timer). */
+  turnDeadlineMs:     number | null;
 }
 
 // ======================================================

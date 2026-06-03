@@ -158,7 +158,9 @@
     "yourTurn": "Ваш хід",
     "round": "Раунд {number}",
     "gameLog": "Журнал гри",
-    "messagePlaceholder": "Повідомлення…"
+    "messagePlaceholder": "Повідомлення…",
+    "surrender": "Здатися",
+    "surrenderConfirm": "Точно?"
   },
 
   "Chat": {
