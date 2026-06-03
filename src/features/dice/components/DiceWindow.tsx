@@ -1,9 +1,11 @@
-    
+
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useTranslations } from 'next-intl';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
+import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, DICE_SPIN_MS } from '@/shared/config/constants';
 
 interface DiceWindowProps {
   diceRoll?: DiceRoll | null;
@@ -44,9 +46,9 @@ function DieFace({
       style={{
         ['--die-rest-transform' as string]: tilt,
         animation: rolling
-          ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} 760ms cubic-bezier(.16,.84,.28,1)`
+          ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} ${DICE_SPIN_MS}ms cubic-bezier(.16,.84,.28,1)`
           : undefined,
-        background: `${DIE_BG}, #1a2340`,
+        background: `${DIE_BG}, ${BOARD_TILE_COLORS.propertyRed}`,
         borderColor: 'rgba(255,255,255,0.10)',
         boxShadow: rolling
           ? '0 12px 0 rgba(0,0,0,0.35), 0 20px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18)'
@@ -73,6 +75,7 @@ function DieFace({
 }
 
 export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
+  const t = useTranslations('Dice');
   const [rolling, setRolling] = useState(false);
   const [justSettled, setJustSettled] = useState(false);
   const die1 = diceRoll?.die1 ?? 1;
@@ -87,34 +90,68 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
   const total = settledRoll.die1 + settledRoll.die2;
   const isDoubles = settledRoll.isDoubles;
 
+  // Tracks which rollId has already been animated so die1/die2 prop changes
+  // (e.g. game state commit after End Turn) don't re-trigger the animation.
+  const lastAnimatedRollIdRef = useRef(0);
+
   useEffect(() => {
     if (rollId === 0) {
+      // Late-joiner / initial sync — show current values without animation.
       setDisplayDie1(die1);
       setDisplayDie2(die2);
       setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
       return;
     }
 
+    if (rollId === lastAnimatedRollIdRef.current) {
+      // Same roll, die values changed due to game state commit — no re-animation.
+      return;
+    }
+
+    lastAnimatedRollIdRef.current = rollId;
+
+    // Collect disposables so the cleanup is a single pass.
+    const dispose: Array<() => void> = [];
+    const later = (fn: () => void, ms: number) => {
+      const id = window.setTimeout(fn, ms);
+      dispose.push(() => window.clearTimeout(id));
+    };
+    const cycle = (fn: () => void, ms: number) => {
+      const id = window.setInterval(fn, ms);
+      dispose.push(() => window.clearInterval(id));
+      return id;
+    };
+
     setRolling(true);
     setJustSettled(false);
-    const interval = window.setInterval(() => {
+
+    // Phase 1: fast chaotic pip cycling during tumble.
+    const fastId = cycle(() => {
       setDisplayDie1(randomFace());
       setDisplayDie2(randomFace());
-    }, 70);
-    const timeout = window.setTimeout(() => {
-      window.clearInterval(interval);
-      setDisplayDie1(die1);
-      setDisplayDie2(die2);
-      setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
-      setRolling(false);
-      setJustSettled(true);
-      window.setTimeout(() => setJustSettled(false), 340);
-    }, 760);
+    }, FAST_INTERVAL_MS);
 
-    return () => {
-      window.clearInterval(interval);
-      window.clearTimeout(timeout);
-    };
+    // Phase 2: slow down as die decelerates.
+    later(() => {
+      window.clearInterval(fastId);
+      const slowId = cycle(() => {
+        setDisplayDie1(randomFace());
+        setDisplayDie2(randomFace());
+      }, SLOW_INTERVAL_MS);
+
+      // Reveal final values and settle.
+      later(() => {
+        window.clearInterval(slowId);
+        setDisplayDie1(die1);
+        setDisplayDie2(die2);
+        setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
+        setRolling(false);
+        setJustSettled(true);
+        later(() => setJustSettled(false), 340);
+      }, DICE_SPIN_MS - FAST_PHASE_MS);
+    }, FAST_PHASE_MS);
+
+    return () => dispose.forEach((fn) => fn());
   }, [die1, die2, rollId]);
 
   return (
@@ -134,7 +171,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
           color: BOARD_TILE_COLORS.altText,
         }}
       >
-        Dice
+        {t('title')}
       </div>
 
       <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-3">
@@ -144,7 +181,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
 
       <div className="flex flex-col items-center gap-1 px-2 py-2 text-[12px]">
         <span className="text-xl font-semibold" style={{ color: GAME_BOARD_COLORS.tileText }}>
-          Total: {total}
+          {t('total', { total })}
         </span>
         <span
           className="rounded-full px-3 py-1 font-semibold tracking-[0.02em]"
@@ -153,7 +190,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
             color: BOARD_TILE_COLORS.altText,
           }}
         >
-          {isDoubles ? 'Doubles' : 'No doubles'}
+          {isDoubles ? t('doubles') : t('noDoubles')}
         </span>
       </div>
     </section>

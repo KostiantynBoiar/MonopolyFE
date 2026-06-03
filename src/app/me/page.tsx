@@ -3,11 +3,12 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { Badge, Button, Container } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', {
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -15,6 +16,8 @@ function formatDate(iso: string) {
 }
 
 export default function MePage() {
+  const t = useTranslations('Profile');
+  const locale = useLocale();
   const { user, token, isLoading, logout, fetchMe } = useAuthStore();
   const router = useRouter();
 
@@ -29,7 +32,7 @@ export default function MePage() {
   if (!token || isLoading || !user) {
     return (
       <div className="min-h-svh bg-paper flex items-center justify-center">
-        <p className="text-sm text-muted">Loading…</p>
+        <p className="text-sm text-muted">{t('loading')}</p>
       </div>
     );
   }
@@ -57,27 +60,27 @@ export default function MePage() {
               router.push('/home');
             }}
           >
-            Sign out
+            {t('signOut')}
           </Button>
         </Container>
       </header>
 
-      <main>
-        <Container className="py-12">
-          <div className="max-w-md">
-            <h1 className="text-2xl font-semibold text-ink mb-1">Profile</h1>
-            <p className="text-sm text-muted mb-8">Your account details</p>
+      <main className="min-h-[calc(100svh-4rem)]">
+        <Container className="flex min-h-[calc(100svh-4rem)] items-center justify-center py-12">
+          <div className="w-full max-w-md">
+            <h1 className="mb-1 text-2xl font-semibold text-ink">{t('title')}</h1>
+            <p className="mb-8 text-sm text-muted">{t('subtitle')}</p>
 
             <div className="rounded-lg border border-line bg-surface divide-y divide-line">
-              <ProfileRow label="Display name" value={user.display_name} />
-              <ProfileRow label="Email" value={user.email} />
-              <ProfileRow label="Member since" value={formatDate(user.created_at)} />
-              <ProfileRow label="User ID" value={user.id} mono />
+              <ProfileRow label={t('displayName')} value={user.display_name} />
+              <ProfileRow label={t('email')} value={user.email} />
+              <ProfileRow label={t('memberSince')} value={formatDate(user.created_at, locale)} />
+              <ProfileRow label={t('userId')} value={user.id} mono />
             </div>
 
             <div className="mt-6">
               <Button as="a" href="/lobby" variant="blue">
-                Go to lobby
+                {t('goToLobby')}
               </Button>
             </div>
           </div>

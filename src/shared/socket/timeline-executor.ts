@@ -13,6 +13,7 @@
  */
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
+import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
 import type { AnimationInstruction } from '@/shared/protocol/animation';
 import type { ActiveCard } from '@/shared/protocol/game-state';
 import { getWalkSteps } from '@/shared/config/board-layout';
@@ -20,11 +21,7 @@ import { getDeedInfo } from '@/features/deed';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
-
-// How long each phase of the dice animation lasts (ms).
-// DICE_SPIN_MS must match DiceWindow's own spin timeout (760 ms).
-const DICE_SPIN_MS    = 760;
-const DICE_LINGER_MS  = 900; // pause on the result before token moves
+import { DICE_SPIN_MS, DICE_LINGER_MS } from '@/shared/config/constants';
 
 // ─── Animation event listeners ────────────────────────────────────────────────
 
@@ -98,6 +95,7 @@ export function resetSnapshotPipeline(): void {
   queue = [];
   running = false;
   closeGate(''); // force-release whatever gate is open
+  useUiStore.getState().setIsRolling(false);
 }
 
 async function drain(): Promise<void> {
@@ -138,7 +136,9 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
         ui.bumpAnimatedDiceRollId();
         ui.setIsRolling(true);
         await delay(DICE_SPIN_MS + DICE_LINGER_MS);
-        ui.setAnimatedDiceRoll(null);
+        // Do NOT clear animatedDiceRoll here — game store hasn't committed yet.
+        // Clearing now would make diceRoll fall back to stale game.turn.diceRoll,
+        // causing DiceWindow to re-animate with wrong values.
         ui.setIsRolling(false);
         break;
 
@@ -172,6 +172,7 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
       case 'open_deed':
         emit(instr);
+        ui.setSelectedTile(instr.position);
         break;
     }
   }
@@ -184,6 +185,9 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
     ? { ...next, game: { ...next.game, activeCard: null } }
     : next;
   commit(finalSnapshot);
+  // Clear the animated dice roll only after commit so game.turn.diceRoll already holds
+  // the correct values — die1/die2 stay the same, DiceWindow never re-triggers.
+  ui.setAnimatedDiceRoll(null);
   ui.setIsTimelineRunning(false);
   maybeSurfaceDeed(next);
 }
@@ -212,9 +216,15 @@ function patchForCard(
 ): GameSnapshot {
   return {
     ...snapshot,
+    // Blank all permissions while the card gate is open — no UI action should be
+    // available until the player acknowledges and the final state commits.
+    permissions: EMPTY_PERMISSIONS,
     game: {
       ...snapshot.game,
       activeCard: card,
+      // Zero out any pending buy so DeedWindow doesn't surface a buy decision
+      // for the post-card landing tile while the card is still being displayed.
+      turn: { ...snapshot.game.turn, pendingBuyPosition: null },
       players: position === null
         ? snapshot.game.players
         : snapshot.game.players.map((p) => (p.id === playerId ? { ...p, position } : p)),

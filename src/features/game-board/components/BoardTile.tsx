@@ -1,5 +1,6 @@
 'use client';
 
+import type { KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { BoardTileFlavor, CornerVariant, SpaceType, TileEdge } from '../game-board.enums';
 import type { BoardTileProps } from '../game-board.types';
@@ -113,6 +114,21 @@ function splitAtFirst(name: string): [string, string | null] {
   return [name.slice(0, idx), name.slice(idx + 1)];
 }
 
+function SelectionRing({ selected }: { selected: boolean }) {
+  if (!selected) return null;
+
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-[50]"
+      style={{
+        borderRadius: 'inherit',
+        boxShadow: `inset 0 0 0 clamp(2px, 0.45vmin, 5px) ${BOARD_TILE_COLORS.propertyYellow}, 0 0 0 1px rgba(16,24,46,0.55)`,
+      }}
+    />
+  );
+}
+
 // ─── TileText ─────────────────────────────────────────────────────────────────
 
 interface TileTextProps {
@@ -165,7 +181,42 @@ function TileText({ name, price, textColor, doSplit }: TileTextProps) {
 
 // ─── BoardTile ────────────────────────────────────────────────────────────────
 
-export function BoardTile({ space, edge, flavor, ownership, players, walkingPlayerIds }: BoardTileProps) {
+function OwnershipOverlay({ color, isMortgaged }: { color: string; isMortgaged: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-10"
+      style={{
+        borderRadius: 'inherit',
+        backgroundColor: color,
+        opacity: isMortgaged ? 0.22 : 0.30,
+      }}
+    />
+  );
+}
+
+function DimOverlay() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-[46] transition-opacity duration-300"
+      style={{ borderRadius: 'inherit', backgroundColor: 'rgba(0,0,0,0.55)' }}
+    />
+  );
+}
+
+export function BoardTile({
+  space,
+  edge,
+  flavor,
+  ownership,
+  ownerColor,
+  players,
+  walkingPlayerIds,
+  isSelected = false,
+  isDimmed = false,
+  onSelect,
+}: BoardTileProps) {
   // Dynamic key lookup for board position — eslint-disable-next-line needed
   // because next-intl's type system only accepts literal string keys.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,6 +225,20 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
   const justVisit = tBoard('justVisiting');
 
   const isHorizontal = edge === TileEdge.BOTTOM || edge === TileEdge.TOP;
+  const isSelectable = Boolean(onSelect);
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (!onSelect || (event.key !== 'Enter' && event.key !== ' ')) return;
+
+    event.preventDefault();
+    onSelect();
+  };
+  const selectableProps = {
+    role: isSelectable ? 'button' : undefined,
+    tabIndex: isSelectable ? 0 : undefined,
+    'aria-pressed': isSelectable ? isSelected : undefined,
+    onClick: onSelect,
+    onKeyDown: handleKeyDown,
+  };
 
   // ─── Corner ───────────────────────────────────────────────────────────────
 
@@ -182,7 +247,11 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
 
     return (
       <article
-        className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border shadow-sm"
+        {...selectableProps}
+        className={cn(
+          'relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border shadow-sm',
+          isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+        )}
         style={{
           backgroundColor: cornerColor,
           borderColor:     cornerColor,
@@ -212,6 +281,8 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
           </p>
         )}
         <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
+        {isDimmed && <DimOverlay />}
+        <SelectionRing selected={isSelected} />
       </article>
     );
   }
@@ -221,7 +292,11 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
   if (flavor === BoardTileFlavor.SPECIAL) {
     return (
       <article
-        className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[12px] border text-center shadow-sm"
+        {...selectableProps}
+        className={cn(
+          'relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[12px] border text-center shadow-sm',
+          isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+        )}
         style={{
           backgroundColor: SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.special,
           borderColor:     BOARD_TILE_COLORS.propertyOrange,
@@ -231,12 +306,12 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
         }}
       >
         <span
-          className="shrink-0 leading-none"
+          className="relative z-[45] shrink-0 leading-none"
           style={{ fontSize: specialEmojiSize, textShadow: shadowEmoji }}
         >
           {SPACE_SYMBOL_MAP[space.type]}
         </span>
-        <div className="min-w-0 overflow-hidden w-full text-center">
+        <div className="relative z-[45] min-w-0 overflow-hidden w-full text-center">
           <h3
             className="break-all font-sans font-bold uppercase leading-tight overflow-hidden"
             style={{ fontSize: specialNameSize, textShadow: shadowOnColor }}
@@ -253,6 +328,9 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
           )}
         </div>
         <PlayerMarker players={players} edge={edge} walkingPlayerIds={walkingPlayerIds} />
+        {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
+        {isDimmed && <DimOverlay />}
+        <SelectionRing selected={isSelected} />
       </article>
     );
   }
@@ -276,7 +354,11 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
 
   return (
     <article
-      className="relative flex h-full w-full overflow-hidden rounded-[12px] border shadow-sm"
+      {...selectableProps}
+      className={cn(
+        'relative flex h-full w-full overflow-hidden rounded-[12px] border shadow-sm',
+        isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+      )}
       style={{
         backgroundColor: surface,
         borderColor:     GAME_BOARD_COLORS.tileBorder,
@@ -284,13 +366,13 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
       }}
     >
       {propertyColor && (
-        <div className={EDGE_HEADER[edge]} style={getHeaderStyle(edge, propertyColor)} />
+        <div className={cn(EDGE_HEADER[edge], 'z-[45]')} style={getHeaderStyle(edge, propertyColor)} />
       )}
       <BuildingsMarker ownership={ownership} edge={edge} />
       <PlayerMarker players={players} edge={edge} />
 
       <div
-        className={cn('flex min-w-0 min-h-0 flex-1 overflow-hidden', flexDir)}
+        className={cn('relative z-[45] flex min-w-0 min-h-0 flex-1 overflow-hidden', flexDir)}
         style={getContentPadding(edge, !!propertyColor)}
       >
         {layoutIsRow ? (
@@ -330,6 +412,9 @@ export function BoardTile({ space, edge, flavor, ownership, players, walkingPlay
           </>
         )}
       </div>
+      {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
+      {isDimmed && <DimOverlay />}
+      <SelectionRing selected={isSelected} />
     </article>
   );
 }

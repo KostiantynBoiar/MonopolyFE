@@ -27,7 +27,12 @@ export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
     const result = inviteCodeSchema.safeParse(raw);
 
     if (!result.success) {
-      setError(result.error.issues[0]?.message ?? 'Invalid code');
+      const message = result.error.issues[0]?.message;
+      setError(
+        message === 'required' || message === 'invite_code_format'
+          ? t('invalidCode')
+          : (message ?? t('invalidCode')),
+      );
       return;
     }
 
@@ -49,7 +54,7 @@ export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
         <input
           value={raw}
           onChange={(event) => handleChange(event.target.value)}
-          placeholder="TYC-XXXX"
+          placeholder={t('inviteCodePlaceholder')}
           maxLength={8}
           spellCheck={false}
           className={cn(

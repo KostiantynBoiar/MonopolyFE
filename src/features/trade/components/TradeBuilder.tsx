@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
@@ -67,6 +68,7 @@ function Stepper({ label, value, max, onChange }: { label: string; value: number
 export function TradeBuilder({
   me, others, myProperties, myJailCards, propertiesOf, jailCardsOf, onPropose, onClose,
 }: TradeBuilderProps) {
+  const t = useTranslations('Trade');
   const [targetId, setTargetId]   = useState(others[0]?.id ?? '');
   const [giveMoney, setGiveMoney] = useState(0);
   const [getMoney, setGetMoney]   = useState(0);
@@ -96,18 +98,18 @@ export function TradeBuilder({
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+    <div className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-white">
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
         <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>
-          Propose Trade
+          {t('builder.header')}
         </span>
-        <button onClick={onClose} className="font-mono text-white/70 hover:text-white" style={{ fontSize: '0.8em' }} aria-label="Close">✕</button>
+        <button onClick={onClose} className="font-mono text-white/70 hover:text-white" style={{ fontSize: '0.8em' }} aria-label={t('builder.close')}>✕</button>
       </div>
 
       {/* Target selector */}
       <div className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2">
-        <span className="font-sans text-muted" style={{ fontSize: '0.65em' }}>Trade with</span>
+        <span className="font-sans text-muted" style={{ fontSize: '0.65em' }}>{t('builder.tradeWith')}</span>
         <select
           value={targetId}
           onChange={(e) => { setTargetId(e.target.value); setGetPos(new Set()); setGetCards(0); }}
@@ -122,7 +124,7 @@ export function TradeBuilder({
         {/* You give */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 border-r border-line p-2.5">
           <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '1em' }}>
-            You give
+            {t('builder.youGive')}
           </span>
           <div className="flex items-center gap-1" style={{ fontSize: '1em' }}>
             <span className="text-muted">M</span>
@@ -132,15 +134,15 @@ export function TradeBuilder({
             {myProperties.map((a) => (
               <AssetChip key={a.position} asset={a} selected={givePos.has(a.position)} onToggle={() => toggle(givePos, setGivePos, a.position)} />
             ))}
-            {myProperties.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>no properties</span>}
+            {myProperties.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>{t('builder.noProperties')}</span>}
           </div>
-          <Stepper label="Jail cards" value={giveCards} max={myJailCards} onChange={setGiveCards} />
+          <Stepper label={t('builder.jailCards')} value={giveCards} max={myJailCards} onChange={setGiveCards} />
         </div>
 
         {/* You get */}
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
           <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '1em' }}>
-            You get
+            {t('builder.youGet')}
           </span>
           <div className="flex items-center gap-1" style={{ fontSize: '1em' }}>
             <span className="text-muted">M</span>
@@ -150,9 +152,9 @@ export function TradeBuilder({
             {targetProps.map((a) => (
               <AssetChip key={a.position} asset={a} selected={getPos.has(a.position)} onToggle={() => toggle(getPos, setGetPos, a.position)} />
             ))}
-            {targetProps.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>no properties</span>}
+            {targetProps.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>{t('builder.noProperties')}</span>}
           </div>
-          <Stepper label="Jail cards" value={getCards} max={targetCards} onChange={setGetCards} />
+          <Stepper label={t('builder.jailCards')} value={getCards} max={targetCards} onChange={setGetCards} />
         </div>
       </div>
 
@@ -163,7 +165,7 @@ export function TradeBuilder({
           className="rounded border border-line-2 bg-surface font-display font-semibold uppercase tracking-wide text-ink hover:bg-paper"
           style={{ fontSize: '0.62em', padding: '0.45em 0.8em' }}
         >
-          Cancel
+          {t('builder.cancel')}
         </button>
         <button
           onClick={propose}
@@ -171,7 +173,7 @@ export function TradeBuilder({
           className="rounded border border-gold-600 bg-gold font-display font-semibold uppercase tracking-wide text-white hover:bg-gold-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
           style={{ fontSize: '0.62em', padding: '0.45em 0.8em' }}
         >
-          Propose
+          {t('builder.propose')}
         </button>
       </div>
     </div>

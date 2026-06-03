@@ -1,31 +1,38 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { FullScreenSpinner } from '@/shared/ui/Spinner';
-import { useLobby, SessionCard, JoinByCodeForm } from '@/features/lobby';
+import { useLobby, SessionCard, JoinByCodeForm, CreateLobbyForm } from '@/features/lobby';
 import { useSessionStore } from '@/stores/session-store';
+import { useSocketStore } from '@/stores/socket-store';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/shared/ui/Button';
-import { useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { SessionStatus } from '@/features/lobby/lobby.enums';
 
 type StatusFilter = 'all' | SessionStatus.WAITING | SessionStatus.IN_PROGRESS;
+type LobbyPanel = 'join' | 'create';
 
 export default function LobbyPage() {
   const t = useTranslations('Lobby');
   const router = useRouter();
   const searchParams = useSearchParams();
   const wasKicked = searchParams.get('kicked') === '1';
+  const panelParam = searchParams.get('panel');
 
   const { ready } = useRequireAuth();
   const setSession = useSessionStore((s) => s.setSession);
+  const resetSocket = useSocketStore((s) => s.reset);
+  const currentSession = useSessionStore((s) => s.currentSession);
+  const hasSessionHydrated = useSessionStore((s) => s._hasHydrated);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [hideFullRooms, setHideFullRooms] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<LobbyPanel>(panelParam === 'create' ? 'create' : 'join');
 
   const {
     sessions, loading, error, joiningId,
@@ -37,6 +44,7 @@ export default function LobbyPage() {
     setJoinError(null);
     try {
       const session = await join(sessionId);
+      resetSocket();
       setSession(session);
       router.push('/game/room');
     } catch (err) {
@@ -46,9 +54,20 @@ export default function LobbyPage() {
 
   async function handleJoinByCode(code: string) {
     const session = await joinWithCode(code);
+    resetSocket();
     setSession(session);
     router.push('/game/room');
   }
+
+  function switchPanel(panel: LobbyPanel) {
+    setJoinError(null);
+    setActivePanel(panel);
+    router.replace(panel === 'create' ? '/lobby?panel=create' : '/lobby');
+  }
+
+  useEffect(() => {
+    setActivePanel(panelParam === 'create' ? 'create' : 'join');
+  }, [panelParam]);
 
   if (!ready) return <FullScreenSpinner />;
 
@@ -78,17 +97,36 @@ export default function LobbyPage() {
           <h1 className="font-display text-xl font-bold text-ink sm:text-2xl lg:text-3xl">{t('publicGames')}</h1>
           <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm lg:text-base">{t('joinOrCreate')}</p>
         </div>
-        <Button as="a" href="/lobby/new" variant="gold" size="md">
-          {t('newGame')}
-        </Button>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          {hasSessionHydrated && currentSession && (
+            <Button as="a" href="/game/room" variant="blue" size="md">
+              {t('backToGame')}
+            </Button>
+          )}
+          {activePanel === 'join' ? (
+            <Button onClick={() => switchPanel('create')} variant="gold" size="md">
+              {t('newGame')}
+            </Button>
+          ) : (
+            <Button onClick={() => switchPanel('join')} variant="ghost" size="md">
+              {t('joinWithInviteCode')}
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Join by invite code */}
+      {/* Join by invite code / create lobby */}
       <div className="mb-5 rounded-sm border border-line bg-surface px-3 py-3 sm:mb-7 sm:px-4 sm:py-4 lg:mb-10 lg:px-5 lg:py-5">
-        <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:mb-2 sm:text-xs lg:text-sm">
-          {t('joinWithInviteCode')}
-        </p>
-        <JoinByCodeForm onSubmit={handleJoinByCode} />
+        {activePanel === 'join' ? (
+          <>
+            <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:mb-2 sm:text-xs lg:text-sm">
+              {t('joinWithInviteCode')}
+            </p>
+            <JoinByCodeForm onSubmit={handleJoinByCode} />
+          </>
+        ) : (
+          <CreateLobbyForm onBack={() => switchPanel('join')} />
+        )}
       </div>
 
       {/* Session list */}
@@ -157,7 +195,7 @@ export default function LobbyPage() {
         {!loading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-10 text-center sm:gap-3 sm:py-14 lg:py-20">
             <p className="text-xs text-muted sm:text-sm lg:text-base">{t('noOpenRooms')}</p>
-            <Button as="a" href="/lobby/new" variant="blue" size="sm">
+            <Button onClick={() => switchPanel('create')} variant="blue" size="sm">
               {t('createOne')}
             </Button>
           </div>

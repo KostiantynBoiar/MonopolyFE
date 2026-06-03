@@ -28,6 +28,8 @@ export interface ChatLogProps {
 export interface ChatWindowProps {
   log: LogEntry[];
   initialMessages?: ChatMessage[];
+  externalMessages?: ChatMessage[];
+  viewerToken?: TokenColor;
   onSendMessage?: (text: string) => void;
   onSendSticker?: (url: string) => void;
 }
@@ -155,14 +157,3 @@ export interface TradeBuilderOverlayProps {
   onTradePropose?: (targetId: string, offer: TradeOffer, request: TradeOffer) => void;
   onCloseTradeBuilder?: () => void;
 }
-
-/** Combined props for the BoardCenterPanel component */
-export type BoardCenterPanelProps = LogAndActionsProps &
-  CardOverlayProps &
-  DeedOverlayProps &
-  JailOverlaySlotProps &
-  DebtOverlaySlotProps &
-  AuctionPanelSlotProps &
-  TradeWindowProps &
-  ManageOverlayProps &
-  TradeBuilderOverlayProps;

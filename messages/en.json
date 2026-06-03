@@ -27,11 +27,52 @@
   "Deed": {
     "titleDeed": "Title Deed",
     "buy": "Buy",
+    "buyWithAmount": "Buy ${amount}",
     "cantAfford": "Can't Afford",
     "auction": "Auction",
     "manageProperties": "Manage Properties",
     "housesHotels": "Houses / Hotels",
     "mortgageValue": "Mortgage Value",
+    "yourMoveDecide": "Your Move - Decide",
+    "status": "Status",
+    "rentTitle": {
+      "default": "Rent",
+      "railroad": "Base Fare",
+      "utility": "Usage"
+    },
+    "row": {
+      "base": "Base Rent",
+      "house1": "With 1 House",
+      "house2": "With 2 Houses",
+      "house3": "With 3 Houses",
+      "house4": "With 4 Houses",
+      "hotel": "With Hotel",
+      "railroad1": "1 Railroad",
+      "railroad2": "2 Railroads",
+      "railroad3": "3 Railroads",
+      "railroad4": "4 Railroads",
+      "utility1": "1 Utility",
+      "utilityBoth": "2 Utilities"
+    },
+    "corner": {
+      "eyebrow": "Corner",
+      "go": { "title": "Collect salary when you pass.", "value": "GO" },
+      "jail": { "title": "Just visiting or locked in.", "value": "JAIL" },
+      "parking": { "title": "Safe place to breathe.", "value": "FREE" },
+      "gotoJail": { "title": "Do not pass GO.", "value": "JAIL" },
+      "default": { "title": "Board anchor space.", "value": "CORNER" }
+    },
+    "special": {
+      "chance": "Draw a chance card",
+      "chest": "Open the community chest",
+      "tax": "Pay the listed amount (${amount})",
+      "default": "Board space information"
+    },
+    "building": {
+      "hotel": "Hotel",
+      "houseNumber": "House {count}",
+      "houseCount": "{count, plural, one {{count} house} other {{count} houses}}"
+    },
     "rent": {
       "base": "Rent",
       "monopoly": "Full Color Group",
@@ -95,7 +136,18 @@
     "counter": "Counter",
     "accept": "Accept",
     "withdraw": "Withdraw",
-    "spectating": "Spectating"
+    "spectating": "Spectating",
+    "builder": {
+      "header": "Propose Trade",
+      "close": "Close",
+      "tradeWith": "Trade with",
+      "youGive": "You give",
+      "youGet": "You get",
+      "noProperties": "no properties",
+      "jailCards": "Jail cards",
+      "cancel": "Cancel",
+      "propose": "Propose"
+    }
   },
 
   "Manage": {
@@ -125,10 +177,43 @@
     "messagePlaceholder": "Message…"
   },
 
+  "Chat": {
+    "tableChat": "Table Chat",
+    "gameEvents": "Game Events",
+    "chat": "Chat",
+    "noEventsYet": "No events yet.",
+    "noMessagesYet": "No messages yet.",
+    "table": "Table",
+    "player": "Player",
+    "messagePlaceholder": "Type a message...",
+    "stickers": "Stickers",
+    "openStickers": "Open stickers",
+    "send": "Send",
+    "stickerAlt": "Sticker"
+  },
+
+  "Dice": {
+    "title": "Dice",
+    "total": "Total: {total}",
+    "doubles": "Doubles",
+    "noDoubles": "No doubles"
+  },
+
   "Player": {
+    "session": "Session",
+    "currentTurn": "Current Turn",
+    "waiting": "Waiting",
+    "position": "Pos {position}",
     "turn": "Turn",
     "jail": "Jail",
-    "jailTurns": "Jail {turns}"
+    "jailTurns": "Jail {turns}",
+    "bankrupt": "Bankrupt",
+    "netWorth": "net ~${amount}",
+    "noProperties": "No properties",
+    "surrender": "Surrender",
+    "avatarAlt": "{name} avatar",
+    "ownedProperties": "{name} owned properties",
+    "tokenCount": "{count, plural, one {{count} player token} other {{count} player tokens}}"
   },
 
   "Lobby": {
@@ -164,7 +249,18 @@
     "leaving": "Leaving…",
     "messagePlaceholder": "Message…",
     "waitingForPlayers": "Waiting for players…",
+    "waitingForHost": "Waiting for host",
     "stickers": "Stickers",
+    "send": "Send",
+    "player": "Player",
+    "stickerAlt": "Sticker",
+    "copyInviteCode": "Copy invite code",
+    "copyInviteCodeWithValue": "Copy invite code {code}",
+    "copied": "Copied",
+    "clickToCopy": "Click to copy",
+    "invalidCode": "Invalid code",
+    "inviteCodePlaceholder": "TYC-XXXX",
+    "backToGame": "Back to game",
     "createGame": "New Game",
     "creating": "Creating…",
     "visibility": {
@@ -198,7 +294,18 @@
     "signOut": "Sign out",
     "signUp": "Sign up",
     "logIn": "Log in",
-    "orContinueWith": "or continue with"
+    "orContinueWith": "or continue with",
+    "socialGoogle": "Google",
+    "socialTelegram": "Telegram",
+    "socialLoginComingSoon": "Social login coming soon",
+    "validation": {
+      "required": "Required",
+      "invalidEmail": "Invalid email address",
+      "passwordMin8": "At least 8 characters",
+      "max128": "Max 128 characters",
+      "displayNameMin2": "At least 2 characters",
+      "displayNameMax32": "Max 32 characters"
+    }
   },
 
   "Profile": {
@@ -208,6 +315,7 @@
     "email": "Email",
     "memberSince": "Member since",
     "userId": "User ID",
+    "loading": "Loading…",
     "signOut": "Sign out",
     "goToLobby": "Go to lobby"
   },
@@ -215,15 +323,38 @@
   "Landing": {
     "playersOnline": "{count} players online",
     "headline": "Play the classic property game online",
+    "headlineAccent": "online",
     "description": "Real-time multiplayer tables with private rooms and built-in negotiation. Create a session, share a code, and trade your way to the top.",
     "createGame": "Create a game",
     "joinWithCode": "Join with code",
     "gameCode": "Game code",
-    "gameCodePlaceholder": "TYC-XXXX",
-    "invalidCode": "Enter a valid code like TYC-XXXX",
+    "gameCodePlaceholder": "TYC-7XK2",
+    "invalidCode": "Enter a valid code like TYC-7XK2",
     "join": "Join",
     "howToPlay": "How to play",
-    "leaderboard": "Leaderboard"
+    "leaderboard": "Leaderboard",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mobileNavigation": "Mobile",
+    "mainNavigation": "Main",
+    "signOut": "Sign out",
+    "logIn": "Log in",
+    "signUp": "Sign up",
+    "footerTagline": "Heritage Finance design system - multiplayer property trading",
+    "features": {
+      "realTimeTables": {
+        "title": "Real-time tables",
+        "body": "Live game state synced across every seat. Moves, rolls, and trades update instantly for all players."
+      },
+      "privateRooms": {
+        "title": "Private rooms",
+        "body": "Create a session and share an invite code. Only players with the code can join your table."
+      },
+      "builtInNegotiation": {
+        "title": "Built-in negotiation",
+        "body": "Propose trades in-session without leaving the board. Offers and counter-offers stay in the game flow."
+      }
+    }
   },
 
   "LocaleSwitcher": {
@@ -231,6 +362,7 @@
   },
 
   "Board": {
+    "boardLabel": "Tycoon board",
     "justVisiting": "Just Visiting",
     "tiles": {
       "p0":  "TYCOON",

@@ -3,9 +3,9 @@ import { SessionVisibility } from './lobby.enums';
 
 export const inviteCodeSchema = z
   .string()
-  .min(1, 'Required')
+  .min(1, 'required')
   .transform((value) => value.toUpperCase().replace(/\s/g, ''))
-  .pipe(z.string().regex(/^TYC-[A-Z0-9]{4}$/, 'Format: TYC-XXXX'));
+  .pipe(z.string().regex(/^TYC-[A-Z0-9]{4}$/, 'invite_code_format'));
 
 export const createSessionSchema = z.object({
   visibility: z.nativeEnum(SessionVisibility),

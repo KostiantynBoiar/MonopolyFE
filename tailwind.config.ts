@@ -42,9 +42,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['var(--font-fraunces)', 'serif'],
-        sans: ['var(--font-hanken)', 'sans-serif'],
-        mono: ['var(--font-dm-mono)', 'monospace'],
+        display: ['var(--font-roboto-flex)', 'sans-serif'],
+        sans: ['var(--font-roboto-flex)', 'sans-serif'],
+        mono: ['var(--font-roboto-flex)', 'sans-serif'],
       },
       borderRadius: {
         sm: '6px',
@@ -63,9 +63,15 @@ const config: Config = {
             opacity: '0',
           },
         },
+        'balance-delta': {
+          '0%':   { opacity: '1', transform: 'translateY(0px) scale(1)' },
+          '15%':  { opacity: '1', transform: 'translateY(-3px) scale(1.07)' },
+          '100%': { opacity: '0', transform: 'translateY(-18px) scale(0.92)' },
+        },
       },
       animation: {
         ping: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+        'balance-delta': 'balance-delta 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
     },
   },

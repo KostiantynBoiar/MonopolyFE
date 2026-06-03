@@ -3,18 +3,19 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Avatar, Button, Container, Icon } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
 
-const navLinks = [
-  { href: '/how-to-play', label: 'How to play' },
-  { href: '/leaderboard', label: 'Leaderboard' },
-] as const;
-
 export function MobileNav() {
+  const t = useTranslations('Landing');
   const [open, setOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const router = useRouter();
+  const navLinks = [
+    { href: '/how-to-play', label: t('howToPlay') },
+    { href: '/leaderboard', label: t('leaderboard') },
+  ] as const;
 
   const close = () => setOpen(false);
 
@@ -25,7 +26,7 @@ export function MobileNav() {
         size="sm"
         aria-expanded={open}
         aria-controls="mobile-nav-panel"
-        aria-label={open ? 'Close menu' : 'Open menu'}
+        aria-label={open ? t('closeMenu') : t('openMenu')}
         onClick={() => setOpen((prev) => !prev)}
       >
         <Icon name={open ? 'close' : 'menu'} />
@@ -35,7 +36,7 @@ export function MobileNav() {
         <nav
           id="mobile-nav-panel"
           className="absolute left-0 right-0 top-16 z-50 border-b border-line bg-surface shadow-md"
-          aria-label="Mobile"
+          aria-label={t('mobileNavigation')}
         >
           <Container className="flex flex-col gap-1 py-4">
             {navLinks.map((link) => (
@@ -64,16 +65,16 @@ export function MobileNav() {
                       router.push('/home');
                     }}
                   >
-                    Sign out
+                    {t('signOut')}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button as="a" href="/login" variant="ghost" size="sm" onClick={close}>
-                    Log in
+                    {t('logIn')}
                   </Button>
                   <Button as="a" href="/register" variant="dark" size="sm" onClick={close}>
-                    Sign up
+                    {t('signUp')}
                   </Button>
                 </>
               )}

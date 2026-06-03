@@ -20,60 +20,74 @@ interface DeedWindowProps {
   decisionSpace?: BoardSpace | null; // when set: player just landed here — forces buy/auction UI
   onBuy?: () => void;
   onAuction?: () => void;
+  canAct?: boolean;              // true only for the viewer who may answer a buy decision
   viewOnly?: boolean;
+  compact?: boolean;              // smaller typography to fit constrained height containers
   ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
 }
 
+type DeedTranslator = (key: string, values?: Record<string, string | number>) => string;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getRentTitle(deed: DeedInfo) {
+function getRentTitle(deed: DeedInfo, t: DeedTranslator) {
   switch (deed.spaceType) {
-    case DeedSpaceType.RAILROAD: return 'Base Fare';
-    case DeedSpaceType.UTILITY:  return 'Usage';
-    default:                      return 'Rent';
+    case DeedSpaceType.RAILROAD: return t('rentTitle.railroad');
+    case DeedSpaceType.UTILITY:  return t('rentTitle.utility');
+    default:                     return t('rentTitle.default');
   }
 }
 
-function formatLabel(key: string) {
+function formatLabel(key: string, t: DeedTranslator) {
   const MAP: Record<string, string> = {
-    base:        'Base Rent',
-    house1:      'With 1 House',
-    house2:      'With 2 Houses',
-    house3:      'With 3 Houses',
-    house4:      'With 4 Houses',
-    hotel:       'With Hotel',
-    railroad1:   '1 Railroad',
-    railroad2:   '2 Railroads',
-    railroad3:   '3 Railroads',
-    railroad4:   '4 Railroads',
-    utility1:    '1 Utility',
-    utilityBoth: '2 Utilities',
+    base:        t('row.base'),
+    house1:      t('row.house1'),
+    house2:      t('row.house2'),
+    house3:      t('row.house3'),
+    house4:      t('row.house4'),
+    hotel:       t('row.hotel'),
+    railroad1:   t('row.railroad1'),
+    railroad2:   t('row.railroad2'),
+    railroad3:   t('row.railroad3'),
+    railroad4:   t('row.railroad4'),
+    utility1:    t('row.utility1'),
+    utilityBoth: t('row.utilityBoth'),
   };
   return MAP[key] ?? key;
 }
 
-function getCornerText(corner: CornerVariant | undefined) {
+function getCornerText(corner: CornerVariant | undefined, t: DeedTranslator) {
   switch (corner) {
-    case CornerVariant.GO:       return { eyebrow: 'Corner', title: 'Collect salary when you pass.', value: 'GO' };
-    case CornerVariant.JAIL:     return { eyebrow: 'Corner', title: 'Just visiting or locked in.',   value: 'JAIL' };
-    case CornerVariant.PARKING:  return { eyebrow: 'Corner', title: 'Safe place to breathe.',        value: 'FREE' };
-    case CornerVariant.GOTO_JAIL:return { eyebrow: 'Corner', title: 'Do not pass GO.',               value: 'JAIL' };
-    default:                     return { eyebrow: 'Corner', title: 'Board anchor space.',           value: 'CORNER' };
+    case CornerVariant.GO:        return { eyebrow: t('corner.eyebrow'), title: t('corner.go.title'), value: t('corner.go.value') };
+    case CornerVariant.JAIL:      return { eyebrow: t('corner.eyebrow'), title: t('corner.jail.title'), value: t('corner.jail.value') };
+    case CornerVariant.PARKING:   return { eyebrow: t('corner.eyebrow'), title: t('corner.parking.title'), value: t('corner.parking.value') };
+    case CornerVariant.GOTO_JAIL: return { eyebrow: t('corner.eyebrow'), title: t('corner.gotoJail.title'), value: t('corner.gotoJail.value') };
+    default:                      return { eyebrow: t('corner.eyebrow'), title: t('corner.default.title'), value: t('corner.default.value') };
   }
 }
 
-function getSpecialText(space: BoardSpace) {
+function getSpecialText(space: BoardSpace, t: DeedTranslator) {
   switch (space.type) {
-    case SpaceType.CHANCE: return 'Draw a chance card';
-    case SpaceType.CHEST:  return 'Open the community chest';
-    case SpaceType.TAX:    return `Pay the listed amount ($${space.price ?? 0})`;
-    default:               return 'Board space information';
+    case SpaceType.CHANCE: return t('special.chance');
+    case SpaceType.CHEST:  return t('special.chest');
+    case SpaceType.TAX:    return t('special.tax', { amount: space.price ?? 0 });
+    default:               return t('special.default');
   }
 }
 
 // ─── DeedWindow ───────────────────────────────────────────────────────────────
 
-export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = false, ownership }: DeedWindowProps) {
+export function DeedWindow({
+  space,
+  decisionSpace,
+  onBuy,
+  onAuction,
+  canAct = true,
+  viewOnly = false,
+  compact = false,
+  ownership,
+}: DeedWindowProps) {
+  const t = useTranslations('Deed');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
 
@@ -85,14 +99,16 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
   const deed           = getDeedInfo(activeSpace.pos);
   const isDeed         = deed !== null;
   const headlineRent   = deed?.rentRows[0]?.amount ?? (activeSpace.price != null ? `M${activeSpace.price}` : null);
-  const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner) : null;
-  const specialText    = !isDeed && !cornerText ? getSpecialText(activeSpace) : null;
+  const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner, t) : null;
+  const specialText    = !isDeed && !cornerText ? getSpecialText(activeSpace, t) : null;
   const isSpecialCard  = Boolean(specialText);
-  // Actions: always visible in decision mode (player MUST choose); hidden in viewOnly browse mode.
-  const showActions    = (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
+  // Actions are visible only when this viewer can answer the active buy decision.
+  const showActions    = canAct && (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
   // Buildings strip: only in viewOnly when ownership data is supplied and there's something to show.
   const showBuildings  = viewOnly && isDeed && ownership != null && (ownership.hotel || ownership.houses > 0);
-  const nonDeedTitle   = cornerText?.title ?? specialText ?? 'Board space information.';
+  const useViewOnlyDeedShell = viewOnly && isDeed && !isDecisionMode;
+  const renderBuildingsInsideInfo = showBuildings && !showActions;
+  const nonDeedTitle   = cornerText?.title ?? specialText ?? t('special.default');
   const headerColor    = getSpaceHeaderColor(activeSpace);
   const headerTextColor = getSpaceHeaderTextColor(activeSpace);
 
@@ -103,8 +119,12 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
     <section
       className="grid h-full min-h-0 gap-[3px] overflow-hidden rounded-[16px] border p-[6px]"
       style={{
-        gridTemplateRows: isDeed
-          ? (showActions || showBuildings ? 'auto auto minmax(0,1fr) auto' : 'auto auto minmax(0,1fr)')
+        gridTemplateRows: useViewOnlyDeedShell
+          ? 'auto minmax(0,1fr)'
+          : isDeed
+          ? (showActions || (showBuildings && !renderBuildingsInsideInfo)
+            ? 'auto auto minmax(0,1fr) auto'
+            : 'auto auto minmax(0,1fr)')
           : (isDecisionMode ? 'auto auto minmax(0,1fr)' : 'auto minmax(0,1fr)'),
         backgroundColor: GAME_BOARD_COLORS.panel,
         borderColor:     outerBorder,
@@ -122,7 +142,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
           }}
         >
           <span className="font-mono text-[10px] font-black uppercase tracking-[0.22em]">
-            Your Move — Decide
+            {t('yourMoveDecide')}
           </span>
         </div>
       )}
@@ -136,14 +156,14 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
           color:           headerTextColor,
         }}
       >
-        <p className="font-display text-lg font-semibold uppercase tracking-[0.08em]">
+        <p className={`font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
           {spaceName}
         </p>
       </div>
 
       {/* Rent / info body */}
       <div
-        className="grid min-h-0 rounded-[10px] border px-3 py-3"
+        className="grid min-h-0 rounded-[10px] border px-3 py-3 self-stretch"
         style={{
           gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : isSpecialCard ? '1fr' : 'auto 1fr',
           backgroundColor:  GAME_BOARD_COLORS.surface,
@@ -152,10 +172,10 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
       >
         {!isSpecialCard && (
           <div className="text-center">
-            <p className="text-sm font-semibold" style={{ color: GAME_BOARD_COLORS.text }}>
-              {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? 'Status'}
+            <p className={`font-semibold ${compact ? 'text-[10px]' : 'text-sm'}`} style={{ color: GAME_BOARD_COLORS.text }}>
+              {isDeed && deed ? getRentTitle(deed, t) : cornerText?.eyebrow ?? t('status')}
             </p>
-            <p className="mt-1 text-4xl font-black leading-none" style={{ color: GAME_BOARD_COLORS.tileText }}>
+            <p className={`mt-1 font-black leading-none ${compact ? 'text-xl' : 'text-4xl'}`} style={{ color: GAME_BOARD_COLORS.tileText }}>
               {isDeed && headlineRent
                 ? `$${headlineRent.replace(/^M/, '')}`
                 : cornerText?.value ?? '--'}
@@ -168,29 +188,73 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
         )}
 
         {isDeed && deed ? (
-          <div className="grid min-h-0 content-center gap-[5px]" style={{ color: GAME_BOARD_COLORS.tileText }}>
-            {deed.rentRows.slice(1).map((row) => (
+          <div
+            className="flex min-h-0 h-full flex-col"
+            style={{ color: GAME_BOARD_COLORS.tileText }}
+          >
+            <div
+              className="grid min-h-0 h-full gap-[5px]"
+              style={{
+                alignContent: renderBuildingsInsideInfo ? 'start' : (!showActions ? 'center' : 'center'),
+              }}
+            >
+              {deed.rentRows.slice(1).map((row) => (
+                <div
+                  key={row.labelKey}
+                  className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[10px]' : 'text-sm'}`}
+                >
+                  <span className="font-medium leading-[1.2] tracking-[0.01em]">
+                    {formatLabel(row.labelKey, t)}
+                  </span>
+                  <span
+                    className="block translate-y-[-1px] border-b border-dotted"
+                    style={{ borderColor: GAME_BOARD_COLORS.border }}
+                  />
+                  <span className="text-right font-bold tabular-nums leading-none">
+                    ${row.amount.replace(/^M/, '')}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {renderBuildingsInsideInfo && ownership && (
               <div
-                key={row.labelKey}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 text-sm"
+                className="mt-auto flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
+                style={{ backgroundColor: headerColor }}
               >
-                <span className="font-medium leading-[1.2] tracking-[0.01em]">
-                  {formatLabel(row.labelKey)}
-                </span>
-                <span
-                  className="block translate-y-[-1px] border-b border-dotted"
-                  style={{ borderColor: GAME_BOARD_COLORS.border }}
-                />
-                <span className="text-right font-bold tabular-nums leading-none">
-                  ${row.amount.replace(/^M/, '')}
-                </span>
+                {ownership.hotel ? (
+                  <div
+                    title={t('building.hotel')}
+                    style={{
+                      width: 16, height: 16,
+                      backgroundColor: '#8B2020',
+                      borderRadius: 3,
+                      border: '1.5px solid rgba(255,255,255,0.88)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                    }}
+                  />
+                ) : (
+                  Array.from({ length: ownership.houses }).map((_, i) => (
+                    <div
+                      key={i}
+                      title={t('building.houseNumber', { count: i + 1 })}
+                      style={{
+                        width: 12, height: 12,
+                        backgroundColor: '#1A6B3A',
+                        borderRadius: 2,
+                        border: '1.5px solid rgba(255,255,255,0.88)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
+                      }}
+                    />
+                  ))
+                )}
               </div>
-            ))}
+            )}
           </div>
         ) : (
           <div className="flex h-full items-center justify-center text-center">
             <p
-              className="max-w-[18ch] text-lg font-black leading-tight"
+              className={`max-w-[18ch] font-black leading-tight ${compact ? 'text-sm' : 'text-lg'}`}
               style={{ color: cornerText ? GAME_BOARD_COLORS.tileText : GAME_BOARD_COLORS.text }}
             >
               {nonDeedTitle}
@@ -212,7 +276,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
               color:           BOARD_TILE_COLORS.altText,
             }}
           >
-            Buy ${activeSpace.price}
+            {t('buyWithAmount', { amount: activeSpace.price ?? 0 })}
           </button>
           <button
             type="button"
@@ -224,20 +288,20 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
               color:           BOARD_TILE_COLORS.propertyBlue,
             }}
           >
-            Auction
+            {t('auction')}
           </button>
         </div>
       )}
 
       {/* Buildings strip — shown in viewOnly mode when ownership data is provided */}
-      {showBuildings && ownership && (
+      {showBuildings && ownership && !renderBuildingsInsideInfo && (
         <div
           className="flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
           style={{ backgroundColor: headerColor }}
         >
           {ownership.hotel ? (
             <div
-              title="Hotel"
+              title={t('building.hotel')}
               style={{
                 width: 16, height: 16,
                 backgroundColor: '#8B2020',
@@ -250,7 +314,7 @@ export function DeedWindow({ space, decisionSpace, onBuy, onAuction, viewOnly = 
             Array.from({ length: ownership.houses }).map((_, i) => (
               <div
                 key={i}
-                title={`House ${i + 1}`}
+                title={t('building.houseNumber', { count: i + 1 })}
                 style={{
                   width: 12, height: 12,
                   backgroundColor: '#1A6B3A',

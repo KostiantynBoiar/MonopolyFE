@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { GameSnapshot } from '@/shared/protocol/permissions';
 import type { GameState } from '@/shared/protocol/game-state';
 import { emptySnapshot } from '@/shared/transport/state-adapter';
@@ -11,17 +12,75 @@ interface GameStore {
   reset:              () => void;
 }
 
-export const useGameStore = create<GameStore>((set) => ({
-  // Safe placeholder until the first server `game.state` frame arrives.
-  snapshot: emptySnapshot(),
+// Only the fields we actually persist.
+type PersistedSlice = {
+  snapshot?: {
+    game?: {
+      gameId?: string;
+      log?: GameState['log'];
+    };
+  };
+};
 
-  setSnapshot: (snapshot) => set({ snapshot }),
+// Debounce localStorage writes so rapid setSnapshot calls during gameplay
+// don't serialize on every frame — only flush after 2 s of inactivity.
+const debouncedStorage = (() => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  return {
+    getItem:    (key: string) => localStorage.getItem(key),
+    removeItem: (key: string) => {
+      if (timer !== null) { clearTimeout(timer); timer = null; }
+      localStorage.removeItem(key);
+    },
+    setItem: (key: string, value: string) => {
+      if (timer !== null) clearTimeout(timer);
+      timer = setTimeout(() => {
+        localStorage.setItem(key, value);
+        timer = null;
+      }, 2_000);
+    },
+  };
+})();
 
-  /** Merge a partial GameState into the current snapshot without touching permissions. */
-  updateGame: (updater) =>
-    set((s) => ({
-      snapshot: { ...s.snapshot, game: updater(s.snapshot.game) },
-    })),
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set) => ({
+      snapshot: emptySnapshot(),
 
-  reset: () => set({ snapshot: emptySnapshot() }),
-}));
+      setSnapshot: (snapshot) => set({ snapshot }),
+
+      updateGame: (updater) =>
+        set((s) => ({
+          snapshot: { ...s.snapshot, game: updater(s.snapshot.game) },
+        })),
+
+      reset: () => set({ snapshot: emptySnapshot() }),
+    }),
+    {
+      name: 'tycoon-game',
+      storage: createJSONStorage(() => debouncedStorage),
+      partialize: (s) => ({
+        snapshot: {
+          game: {
+            gameId: s.snapshot.game.gameId,
+            log:    s.snapshot.game.log,
+          },
+        },
+      }),
+      merge: (persisted, current) => {
+        const p = persisted as PersistedSlice;
+        const log    = p.snapshot?.game?.log;
+        const gameId = p.snapshot?.game?.gameId;
+        // Reject stale log from a different (or missing) game session.
+        if (!log?.length || gameId !== current.snapshot.game.gameId) return current;
+        return {
+          ...current,
+          snapshot: {
+            ...current.snapshot,
+            game: { ...current.snapshot.game, log },
+          },
+        };
+      },
+    },
+  ),
+);

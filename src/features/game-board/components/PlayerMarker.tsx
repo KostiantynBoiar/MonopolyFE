@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { TileEdge } from '../game-board.enums';
 import type { BoardPlayer } from '../game-board.types';
@@ -80,6 +81,7 @@ function Token({ player, diameter, isWalking }: TokenProps) {
 // ─── PlayerMarker ─────────────────────────────────────────────────────────────
 
 export function PlayerMarker({ players, edge, walkingPlayerIds }: PlayerMarkerProps) {
+  const t = useTranslations('Player');
   if (!players?.length) return null;
 
   const many     = players.length > 1;
@@ -88,12 +90,12 @@ export function PlayerMarker({ players, edge, walkingPlayerIds }: PlayerMarkerPr
   return (
     <div
       className={cn(
-        'absolute z-30 flex flex-wrap items-center justify-center',
+        'absolute z-[47] flex flex-wrap items-center justify-center',
         many ? 'gap-[3px]' : '',
         ANCHOR[edge],
       )}
       style={{ maxWidth: '92%', maxHeight: '92%' }}
-      aria-label={`${players.length} player token${players.length === 1 ? '' : 's'}`}
+      aria-label={t('tokenCount', { count: players.length })}
     >
       {players.slice(0, 6).map((player) => {
         const isWalking = walkingPlayerIds?.has(player.id) ?? false;

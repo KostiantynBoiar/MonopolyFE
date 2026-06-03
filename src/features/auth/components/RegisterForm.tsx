@@ -9,6 +9,21 @@ import { registerSchema } from '../auth.schema';
 import type { RegisterInput } from '../auth.schema';
 import { OAuthButtons } from './OAuthButtons';
 
+type AuthTranslator = (key: string) => string;
+
+function translateAuthError(t: AuthTranslator, message: string) {
+  const keyMap: Record<string, string> = {
+    invalid_email: 'validation.invalidEmail',
+    required: 'validation.required',
+    password_min_8: 'validation.passwordMin8',
+    max_128: 'validation.max128',
+    display_name_min_2: 'validation.displayNameMin2',
+    display_name_max_32: 'validation.displayNameMax32',
+  };
+  const key = keyMap[message];
+  return key ? t(key) : message;
+}
+
 export function RegisterForm() {
   const t = useTranslations('Auth');
   const router = useRouter();
@@ -34,7 +49,7 @@ export function RegisterForm() {
     if (!parsed.success) {
       const fe: Partial<RegisterInput> = {};
       for (const err of parsed.error.errors) {
-        fe[err.path[0] as keyof RegisterInput] = err.message;
+        fe[err.path[0] as keyof RegisterInput] = translateAuthError(t, err.message);
       }
       setFieldErrors(fe);
       return;

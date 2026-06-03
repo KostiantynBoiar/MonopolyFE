@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
@@ -31,11 +32,19 @@ export function BoardContainer({
   players,
   walkingPlayers,
   sidebarPlayers,
+  selectedPosition,
+  onSelectPosition,
+  focusPosition,
+  viewerId,
+  createdAt,
+  onSurrender,
 }: BoardContainerProps) {
+  const t = useTranslations('Board');
   const boardSpaces = spaces ?? [];
   const boardPlayers = players ?? [];
   const hasSidebar = sidebarPlayers !== undefined;
   const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
+  const colorById = new Map(boardPlayers.map((p) => [p.id, p.tokenColor]));
   const playersByPosition = new Map<number, typeof boardPlayers>();
 
   const walkingIds = new Set((walkingPlayers ?? []).map((player) => player.id));
@@ -71,7 +80,7 @@ export function BoardContainer({
     >
       <section
         className={`grid h-full w-full gap-[4px] overflow-hidden${hasSidebar ? ' md:grid-cols-[minmax(0,1fr)_320px]' : ''}`}
-        aria-label="Tycoon board"
+        aria-label={t('boardLabel')}
         style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
       >
         <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">
@@ -101,8 +110,15 @@ export function BoardContainer({
                       edge={getTileEdge(space.pos)}
                       flavor={getTileFlavor(space.type)}
                       ownership={ownershipByPosition.get(space.pos) ?? null}
+                      ownerColor={(() => {
+                        const own = ownershipByPosition.get(space.pos);
+                        return own?.ownerId ? colorById.get(own.ownerId) : undefined;
+                      })()}
                       players={playersByPosition.get(space.pos) ?? []}
                       walkingPlayerIds={walkingIds}
+                      isSelected={selectedPosition === space.pos}
+                      isDimmed={focusPosition != null && space.pos !== focusPosition}
+                      onSelect={onSelectPosition ? () => onSelectPosition(space.pos) : undefined}
                     />
                   </div>
                 );
@@ -156,7 +172,12 @@ export function BoardContainer({
 
         {hasSidebar && (
           <div className="hidden min-h-0 md:block">
-            <PlayerPanel players={sidebarPlayers} />
+            <PlayerPanel
+              players={sidebarPlayers}
+              viewerId={viewerId}
+              createdAt={createdAt}
+              onSurrender={onSurrender}
+            />
           </div>
         )}
       </section>

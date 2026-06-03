@@ -1,22 +1,5 @@
 {
-  "Corner": {
-    "go": {
-      "label": "СТАРТ",
-      "sub": "Отримайте M200 при проходженні"
-    },
-    "jail": {
-      "label": "Просто проїжджаю",
-      "sub": "Тюрма"
-    },
-    "parking": {
-      "label": "Вільне паркування"
-    },
-    "gotojail": {
-      "label": "До тюрми!",
-      "sub": "Прямо до тюрми"
-    }
-  },
-
+  
   "Card": {
     "chance": "ШАНС",
     "community_chest": "СКАРБНИЦЯ",
@@ -27,11 +10,52 @@
   "Deed": {
     "titleDeed": "Свідоцтво",
     "buy": "Купити",
+    "buyWithAmount": "Купити за ${amount}",
     "cantAfford": "Не вистачає",
     "auction": "Аукціон",
     "manageProperties": "Управляти нерухомістю",
     "housesHotels": "Будинки / Готелі",
     "mortgageValue": "Заставна вартість",
+    "yourMoveDecide": "Ваш хід - вирішіть",
+    "status": "Статус",
+    "rentTitle": {
+      "default": "Оренда",
+      "railroad": "Базовий тариф",
+      "utility": "Використання"
+    },
+    "row": {
+      "base": "Базова оренда",
+      "house1": "З 1 будинком",
+      "house2": "З 2 будинками",
+      "house3": "З 3 будинками",
+      "house4": "З 4 будинками",
+      "hotel": "З готелем",
+      "railroad1": "1 станція",
+      "railroad2": "2 станції",
+      "railroad3": "3 станції",
+      "railroad4": "4 станції",
+      "utility1": "1 компанія",
+      "utilityBoth": "2 компанії"
+    },
+    "corner": {
+      "eyebrow": "Кут",
+      "go": { "title": "Отримайте зарплату при проходженні.", "value": "СТАРТ" },
+      "jail": { "title": "Просто відвідуєте або сидите.", "value": "ТЮРМА" },
+      "parking": { "title": "Безпечне місце, щоб перевести подих.", "value": "ВІЛЬНО" },
+      "gotoJail": { "title": "Не проходьте СТАРТ.", "value": "ТЮРМА" },
+      "default": { "title": "Опорна клітинка поля.", "value": "КУТ" }
+    },
+    "special": {
+      "chance": "Візьміть картку шансу",
+      "chest": "Відкрийте скарбницю",
+      "tax": "Сплатіть вказану суму (${amount})",
+      "default": "Інформація про клітинку"
+    },
+    "building": {
+      "hotel": "Готель",
+      "houseNumber": "Будинок {count}",
+      "houseCount": "{count, plural, one {{count} будинок} few {{count} будинки} many {{count} будинків} other {{count} будинки}}"
+    },
     "rent": {
       "base": "Оренда",
       "monopoly": "Повна група",
@@ -95,7 +119,18 @@
     "counter": "Зустрічна",
     "accept": "Прийняти",
     "withdraw": "Відкликати",
-    "spectating": "Спостерігач"
+    "spectating": "Спостерігач",
+    "builder": {
+      "header": "Запропонувати обмін",
+      "close": "Закрити",
+      "tradeWith": "Обмін з",
+      "youGive": "Ви даєте",
+      "youGet": "Ви отримуєте",
+      "noProperties": "немає нерухомості",
+      "jailCards": "Картки тюрми",
+      "cancel": "Скасувати",
+      "propose": "Запропонувати"
+    }
   },
 
   "Manage": {
@@ -125,10 +160,43 @@
     "messagePlaceholder": "Повідомлення…"
   },
 
+  "Chat": {
+    "tableChat": "Чат столу",
+    "gameEvents": "Події гри",
+    "chat": "Чат",
+    "noEventsYet": "Подій ще немає.",
+    "noMessagesYet": "Повідомлень ще немає.",
+    "table": "Стіл",
+    "player": "Гравець",
+    "messagePlaceholder": "Введіть повідомлення...",
+    "stickers": "Стікери",
+    "openStickers": "Відкрити стікери",
+    "send": "Надіслати",
+    "stickerAlt": "Стікер"
+  },
+
+  "Dice": {
+    "title": "Кубики",
+    "total": "Сума: {total}",
+    "doubles": "Дублі",
+    "noDoubles": "Не дублі"
+  },
+
   "Player": {
+    "session": "Сесія",
+    "currentTurn": "Поточний хід",
+    "waiting": "Очікування",
+    "position": "Поз. {position}",
     "turn": "Хід",
     "jail": "Тюрма",
-    "jailTurns": "Тюрма {turns}"
+    "jailTurns": "Тюрма {turns}",
+    "bankrupt": "Банкрут",
+    "netWorth": "капітал ~${amount}",
+    "noProperties": "Немає нерухомості",
+    "surrender": "Здатися",
+    "avatarAlt": "Аватар {name}",
+    "ownedProperties": "Нерухомість {name}",
+    "tokenCount": "{count, plural, one {{count} фішка гравця} few {{count} фішки гравців} many {{count} фішок гравців} other {{count} фішки гравців}}"
   },
 
   "Lobby": {
@@ -164,7 +232,18 @@
     "leaving": "Виходимо…",
     "messagePlaceholder": "Повідомлення…",
     "waitingForPlayers": "Очікуємо гравців…",
+    "waitingForHost": "Очікуємо хоста",
     "stickers": "Стікери",
+    "send": "Надіслати",
+    "player": "Гравець",
+    "stickerAlt": "Стікер",
+    "copyInviteCode": "Скопіювати код запрошення",
+    "copyInviteCodeWithValue": "Скопіювати код запрошення {code}",
+    "copied": "Скопійовано",
+    "clickToCopy": "Натисніть, щоб скопіювати",
+    "invalidCode": "Неправильний код",
+    "inviteCodePlaceholder": "TYC-XXXX",
+    "backToGame": "Повернутися до гри",
     "createGame": "Нова гра",
     "creating": "Створюємо…",
     "visibility": {
@@ -198,7 +277,18 @@
     "signOut": "Вийти",
     "signUp": "Реєстрація",
     "logIn": "Увійти",
-    "orContinueWith": "або продовжити через"
+    "orContinueWith": "або продовжити через",
+    "socialGoogle": "Google",
+    "socialTelegram": "Telegram",
+    "socialLoginComingSoon": "Соціальний вхід незабаром",
+    "validation": {
+      "required": "Обов'язкове поле",
+      "invalidEmail": "Неправильна адреса email",
+      "passwordMin8": "Щонайменше 8 символів",
+      "max128": "Максимум 128 символів",
+      "displayNameMin2": "Щонайменше 2 символи",
+      "displayNameMax32": "Максимум 32 символи"
+    }
   },
 
   "Profile": {
@@ -208,6 +298,7 @@
     "email": "Email",
     "memberSince": "Учасник з",
     "userId": "ID користувача",
+    "loading": "Завантаження…",
     "signOut": "Вийти",
     "goToLobby": "До лобі"
   },
@@ -215,15 +306,38 @@
   "Landing": {
     "playersOnline": "{count} гравців онлайн",
     "headline": "Класична гра в нерухомість онлайн",
+    "headlineAccent": "онлайн",
     "description": "Мультиплеєрні столи в реальному часі з приватними кімнатами та вбудованими переговорами. Створіть сесію, поділіться кодом і торгуйте своїм шляхом до вершини.",
     "createGame": "Створити гру",
     "joinWithCode": "Приєднатися за кодом",
     "gameCode": "Код гри",
-    "gameCodePlaceholder": "TYC-XXXX",
-    "invalidCode": "Введіть правильний код, наприклад TYC-XXXX",
+    "gameCodePlaceholder": "TYC-7XK2",
+    "invalidCode": "Введіть правильний код, наприклад TYC-7XK2",
     "join": "Приєднатися",
     "howToPlay": "Як грати",
-    "leaderboard": "Рейтинг"
+    "leaderboard": "Рейтинг",
+    "openMenu": "Відкрити меню",
+    "closeMenu": "Закрити меню",
+    "mobileNavigation": "Мобільна навігація",
+    "mainNavigation": "Основна навігація",
+    "signOut": "Вийти",
+    "logIn": "Увійти",
+    "signUp": "Реєстрація",
+    "footerTagline": "Дизайн-система Heritage Finance - багатокористувацька торгівля нерухомістю",
+    "features": {
+      "realTimeTables": {
+        "title": "Столи в реальному часі",
+        "body": "Стан гри синхронізується для кожного місця. Ходи, кидки й обміни оновлюються миттєво для всіх гравців."
+      },
+      "privateRooms": {
+        "title": "Приватні кімнати",
+        "body": "Створіть сесію та поділіться кодом запрошення. До вашого столу приєднаються лише гравці з кодом."
+      },
+      "builtInNegotiation": {
+        "title": "Вбудовані переговори",
+        "body": "Пропонуйте обміни прямо під час сесії, не залишаючи поле. Пропозиції та зустрічні залишаються в потоці гри."
+      }
+    }
   },
 
   "LocaleSwitcher": {
@@ -231,6 +345,7 @@
   },
 
   "Board": {
+    "boardLabel": "Поле Tycoon",
     "justVisiting": "Просто проїжджаю",
     "tiles": {
       "p0":  "TYCOON",
