@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import { TileEdge } from '../game-board.enums';
 
@@ -78,12 +79,13 @@ function Block({ w, h, bg }: BlockProps) {
 // ─── BuildingsMarker ──────────────────────────────────────────────────────────
 
 export function BuildingsMarker({ ownership, edge }: BuildingsMarkerProps) {
+  const t = useTranslations('Deed');
   if (!ownership || (!ownership.hotel && ownership.houses === 0)) return null;
 
   return (
     <div
       style={getBandStyle(edge)}
-      aria-label={ownership.hotel ? 'Hotel' : `${ownership.houses} house${ownership.houses === 1 ? '' : 's'}`}
+      aria-label={ownership.hotel ? t('building.hotel') : t('building.houseCount', { count: ownership.houses })}
     >
       {ownership.hotel ? (
         <Block w={W_HOTEL} h={H_HOTEL} bg={HOTEL_BG} />

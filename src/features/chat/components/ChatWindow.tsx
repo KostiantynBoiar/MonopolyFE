@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
@@ -143,6 +144,7 @@ function StickerCell({ url, file, index, onSelect }: { url: string; file: string
 }
 
 export function ChatWindow({ log, initialMessages = [], externalMessages, viewerToken, onSendMessage, onSendSticker }: ChatWindowProps) {
+  const t = useTranslations('Chat');
   const [activeTab, setActiveTab] = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -269,7 +271,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
           }}
           onClick={() => setActiveTab(ChatWindowTab.EVENTS)}
         >
-          <span>Game Events</span>
+          <span>{t('gameEvents')}</span>
         </button>
 
         <button
@@ -284,7 +286,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
           }}
           onClick={() => setActiveTab(ChatWindowTab.CHAT)}
         >
-          <span>Chat</span>
+          <span>{t('chat')}</span>
           {unreadCount > 0 && (
             <span
               className="flex min-w-5 items-center justify-center rounded-full px-1.5 text-[14px] font-bold"
@@ -312,7 +314,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
               className="flex h-full items-center justify-center rounded-[8px] text-center text-[15px]"
               style={{ color: GAME_BOARD_COLORS.muted }}
             >
-              {activeTab === ChatWindowTab.EVENTS ? 'No events yet.' : 'No messages yet.'}
+              {activeTab === ChatWindowTab.EVENTS ? t('noEventsYet') : t('noMessagesYet')}
             </div>
           ) : activeTab === ChatWindowTab.EVENTS ? (
             <div className="grid gap-[3px]">
@@ -329,7 +331,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
                     className="min-w-0 whitespace-pre-wrap text-center text-[15px] leading-[1.35]"
                     style={{ color: GAME_BOARD_COLORS.text, overflowWrap: 'anywhere' }}
                   >
-                    <span className="font-semibold">{entry.playerName ?? 'Table'}</span>
+                    <span className="font-semibold">{entry.playerName ?? t('table')}</span>
                     {': '}
                     {entry.text}
                   </p>
@@ -359,18 +361,18 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
                         className="font-semibold"
                         style={{ color: entry.token ? TOKEN_COLORS[entry.token] : GAME_BOARD_COLORS.muted }}
                       >
-                        {entry.author ?? 'Player'}
+                        {entry.author ?? t('player')}
                       </span>
                     </div>
                     {stickerUrl ? (
                       <div className="flex flex-wrap items-center gap-2">
-                        <StickerPreview url={stickerUrl} alt="Sticker" size={80} />
+                        <StickerPreview url={stickerUrl} alt={t('stickerAlt')} size={80} />
                       </div>
                     ) : (
                       <p
                         className="min-w-0 whitespace-pre-wrap text-left text-[15px] leading-[1.35]"
                         style={{ color: GAME_BOARD_COLORS.text, overflowWrap: 'anywhere' }}
-                        title={`${formatTime(entry.ts)} | ${entry.author ?? 'Player'}: ${entry.text}`}
+                        title={`${formatTime(entry.ts)} | ${entry.author ?? t('player')}: ${entry.text}`}
                       >
                         {entry.text}
                       </p>
@@ -401,7 +403,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
             value={draft}
             onChange={(event) => setDraft(clampMessage(event.target.value))}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
+            placeholder={t('messagePlaceholder')}
             className="h-full min-h-0 w-full resize-none bg-transparent pl-3 pr-12 py-[14px] text-[15px] leading-tight outline-none"
             maxLength={128}
             style={{
@@ -416,8 +418,8 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
               backgroundColor: showStickers ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
               color: showStickers ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
             }}
-            title="Stickers"
-            aria-label="Open stickers"
+            title={t('stickers')}
+            aria-label={t('openStickers')}
           >
             <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
               <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
@@ -437,7 +439,7 @@ export function ChatWindow({ log, initialMessages = [], externalMessages, viewer
             color: BOARD_TILE_COLORS.altText,
           }}
         >
-          Send
+          {t('send')}
         </button>
       </div>
       {showStickers && (

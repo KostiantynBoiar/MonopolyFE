@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Required').max(128),
+  email: z.string().email('invalid_email'),
+  password: z.string().min(1, 'required').max(128, 'max_128'),
 });
 
 export const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'At least 8 characters').max(128, 'Max 128 characters'),
-  display_name: z.string().min(2, 'At least 2 characters').max(32, 'Max 32 characters'),
+  email: z.string().email('invalid_email'),
+  password: z.string().min(8, 'password_min_8').max(128, 'max_128'),
+  display_name: z.string().min(2, 'display_name_min_2').max(32, 'display_name_max_32'),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

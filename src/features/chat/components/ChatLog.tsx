@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import type { ChatLogProps } from '../chat.types';
 
 function StickerImage({ url }: { url: string }) {
+  const t = useTranslations('Chat');
   return (
     <img
       src={url}
-      alt="sticker"
+      alt={t('stickerAlt')}
       className="mt-1 block rounded object-contain"
       style={{ width: 80, height: 80 }}
     />
@@ -18,6 +20,7 @@ function StickerImage({ url }: { url: string }) {
 }
 
 export function ChatLog({ log }: ChatLogProps) {
+  const t = useTranslations('Chat');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,7 +44,7 @@ export function ChatLog({ log }: ChatLogProps) {
           className="font-display font-semibold uppercase tracking-[0.28em]"
           style={{ color: GAME_BOARD_COLORS.muted, fontSize: '0.78rem' }}
         >
-          Table Chat
+          {t('tableChat')}
         </span>
       </div>
 

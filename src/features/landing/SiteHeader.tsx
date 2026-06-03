@@ -25,7 +25,7 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex" aria-label="Main">
+        <nav className="hidden items-center gap-6 md:flex" aria-label={t('mainNavigation')}>
           {navLinks.map((link) => (
             <Link
               key={link.href}

@@ -23,7 +23,7 @@ export async function Hero({ onlineCount }: HeroProps) {
             )}
 
             <h1 className="font-display text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-[1.05] tracking-tight text-ink">
-              {t('headline')} <em className="italic text-blue">online</em>
+              {t('headline')} <em className="italic text-blue">{t('headlineAccent')}</em>
             </h1>
 
             <p className="max-w-lg text-base leading-relaxed text-muted md:text-lg">

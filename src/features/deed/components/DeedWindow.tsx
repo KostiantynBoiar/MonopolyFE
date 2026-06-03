@@ -26,50 +26,52 @@ interface DeedWindowProps {
   ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
 }
 
+type DeedTranslator = (key: string, values?: Record<string, string | number>) => string;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getRentTitle(deed: DeedInfo) {
+function getRentTitle(deed: DeedInfo, t: DeedTranslator) {
   switch (deed.spaceType) {
-    case DeedSpaceType.RAILROAD: return 'Base Fare';
-    case DeedSpaceType.UTILITY:  return 'Usage';
-    default:                      return 'Rent';
+    case DeedSpaceType.RAILROAD: return t('rentTitle.railroad');
+    case DeedSpaceType.UTILITY:  return t('rentTitle.utility');
+    default:                     return t('rentTitle.default');
   }
 }
 
-function formatLabel(key: string) {
+function formatLabel(key: string, t: DeedTranslator) {
   const MAP: Record<string, string> = {
-    base:        'Base Rent',
-    house1:      'With 1 House',
-    house2:      'With 2 Houses',
-    house3:      'With 3 Houses',
-    house4:      'With 4 Houses',
-    hotel:       'With Hotel',
-    railroad1:   '1 Railroad',
-    railroad2:   '2 Railroads',
-    railroad3:   '3 Railroads',
-    railroad4:   '4 Railroads',
-    utility1:    '1 Utility',
-    utilityBoth: '2 Utilities',
+    base:        t('row.base'),
+    house1:      t('row.house1'),
+    house2:      t('row.house2'),
+    house3:      t('row.house3'),
+    house4:      t('row.house4'),
+    hotel:       t('row.hotel'),
+    railroad1:   t('row.railroad1'),
+    railroad2:   t('row.railroad2'),
+    railroad3:   t('row.railroad3'),
+    railroad4:   t('row.railroad4'),
+    utility1:    t('row.utility1'),
+    utilityBoth: t('row.utilityBoth'),
   };
   return MAP[key] ?? key;
 }
 
-function getCornerText(corner: CornerVariant | undefined) {
+function getCornerText(corner: CornerVariant | undefined, t: DeedTranslator) {
   switch (corner) {
-    case CornerVariant.GO:       return { eyebrow: 'Corner', title: 'Collect salary when you pass.', value: 'GO' };
-    case CornerVariant.JAIL:     return { eyebrow: 'Corner', title: 'Just visiting or locked in.',   value: 'JAIL' };
-    case CornerVariant.PARKING:  return { eyebrow: 'Corner', title: 'Safe place to breathe.',        value: 'FREE' };
-    case CornerVariant.GOTO_JAIL:return { eyebrow: 'Corner', title: 'Do not pass GO.',               value: 'JAIL' };
-    default:                     return { eyebrow: 'Corner', title: 'Board anchor space.',           value: 'CORNER' };
+    case CornerVariant.GO:        return { eyebrow: t('corner.eyebrow'), title: t('corner.go.title'), value: t('corner.go.value') };
+    case CornerVariant.JAIL:      return { eyebrow: t('corner.eyebrow'), title: t('corner.jail.title'), value: t('corner.jail.value') };
+    case CornerVariant.PARKING:   return { eyebrow: t('corner.eyebrow'), title: t('corner.parking.title'), value: t('corner.parking.value') };
+    case CornerVariant.GOTO_JAIL: return { eyebrow: t('corner.eyebrow'), title: t('corner.gotoJail.title'), value: t('corner.gotoJail.value') };
+    default:                      return { eyebrow: t('corner.eyebrow'), title: t('corner.default.title'), value: t('corner.default.value') };
   }
 }
 
-function getSpecialText(space: BoardSpace) {
+function getSpecialText(space: BoardSpace, t: DeedTranslator) {
   switch (space.type) {
-    case SpaceType.CHANCE: return 'Draw a chance card';
-    case SpaceType.CHEST:  return 'Open the community chest';
-    case SpaceType.TAX:    return `Pay the listed amount ($${space.price ?? 0})`;
-    default:               return 'Board space information';
+    case SpaceType.CHANCE: return t('special.chance');
+    case SpaceType.CHEST:  return t('special.chest');
+    case SpaceType.TAX:    return t('special.tax', { amount: space.price ?? 0 });
+    default:               return t('special.default');
   }
 }
 
@@ -85,6 +87,7 @@ export function DeedWindow({
   compact = false,
   ownership,
 }: DeedWindowProps) {
+  const t = useTranslations('Deed');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
 
@@ -96,14 +99,14 @@ export function DeedWindow({
   const deed           = getDeedInfo(activeSpace.pos);
   const isDeed         = deed !== null;
   const headlineRent   = deed?.rentRows[0]?.amount ?? (activeSpace.price != null ? `M${activeSpace.price}` : null);
-  const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner) : null;
-  const specialText    = !isDeed && !cornerText ? getSpecialText(activeSpace) : null;
+  const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner, t) : null;
+  const specialText    = !isDeed && !cornerText ? getSpecialText(activeSpace, t) : null;
   const isSpecialCard  = Boolean(specialText);
   // Actions are visible only when this viewer can answer the active buy decision.
   const showActions    = canAct && (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
   // Buildings strip: only in viewOnly when ownership data is supplied and there's something to show.
   const showBuildings  = viewOnly && isDeed && ownership != null && (ownership.hotel || ownership.houses > 0);
-  const nonDeedTitle   = cornerText?.title ?? specialText ?? 'Board space information.';
+  const nonDeedTitle   = cornerText?.title ?? specialText ?? t('special.default');
   const headerColor    = getSpaceHeaderColor(activeSpace);
   const headerTextColor = getSpaceHeaderTextColor(activeSpace);
 
@@ -133,7 +136,7 @@ export function DeedWindow({
           }}
         >
           <span className="font-mono text-[10px] font-black uppercase tracking-[0.22em]">
-            Your Move — Decide
+            {t('yourMoveDecide')}
           </span>
         </div>
       )}
@@ -164,7 +167,7 @@ export function DeedWindow({
         {!isSpecialCard && (
           <div className="text-center">
             <p className={`font-semibold ${compact ? 'text-[10px]' : 'text-sm'}`} style={{ color: GAME_BOARD_COLORS.text }}>
-              {isDeed && deed ? getRentTitle(deed) : cornerText?.eyebrow ?? 'Status'}
+              {isDeed && deed ? getRentTitle(deed, t) : cornerText?.eyebrow ?? t('status')}
             </p>
             <p className={`mt-1 font-black leading-none ${compact ? 'text-xl' : 'text-4xl'}`} style={{ color: GAME_BOARD_COLORS.tileText }}>
               {isDeed && headlineRent
@@ -186,7 +189,7 @@ export function DeedWindow({
                 className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[10px]' : 'text-sm'}`}
               >
                 <span className="font-medium leading-[1.2] tracking-[0.01em]">
-                  {formatLabel(row.labelKey)}
+                  {formatLabel(row.labelKey, t)}
                 </span>
                 <span
                   className="block translate-y-[-1px] border-b border-dotted"
@@ -223,7 +226,7 @@ export function DeedWindow({
               color:           BOARD_TILE_COLORS.altText,
             }}
           >
-            Buy ${activeSpace.price}
+            {t('buyWithAmount', { amount: activeSpace.price ?? 0 })}
           </button>
           <button
             type="button"
@@ -235,7 +238,7 @@ export function DeedWindow({
               color:           BOARD_TILE_COLORS.propertyBlue,
             }}
           >
-            Auction
+            {t('auction')}
           </button>
         </div>
       )}
@@ -248,7 +251,7 @@ export function DeedWindow({
         >
           {ownership.hotel ? (
             <div
-              title="Hotel"
+              title={t('building.hotel')}
               style={{
                 width: 16, height: 16,
                 backgroundColor: '#8B2020',
@@ -261,7 +264,7 @@ export function DeedWindow({
             Array.from({ length: ownership.houses }).map((_, i) => (
               <div
                 key={i}
-                title={`House ${i + 1}`}
+                title={t('building.houseNumber', { count: i + 1 })}
                 style={{
                   width: 12, height: 12,
                   backgroundColor: '#1A6B3A',

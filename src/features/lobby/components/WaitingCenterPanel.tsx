@@ -31,6 +31,7 @@ function EventRow({ text }: { text: string }) {
 }
 
 function MessageRow({ author, token, text }: { author?: string; token?: TokenColor; text: string }) {
+  const t = useTranslations('Lobby');
   const color = token ? TOKEN_COLORS[token] : '#10182E';
   const stickerUrl = getStickerUrl(text);
 
@@ -39,13 +40,13 @@ function MessageRow({ author, token, text }: { author?: string; token?: TokenCol
       <span className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} />
       <div className="min-w-0">
         <p className="font-sans text-[1em] leading-snug text-ink">
-          <span className="mr-1 font-semibold" style={{ color }}>{author ?? 'Player'}</span>
+          <span className="mr-1 font-semibold" style={{ color }}>{author ?? t('player')}</span>
           {!stickerUrl && text}
         </p>
         {stickerUrl && (
           stickerUrl.endsWith('.tgs')
             ? <TgsPlayer src={stickerUrl} size={72} />
-            : <img src={stickerUrl} alt="Sticker" className="h-[72px] w-[72px] object-contain" />
+            : <img src={stickerUrl} alt={t('stickerAlt')} className="h-[72px] w-[72px] object-contain" />
         )}
       </div>
     </div>
@@ -82,7 +83,7 @@ export function WaitingActionsPanel({
   const canStart = isHost && hasEnoughPlayers && !isStarting;
 
   const startLabel = !isHost
-    ? 'Waiting for host'
+    ? t('waitingForHost')
     : isStarting
       ? t('starting')
       : hasEnoughPlayers
@@ -152,13 +153,13 @@ export function WaitingInviteCodePanel({ session }: WaitingInviteCodePanelProps)
         type="button"
         onClick={handleCopy}
         className="mt-2 flex min-h-0 flex-1 items-center justify-center rounded-[10px] border border-line-2 bg-paper px-2 text-center font-mono text-[24px] font-black tracking-[0.14em] text-ink transition-colors hover:border-ink"
-        title="Copy invite code"
-        aria-label={`Copy invite code ${session.invite_code}`}
+        title={t('copyInviteCode')}
+        aria-label={t('copyInviteCodeWithValue', { code: session.invite_code })}
       >
         {session.invite_code}
       </button>
       <p className="mt-2 text-center font-sans text-[12px] font-semibold text-muted" aria-live="polite">
-        {copied ? 'Copied' : 'Click to copy'}
+        {copied ? t('copied') : t('clickToCopy')}
       </p>
     </section>
   );
@@ -221,7 +222,7 @@ export function WaitingChatPanel({ messages, onSendMessage, socketStatus }: Wait
           disabled={!draft.trim()}
           className="rounded-[9px] border border-blue bg-blue text-[12px] font-bold uppercase tracking-[0.06em] text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-paper disabled:text-muted"
         >
-          Send
+          {t('send')}
         </button>
       </div>
     </section>

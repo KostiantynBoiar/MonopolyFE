@@ -2,11 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button, Input } from '@/shared/ui';
 
 const CODE_PATTERN = /^TYC-[A-Z0-9]{4}$/;
 
 export function JoinWithCode() {
+  const t = useTranslations('Landing');
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -24,7 +26,7 @@ export function JoinWithCode() {
     const code = value.trim().toUpperCase();
 
     if (!CODE_PATTERN.test(code)) {
-      setError('Enter a valid code like TYC-7XK2');
+      setError(t('invalidCode'));
       return;
     }
 
@@ -35,7 +37,7 @@ export function JoinWithCode() {
   if (!expanded) {
     return (
       <Button variant="ghost" onClick={() => setExpanded(true)}>
-        Join with code
+        {t('joinWithCode')}
       </Button>
     );
   }
@@ -45,13 +47,13 @@ export function JoinWithCode() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         <div className="flex flex-col gap-1">
           <label htmlFor="join-code" className="sr-only">
-            Game code
+            {t('gameCode')}
           </label>
           <Input
             ref={inputRef}
             id="join-code"
             name="code"
-            placeholder="TYC-7XK2"
+            placeholder={t('gameCodePlaceholder')}
             value={value}
             error={Boolean(error)}
             onChange={(event) => {
@@ -69,7 +71,7 @@ export function JoinWithCode() {
           )}
         </div>
         <Button type="submit" variant="blue" size="sm" className="sm:mt-0">
-          Join
+          {t('join')}
         </Button>
       </div>
     </form>

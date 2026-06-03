@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useTranslations } from 'next-intl';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, DICE_SPIN_MS } from '@/shared/config/constants';
@@ -74,6 +75,7 @@ function DieFace({
 }
 
 export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
+  const t = useTranslations('Dice');
   const [rolling, setRolling] = useState(false);
   const [justSettled, setJustSettled] = useState(false);
   const die1 = diceRoll?.die1 ?? 1;
@@ -169,7 +171,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
           color: BOARD_TILE_COLORS.altText,
         }}
       >
-        Dice
+        {t('title')}
       </div>
 
       <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-3">
@@ -179,7 +181,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
 
       <div className="flex flex-col items-center gap-1 px-2 py-2 text-[12px]">
         <span className="text-xl font-semibold" style={{ color: GAME_BOARD_COLORS.tileText }}>
-          Total: {total}
+          {t('total', { total })}
         </span>
         <span
           className="rounded-full px-3 py-1 font-semibold tracking-[0.02em]"
@@ -188,7 +190,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
             color: BOARD_TILE_COLORS.altText,
           }}
         >
-          {isDoubles ? 'Doubles' : 'No doubles'}
+          {isDoubles ? t('doubles') : t('noDoubles')}
         </span>
       </div>
     </section>

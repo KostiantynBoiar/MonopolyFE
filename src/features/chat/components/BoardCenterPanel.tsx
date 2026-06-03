@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ChatWindow } from './ChatWindow';
 import { DiceWindow } from '@/features/dice';
 import type { BoardCenterPanelProps } from '../chat.types';
@@ -26,6 +27,7 @@ export function BoardCenterPanel({
   onSendMessage,
   compact,
 }: BoardCenterPanelComponentProps) {
+  const t = useTranslations('Game');
   return (
     <div className="flex h-full w-full flex-col bg-paper">
       {/* Game log and actions */}
@@ -49,14 +51,14 @@ export function BoardCenterPanel({
           disabled={!canRoll}
           className="rounded bg-green px-3 py-1.5 font-bold text-white transition-colors hover:bg-green-600 disabled:bg-line disabled:text-muted"
         >
-          Roll
+          {t('roll')}
         </button>
         {canBuy && (
           <button
             onClick={onBuy}
             className="rounded bg-blue px-3 py-1.5 font-bold text-white transition-colors hover:bg-blue-600"
           >
-            Buy
+            {t('buyProperty')}
           </button>
         )}
         {canManage && (
@@ -64,7 +66,7 @@ export function BoardCenterPanel({
             onClick={onManage}
             className="rounded bg-gold px-3 py-1.5 font-bold text-white transition-colors hover:bg-gold-600"
           >
-            Manage
+            {t('manage')}
           </button>
         )}
         {canTrade && (
@@ -72,7 +74,7 @@ export function BoardCenterPanel({
             onClick={onTrade}
             className="rounded bg-purple px-3 py-1.5 font-bold text-white transition-colors hover:bg-purple-600"
           >
-            Trade
+            {t('trade')}
           </button>
         )}
         {canEndTurn && (
@@ -80,7 +82,7 @@ export function BoardCenterPanel({
             onClick={onEndTurn}
             className="ml-auto rounded bg-red px-3 py-1.5 font-bold text-white transition-colors hover:bg-red-600"
           >
-            End Turn
+            {t('endTurn')}
           </button>
         )}
       </div>

@@ -9,6 +9,18 @@ import { loginSchema } from '../auth.schema';
 import type { LoginInput } from '../auth.schema';
 import { OAuthButtons } from './OAuthButtons';
 
+type AuthTranslator = (key: string) => string;
+
+function translateAuthError(t: AuthTranslator, message: string) {
+  const keyMap: Record<string, string> = {
+    invalid_email: 'validation.invalidEmail',
+    required: 'validation.required',
+    max_128: 'validation.max128',
+  };
+  const key = keyMap[message];
+  return key ? t(key) : message;
+}
+
 export function LoginForm() {
   const t = useTranslations('Auth');
   const router = useRouter();
@@ -30,7 +42,7 @@ export function LoginForm() {
     if (!parsed.success) {
       const fe: Partial<LoginInput> = {};
       for (const err of parsed.error.errors) {
-        fe[err.path[0] as keyof LoginInput] = err.message;
+        fe[err.path[0] as keyof LoginInput] = translateAuthError(t, err.message);
       }
       setFieldErrors(fe);
       return;

@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps } from '../game-board.types';
@@ -38,6 +39,7 @@ export function BoardContainer({
   createdAt,
   onSurrender,
 }: BoardContainerProps) {
+  const t = useTranslations('Board');
   const boardSpaces = spaces ?? [];
   const boardPlayers = players ?? [];
   const hasSidebar = sidebarPlayers !== undefined;
@@ -78,7 +80,7 @@ export function BoardContainer({
     >
       <section
         className={`grid h-full w-full gap-[4px] overflow-hidden${hasSidebar ? ' md:grid-cols-[minmax(0,1fr)_320px]' : ''}`}
-        aria-label="Tycoon board"
+        aria-label={t('boardLabel')}
         style={{ backgroundColor: GAME_BOARD_COLORS.ink }}
       >
         <div className="flex min-h-0 min-w-0 items-center justify-center overflow-hidden">

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 
 type OAuthButtonProps = {
@@ -9,6 +10,7 @@ type OAuthButtonProps = {
 };
 
 function OAuthButton({ provider, onClick, disabled }: OAuthButtonProps) {
+  const t = useTranslations('Auth');
   const isGoogle = provider === 'google';
 
   return (
@@ -26,7 +28,7 @@ function OAuthButton({ provider, onClick, disabled }: OAuthButtonProps) {
       )}
     >
       {isGoogle ? <GoogleIcon /> : <TelegramIcon />}
-      {isGoogle ? 'Google' : 'Telegram'}
+      {isGoogle ? t('socialGoogle') : t('socialTelegram')}
     </button>
   );
 }
@@ -70,6 +72,7 @@ type OAuthButtonsProps = {
 };
 
 export function OAuthButtons({ disabled }: OAuthButtonsProps) {
+  const t = useTranslations('Auth');
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-3">
@@ -77,7 +80,7 @@ export function OAuthButtons({ disabled }: OAuthButtonsProps) {
         <OAuthButton provider="telegram" disabled />
       </div>
       <p className="text-center font-sans text-xs text-muted">
-        Social login coming soon
+        {t('socialLoginComingSoon')}
       </p>
     </div>
   );
