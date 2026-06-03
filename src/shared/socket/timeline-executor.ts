@@ -14,11 +14,12 @@
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
-import type { AnimationInstruction } from '@/shared/protocol/animation';
+import { WalkingAnimationVariant, type AnimationInstruction, type MoveAnimation } from '@/shared/protocol/animation';
 import type { ActiveCard } from '@/shared/protocol/game-state';
+import { CardEffectType } from '@/shared/protocol/game-state.enums';
 import { getWalkSteps } from '@/shared/config/board-layout';
 import { getDeedInfo } from '@/features/deed';
-import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 import { DICE_SPIN_MS, DICE_LINGER_MS } from '@/shared/config/constants';
@@ -41,6 +42,8 @@ function emit(instr: AnimationInstruction): void {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const BOARD_SIZE = 40;
+const GO_TO_JAIL_POSITION = 30;
+const JAIL_POSITION = 10;
 const MAX_FORWARD_STEPS = 20;
 // Safety auto-release for a wait gate if Continue never arrives.
 const GATE_TIMEOUT_MS = 60_000;
@@ -122,6 +125,7 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
   ui.setIsTimelineRunning(true);
 
   const hasCard = timeline.some((i) => i.type === 'show_card');
+  const timelineCard = timeline.find((instruction) => instruction.type === 'show_card')?.card ?? next.game.activeCard ?? null;
   // Track the moving player's last position so show_card can be committed spatially.
   let lastMover = next.game.turn.currentPlayerId;
   let lastPos: number | null = null;
@@ -144,11 +148,17 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
       case 'move': {
         emit(instr);
-        const steps = walkPath(instr.fromPosition, instr.toPosition);
-        const fast = instr.speed === 'fast';
-        const stepMs = fast ? CARD_WALK_STEP_DURATION_MS : WALK_STEP_DURATION_MS;
-        ui.setWalkState({ playerId: instr.playerId, currentPos: instr.fromPosition, fast });
-        await walkSteps(instr.playerId, steps, stepMs, fast);
+        const movementPlan = createMovementPlan(instr.fromPosition, instr.toPosition, instr.reason, instr.speed, timelineCard);
+        ui.setWalkState({ playerId: instr.playerId, currentPos: instr.fromPosition, variant: movementPlan.initialVariant });
+        await walkSteps(instr.playerId, movementPlan.steps, movementPlan.stepMs, movementPlan.stepVariant);
+        if (movementPlan.dragToPosition !== null) {
+          ui.setWalkState({
+            playerId: instr.playerId,
+            currentPos: movementPlan.dragToPosition,
+            variant: WalkingAnimationVariant.DRAG,
+          });
+          await delay(JAIL_CORNER_DRAG_DURATION_MS);
+        }
         ui.setWalkState(null);
         ui.setIsRolling(false);
         lastMover = instr.playerId;
@@ -194,11 +204,14 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Step path from→to. Forward by default; backward when the forward arc is long
- *  (a "go back N" card), so the token visibly steps backward instead of looping. */
+/** Step path from→to. Forward by default; backward only for short-form inferred reverse moves. */
 function walkPath(from: number, to: number): number[] {
   const forward = getWalkSteps(from, to);
   if (forward.length <= MAX_FORWARD_STEPS) return forward;
+  return getBackwardWalkSteps(from, to);
+}
+
+function getBackwardWalkSteps(from: number, to: number): number[] {
   const steps: number[] = [];
   let p = from;
   while (p !== to) {
@@ -206,6 +219,55 @@ function walkPath(from: number, to: number): number[] {
     steps.push(p);
   }
   return steps;
+}
+
+interface MovementPlan {
+  steps: number[];
+  stepMs: number;
+  stepVariant: WalkingAnimationVariant;
+  initialVariant: WalkingAnimationVariant;
+  dragToPosition: number | null;
+}
+
+function createMovementPlan(
+  from: number,
+  to: number,
+  reason: MoveAnimation['reason'],
+  speed: MoveAnimation['speed'],
+  activeCard: ActiveCard | null,
+): MovementPlan {
+  const isFast = speed === 'fast';
+  const stepVariant = isFast ? WalkingAnimationVariant.FAST : WalkingAnimationVariant.NORMAL;
+  const stepMs = isFast ? CARD_WALK_STEP_DURATION_MS : WALK_STEP_DURATION_MS;
+
+  if (reason === 'jail') {
+    return {
+      steps: from === GO_TO_JAIL_POSITION ? [] : getWalkSteps(from, GO_TO_JAIL_POSITION),
+      stepMs,
+      stepVariant,
+      initialVariant: stepVariant,
+      dragToPosition: JAIL_POSITION,
+    };
+  }
+
+  if (reason === 'card') {
+    const shouldWalkBackward = activeCard?.effect.type === CardEffectType.GO_BACK;
+    return {
+      steps: shouldWalkBackward ? getBackwardWalkSteps(from, to) : getWalkSteps(from, to),
+      stepMs,
+      stepVariant,
+      initialVariant: stepVariant,
+      dragToPosition: null,
+    };
+  }
+
+  return {
+    steps: walkPath(from, to),
+    stepMs,
+    stepVariant,
+    initialVariant: stepVariant,
+    dragToPosition: null,
+  };
 }
 
 function patchForCard(
@@ -242,12 +304,17 @@ function maybeSurfaceDeed(snapshot: GameSnapshot): void {
   }
 }
 
-function walkSteps(playerId: string, steps: number[], stepMs: number, fast = false): Promise<void> {
+function walkSteps(
+  playerId: string,
+  steps: number[],
+  stepMs: number,
+  variant: WalkingAnimationVariant,
+): Promise<void> {
   return new Promise((resolve) => {
     let i = 0;
     const step = () => {
       if (i >= steps.length) return resolve();
-      useUiStore.getState().setWalkState({ playerId, currentPos: steps[i++], fast });
+      useUiStore.getState().setWalkState({ playerId, currentPos: steps[i++], variant });
       setTimeout(step, stepMs);
     };
     setTimeout(step, 80);

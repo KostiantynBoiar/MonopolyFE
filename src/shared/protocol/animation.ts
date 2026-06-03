@@ -7,6 +7,12 @@
  */
 import type { ActiveCard } from './game-state';
 
+export enum WalkingAnimationVariant {
+  NORMAL = 'normal',
+  FAST = 'fast',
+  DRAG = 'drag',
+}
+
 export type RollDiceAnimation = {
   type: 'roll_dice';
   playerId: string;

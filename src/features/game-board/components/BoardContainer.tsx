@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BOARD, getGridPos, getTileEdge, getTileOuterEdgePct } from '@/shared/config/board-layout';
-import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS } from '@/shared/config/constants';
+import { WalkingAnimationVariant } from '@/shared/protocol/animation';
+import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
@@ -13,18 +14,24 @@ import { PlayerPanel } from './PlayerPanel';
 // ─── Animated overlay token ───────────────────────────────────────────────────
 
 const ANIM = {
-  slow: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: WALK_STEP_DURATION_MS },
-  fast: { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: CARD_WALK_STEP_DURATION_MS },
+  [WalkingAnimationVariant.NORMAL]: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: WALK_STEP_DURATION_MS },
+  [WalkingAnimationVariant.FAST]: { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: CARD_WALK_STEP_DURATION_MS },
+  [WalkingAnimationVariant.DRAG]: { easing: 'cubic-bezier(0.16, 0.84, 0.24, 1)', duration: JAIL_CORNER_DRAG_DURATION_MS },
 } as const;
 
-function AnimatedBoardToken({ id, currentPos, tokenColor, fast }: WalkingPlayer) {
+function AnimatedBoardToken({
+  id,
+  currentPos,
+  tokenColor,
+  variant = WalkingAnimationVariant.NORMAL,
+}: WalkingPlayer) {
   const prevPosRef            = useRef(currentPos);
   const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
     const prev  = prevPosRef.current;
     const delta = Math.abs(currentPos - prev);
-    if (delta > 20) {
+    if (variant !== WalkingAnimationVariant.DRAG && delta > 20) {
       // Wraparound — teleport without transition, then re-enable for next step
       setAnimate(false);
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
@@ -35,7 +42,7 @@ function AnimatedBoardToken({ id, currentPos, tokenColor, fast }: WalkingPlayer)
   }, [currentPos]);
 
   const { x, y }             = getTileOuterEdgePct(currentPos);
-  const { easing, duration } = fast ? ANIM.fast : ANIM.slow;
+  const { easing, duration } = ANIM[variant];
 
   return (
     <div
