@@ -5,7 +5,6 @@ import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
-import type { DiceRoll } from '@/shared/protocol/game-state';
 import { CenterPanel, type CenterPanelProps } from './CenterPanel';
 import { FullOverlay, type FullOverlayProps } from './FullOverlay';
 import { TurnTimer } from './TurnTimer';

@@ -117,6 +117,7 @@ function StickerPreview({
   }
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote sticker URL with onError fallback; next/image doesn't fit
     <img
       src={url}
       alt={alt}

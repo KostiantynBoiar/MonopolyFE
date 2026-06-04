@@ -1,6 +1,5 @@
 import { backoffDelay } from './reconnect';
 import {
-  WS_PROTOCOL_VERSION,
   WsInboundType,
   buildPong,
   buildChatSend,

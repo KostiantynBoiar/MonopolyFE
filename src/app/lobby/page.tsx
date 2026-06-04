@@ -9,8 +9,7 @@ import { useLobby, SessionCard, JoinByCodeForm, CreateLobbyForm } from '@/featur
 import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/shared/ui/Button';
-import { cn } from '@/shared/lib/cn';
+import { Alert, Button, FilterPill } from '@/shared/ui';
 import { SessionStatus } from '@/features/lobby/lobby.enums';
 
 type StatusFilter = 'all' | SessionStatus.WAITING | SessionStatus.IN_PROGRESS;
@@ -75,20 +74,28 @@ export default function LobbyPage() {
     <div className="mx-auto max-w-2xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6 lg:py-12">
       {/* Kicked notice */}
       {wasKicked && (
-        <div className="mb-4 flex items-center gap-2 rounded-sm border border-red/30 bg-red/5 px-3 py-2 sm:mb-5 sm:gap-3 sm:px-4 sm:py-3 lg:mb-6">
-          <span className="text-xs text-red sm:text-sm">{t('kickedNotice')}</span>
-          <Button as="a" href="/lobby" variant="ghost" size="sm" className="ml-auto shrink-0">
-            {t('dismiss')}
-          </Button>
-        </div>
+        <Alert
+          className="mb-4 sm:mb-5 lg:mb-6"
+          action={
+            <Button as="a" href="/lobby" variant="ghost" size="sm" className="shrink-0">
+              {t('dismiss')}
+            </Button>
+          }
+        >
+          {t('kickedNotice')}
+        </Alert>
       )}
 
       {/* Join error */}
       {joinError && (
-        <div className="mb-4 flex items-center gap-2 rounded-sm border border-red/30 bg-red/5 px-3 py-2 sm:mb-5 sm:gap-3 sm:px-4 sm:py-3">
-          <span className="min-w-0 flex-1 text-xs text-red sm:text-sm">{joinError}</span>
-          <button onClick={() => setJoinError(null)} className="shrink-0 text-xs text-red/60 hover:text-red">✕</button>
-        </div>
+        <Alert
+          className="mb-4 sm:mb-5"
+          action={
+            <button onClick={() => setJoinError(null)} className="shrink-0 text-xs text-red/60 hover:text-red">✕</button>
+          }
+        >
+          {joinError}
+        </Alert>
       )}
 
       {/* Page header */}
@@ -143,33 +150,20 @@ export default function LobbyPage() {
               { value: SessionStatus.WAITING,        label: t('waiting') },
               { value: SessionStatus.IN_PROGRESS,    label: t('inProgress') },
             ] as { value: StatusFilter; label: string }[]).map(({ value, label }) => (
-              <button
+              <FilterPill
                 key={value}
+                active={statusFilter === value}
                 onClick={() => setStatusFilter(value)}
-                className={cn(
-                  'rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:text-xs lg:text-sm',
-                  statusFilter === value
-                    ? 'border-ink bg-ink text-paper'
-                    : 'border-line bg-surface text-muted hover:border-ink/40 hover:text-ink',
-                )}
               >
                 {label}
-              </button>
+              </FilterPill>
             ))}
           </div>
 
           {/* Hide full toggle */}
-          <button
-            onClick={() => setHideFullRooms((v) => !v)}
-            className={cn(
-              'rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold transition-colors sm:px-2.5 sm:text-xs lg:text-sm',
-              hideFullRooms
-                ? 'border-ink bg-ink text-paper'
-                : 'border-line bg-surface text-muted hover:border-ink/40 hover:text-ink',
-            )}
-          >
+          <FilterPill active={hideFullRooms} onClick={() => setHideFullRooms((v) => !v)}>
             {t('hideFull')}
-          </button>
+          </FilterPill>
 
           <button
             onClick={refresh}
@@ -186,11 +180,7 @@ export default function LobbyPage() {
           </div>
         )}
 
-        {!loading && error && (
-          <div className="rounded-sm border border-red/30 bg-red/5 px-3 py-2 text-xs text-red sm:px-4 sm:py-3 sm:text-sm">
-            {error}
-          </div>
-        )}
+        {!loading && error && <Alert>{error}</Alert>}
 
         {!loading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-10 text-center sm:gap-3 sm:py-14 lg:py-20">

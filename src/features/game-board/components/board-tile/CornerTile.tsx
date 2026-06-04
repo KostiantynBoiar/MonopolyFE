@@ -4,7 +4,7 @@ import type { KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { CORNER_COLOR_MAP } from '../../game-board.colors';
-import { CornerVariant, TileEdge } from '../../game-board.enums';
+import { CornerVariant } from '../../game-board.enums';
 import type { BoardTileProps } from '../../game-board.types';
 import { BuildingsMarker } from '../BuildingsMarker';
 import { PlayerMarker } from '../PlayerMarker';

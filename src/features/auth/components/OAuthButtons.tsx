@@ -67,11 +67,7 @@ function TelegramIcon() {
   );
 }
 
-type OAuthButtonsProps = {
-  disabled?: boolean;
-};
-
-export function OAuthButtons({ disabled }: OAuthButtonsProps) {
+export function OAuthButtons() {
   const t = useTranslations('Auth');
   return (
     <div className="flex flex-col gap-2">

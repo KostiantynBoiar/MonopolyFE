@@ -86,6 +86,7 @@ function PlayerAvatar({ player }: { player: Player }) {
         className="block h-10 w-10 shrink-0 overflow-hidden rounded-full border-2"
         style={{ borderColor: tokenColor, boxShadow: '0 2px 6px rgba(0,0,0,.22)' }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element -- remote, user-provided avatar URL; next/image adds little here */}
         <img src={player.avatarUrl} alt={t('avatarAlt', { name: player.name })} className="h-full w-full object-cover" />
       </span>
     );
@@ -168,7 +169,7 @@ function PropertyGroupGrid({ ownedPositions }: { ownedPositions: number[] }) {
 
 // ─── PlayerPanel ──────────────────────────────────────────────────────────────
 
-export function PlayerPanel({ players, viewerId, createdAt, onSurrender }: PlayerPanelProps) {
+export function PlayerPanel({ players, createdAt, onSurrender }: PlayerPanelProps) {
   const t = useTranslations('Player');
   const currentPlayer = players.find((player) => player.isActive);
   const sessionTimer  = useSessionTimer(createdAt);

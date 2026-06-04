@@ -1,6 +1,5 @@
 import { SpaceType, TileEdge, CornerVariant, BoardTileSelectionTone } from '../../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '../../game-board.colors';
-import type { BoardSpace } from '../../game-board.types';
 
 export { BOARD_TILE_COLORS, GAME_BOARD_COLORS };
 

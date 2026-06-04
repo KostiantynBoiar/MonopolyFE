@@ -2,27 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input } from '@/shared/ui';
+import { Button, FormField, OrDivider } from '@/shared/ui';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslations } from 'next-intl';
 import { registerSchema } from '../auth.schema';
 import type { RegisterInput } from '../auth.schema';
+import { translateAuthError } from '../translateAuthError';
 import { OAuthButtons } from './OAuthButtons';
-
-type AuthTranslator = (key: string) => string;
-
-function translateAuthError(t: AuthTranslator, message: string) {
-  const keyMap: Record<string, string> = {
-    invalid_email: 'validation.invalidEmail',
-    required: 'validation.required',
-    password_min_8: 'validation.passwordMin8',
-    max_128: 'validation.max128',
-    display_name_min_2: 'validation.displayNameMin2',
-    display_name_max_32: 'validation.displayNameMax32',
-  };
-  const key = keyMap[message];
-  return key ? t(key) : message;
-}
 
 export function RegisterForm() {
   const t = useTranslations('Auth');
@@ -64,62 +50,41 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="display_name" className="text-sm font-medium text-ink">
-          {t('displayName')}
-        </label>
-        <Input
-          id="display_name"
-          type="text"
-          autoComplete="nickname"
-          placeholder={t('displayNamePlaceholder')}
-          value={fields.display_name}
-          onChange={handleChange('display_name')}
-          error={!!fieldErrors.display_name}
-          disabled={isLoading}
-        />
-        {fieldErrors.display_name && (
-          <p className="text-xs text-red">{fieldErrors.display_name}</p>
-        )}
-      </div>
+      <FormField
+        id="display_name"
+        label={t('displayName')}
+        type="text"
+        autoComplete="nickname"
+        placeholder={t('displayNamePlaceholder')}
+        value={fields.display_name}
+        onChange={handleChange('display_name')}
+        error={fieldErrors.display_name}
+        disabled={isLoading}
+      />
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-ink">
-          {t('email')}
-        </label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder={t('emailPlaceholder')}
-          value={fields.email}
-          onChange={handleChange('email')}
-          error={!!fieldErrors.email}
-          disabled={isLoading}
-        />
-        {fieldErrors.email && (
-          <p className="text-xs text-red">{fieldErrors.email}</p>
-        )}
-      </div>
+      <FormField
+        id="email"
+        label={t('email')}
+        type="email"
+        autoComplete="email"
+        placeholder={t('emailPlaceholder')}
+        value={fields.email}
+        onChange={handleChange('email')}
+        error={fieldErrors.email}
+        disabled={isLoading}
+      />
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-ink">
-          {t('password')}
-        </label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="new-password"
-          placeholder={t('passwordMinLength')}
-          value={fields.password}
-          onChange={handleChange('password')}
-          error={!!fieldErrors.password}
-          disabled={isLoading}
-        />
-        {fieldErrors.password && (
-          <p className="text-xs text-red">{fieldErrors.password}</p>
-        )}
-      </div>
+      <FormField
+        id="password"
+        label={t('password')}
+        type="password"
+        autoComplete="new-password"
+        placeholder={t('passwordMinLength')}
+        value={fields.password}
+        onChange={handleChange('password')}
+        error={fieldErrors.password}
+        disabled={isLoading}
+      />
 
       {error && (
         <p className="rounded-sm bg-red/10 px-3 py-2 text-sm text-red">{error}</p>
@@ -134,12 +99,8 @@ export function RegisterForm() {
         {isLoading ? t('creatingAccount') : t('createAccount')}
       </Button>
 
-      <div className="relative flex items-center gap-3">
-        <div className="flex-1 border-t border-line" />
-        <span className="text-xs text-muted">{t('orContinueWith')}</span>
-        <div className="flex-1 border-t border-line" />
-      </div>
-      <OAuthButtons disabled={isLoading} />
+      <OrDivider>{t('orContinueWith')}</OrDivider>
+      <OAuthButtons />
     </form>
   );
 }
