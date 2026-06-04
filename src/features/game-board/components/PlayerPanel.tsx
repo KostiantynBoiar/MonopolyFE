@@ -7,37 +7,28 @@ import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
 
-// All buyable positions sorted by group — 28 total, laid out as a 7×4 rectangle
-const SORTED_BUYABLE_SPACES: Array<{ pos: number; color: string }> = [
-  { pos: 1,  color: BOARD_TILE_COLORS.propertyBrown  },
-  { pos: 3,  color: BOARD_TILE_COLORS.propertyBrown  },
-  { pos: 6,  color: BOARD_TILE_COLORS.propertyCyan   },
-  { pos: 8,  color: BOARD_TILE_COLORS.propertyCyan   },
-  { pos: 9,  color: BOARD_TILE_COLORS.propertyCyan   },
-  { pos: 11, color: BOARD_TILE_COLORS.propertyPink   },
-  { pos: 13, color: BOARD_TILE_COLORS.propertyPink   },
-  { pos: 14, color: BOARD_TILE_COLORS.propertyPink   },
-  { pos: 16, color: BOARD_TILE_COLORS.propertyOrange },
-  { pos: 18, color: BOARD_TILE_COLORS.propertyOrange },
-  { pos: 19, color: BOARD_TILE_COLORS.propertyOrange },
-  { pos: 21, color: BOARD_TILE_COLORS.propertyRed    },
-  { pos: 23, color: BOARD_TILE_COLORS.propertyRed    },
-  { pos: 24, color: BOARD_TILE_COLORS.propertyRed    },
-  { pos: 26, color: BOARD_TILE_COLORS.propertyYellow },
-  { pos: 27, color: BOARD_TILE_COLORS.propertyYellow },
-  { pos: 29, color: BOARD_TILE_COLORS.propertyYellow },
-  { pos: 31, color: BOARD_TILE_COLORS.propertyGreen  },
-  { pos: 32, color: BOARD_TILE_COLORS.propertyGreen  },
-  { pos: 34, color: BOARD_TILE_COLORS.propertyGreen  },
-  { pos: 37, color: BOARD_TILE_COLORS.propertyBlue   },
-  { pos: 39, color: BOARD_TILE_COLORS.propertyBlue   },
-  { pos: 5,  color: BOARD_TILE_COLORS.railroad       },
-  { pos: 15, color: BOARD_TILE_COLORS.railroad       },
-  { pos: 25, color: BOARD_TILE_COLORS.railroad       },
-  { pos: 35, color: BOARD_TILE_COLORS.railroad       },
-  { pos: 12, color: BOARD_TILE_COLORS.utility        },
-  { pos: 28, color: BOARD_TILE_COLORS.utility        },
+// Buyable positions sorted by group — 28 total, laid out as a 7×4 rectangle.
+// Only the layout/order is hardcoded; each cell's colour is derived from BOARD
+// so it can never drift from the actual tile colours (getSpaceHeaderColor).
+const SORTED_BUYABLE_POSITIONS: number[] = [
+  1, 3,                 // brown
+  6, 8, 9,              // cyan
+  11, 13, 14,           // pink
+  16, 18, 19,           // orange
+  21, 23, 24,           // red
+  26, 27, 29,           // yellow
+  31, 32, 34,           // green
+  37, 39,               // blue
+  5, 15, 25, 35,        // railroads
+  12, 28,               // utilities
 ];
+
+const SORTED_BUYABLE_SPACES: Array<{ pos: number; color: string }> = SORTED_BUYABLE_POSITIONS.map(
+  (pos) => {
+    const space = BOARD.find((boardSpace) => boardSpace.pos === pos);
+    return { pos, color: space ? getSpaceHeaderColor(space) : GAME_BOARD_COLORS.border };
+  },
+);
 
 interface PlayerPanelProps {
   players:     Player[];

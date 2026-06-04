@@ -6,6 +6,7 @@ import { BoardTileFlavor, SpaceType } from '@/features/game-board/game-board.enu
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { BoardTile } from '@/features/game-board/components/BoardTile';
 import type { BoardPlayer } from '@/features/game-board/game-board.types';
+import { TokenShape } from '@/features/game-board/token-shapes';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 
@@ -79,8 +80,8 @@ const STATIC_OWNERSHIP = new Map<number, PropertyState>([
 ]);
 
 const STATIC_PLAYERS = new Map<number, BoardPlayer[]>([
-  [0,  [{ id: 'still-a', position: 0,  tokenColor: '#F59E0B', isBankrupt: false }]],
-  [20, [{ id: 'still-b', position: 20, tokenColor: '#A855F7', isBankrupt: false }]],
+  [0,  [{ id: 'still-a', position: 0,  tokenColor: '#F59E0B', tokenShape: TokenShape.SUNNY,    isBankrupt: false }]],
+  [20, [{ id: 'still-b', position: 20, tokenColor: '#A855F7', tokenShape: TokenShape.GHOSTISH, isBankrupt: false }]],
 ]);
 
 // ─── Walk mode: continuous loop ───────────────────────────────────────────────

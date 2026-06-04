@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { TileEdge } from '../game-board.enums';
 import type { BoardPlayer } from '../game-board.types';
+import { TokenShapeSvg } from './TokenShapeSvg';
 
 interface PlayerMarkerProps {
   edge: TileEdge;
@@ -38,8 +39,8 @@ const ANCHOR: Record<TileEdge, string> = {
 };
 
 // ─── Token ─────────────────────────────────────────────────────────────────────
-// aspectRatio: '1 / 1' + explicit width only → perfect circle no matter how
-// the flex or stacking context resolves height.
+// The MD3-Expressive silhouette (and its ring + shadow) is drawn as SVG so the
+// outline follows the shape, not a box. The token is always square (size only).
 interface TokenProps {
   player: BoardPlayer;
   diameter: string;
@@ -47,33 +48,13 @@ interface TokenProps {
 }
 
 function Token({ player, diameter, isWalking }: TokenProps) {
-  const ring: React.CSSProperties = {
-    width:         diameter,
-    aspectRatio:   '1 / 1',
-    borderRadius:  '50%',
-    flexShrink:    0,
-    outline:       '2px solid rgba(255,255,255,0.96)',
-    outlineOffset: '0px',
-    boxShadow:     '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 9px rgba(0,0,0,0.65)',
-  };
-
-  const cls = isWalking ? 'token-walking' : undefined;
-
-  if (player.avatarUrl) {
-    return (
-      <img
-        src={player.avatarUrl}
-        alt=""
-        className={cls}
-        style={{ ...ring, objectFit: 'cover', display: 'block', backgroundColor: player.tokenColor }}
-      />
-    );
-  }
-
   return (
-    <span
-      className={cls}
-      style={{ ...ring, display: 'block', backgroundColor: player.tokenColor }}
+    <TokenShapeSvg
+      shape={player.tokenShape}
+      color={player.tokenColor}
+      avatarUrl={player.avatarUrl}
+      size={diameter}
+      className={isWalking ? 'token-walking' : undefined}
     />
   );
 }
