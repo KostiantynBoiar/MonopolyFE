@@ -148,9 +148,9 @@ export function WaitingCenterGrid({
             disabled={isLeaving}
             className="h-full rounded-[10px] border px-3 text-[12px] font-semibold uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-60"
             style={isLeaving ? DISABLED_BUTTON : {
-              backgroundColor: GAME_BOARD_COLORS.surface,
-              borderColor: GAME_BOARD_COLORS.border,
-              color: GAME_BOARD_COLORS.muted,
+              backgroundColor: BOARD_TILE_COLORS.propertyRed,
+              borderColor: BOARD_TILE_COLORS.propertyRed,
+              color: BOARD_TILE_COLORS.altText,
               transition: TRANSITION,
             }}
           >
