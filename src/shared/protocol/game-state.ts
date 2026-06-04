@@ -130,6 +130,7 @@ export interface PlayerState {
   isBankrupt:         boolean;
   isConnected:        boolean;
   afkStrikes:         number;
+  rating:             number;
 }
 
 // ======================================================

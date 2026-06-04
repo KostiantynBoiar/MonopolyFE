@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Player } from '@/features/player-panel';
+import { RatingBadge } from '@/shared/ui/RatingBadge';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
 import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
@@ -268,6 +269,7 @@ export function PlayerPanel({ players, createdAt, onSurrender }: PlayerPanelProp
                   <p className="min-w-0 truncate font-display text-base font-semibold leading-tight">
                     {player.name}
                   </p>
+                  <RatingBadge rating={player.rating} />
                   <StatusPill backgroundColor={getPositionPillColor(player.position)}>
                     {t('position', { position: player.position })}
                   </StatusPill>

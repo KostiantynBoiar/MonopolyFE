@@ -110,6 +110,7 @@ export default function GameRoomPage() {
       isActive: false,
       isBankrupt: false,
       inJail: false,
+      rating: m.rating,
     })) ?? [],
     [currentSession?.members],
   );

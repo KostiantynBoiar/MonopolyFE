@@ -62,6 +62,14 @@ export default function MePage() {
 
             <div className="rounded-lg border border-line bg-surface divide-y divide-line">
               <ProfileRow label={t('displayName')} value={user.display_name} />
+              <ProfileRow
+                label={t('rating')}
+                value={
+                  user.calibration_complete
+                    ? String(user.rating)
+                    : `${user.rating} ${t('provisional')}`
+                }
+              />
               <ProfileRow label={t('email')} value={user.email} />
               <ProfileRow label={t('memberSince')} value={formatDate(user.created_at, locale)} />
               <ProfileRow label={t('userId')} value={user.id} mono />
