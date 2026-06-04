@@ -17,8 +17,10 @@ import {
   getTilePadding,
   shadowEmoji,
   shadowOnColor,
+  TILE_INTERACTIVE,
+  TILE_SHADOW,
 } from './constants';
-import { DimOverlay } from './Overlays';
+import { DimOverlay, TileSheen } from './Overlays';
 import { SelectionRing } from './SelectionRing';
 
 export function CornerTile({
@@ -55,8 +57,9 @@ export function CornerTile({
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       className={cn(
-        'relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border shadow-sm',
+        'relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border',
         isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+        isSelectable && TILE_INTERACTIVE,
       )}
       style={{
         backgroundColor: cornerColor,
@@ -64,23 +67,25 @@ export function CornerTile({
         color:           BOARD_TILE_COLORS.altText,
         padding:         getTilePadding(),
         gap:             '0.3em',
+        boxShadow:       TILE_SHADOW,
       }}
     >
+      <TileSheen />
       <span
-        className="shrink-0 leading-none"
+        className="relative z-[2] shrink-0 leading-none"
         style={{ fontSize: cornerEmojiSize, textShadow: shadowEmoji }}
       >
         {CORNER_SYMBOL_MAP[space.corner]}
       </span>
       <h3
-        className="break-all text-center font-sans font-black uppercase leading-tight overflow-hidden w-full"
+        className="relative z-[2] break-all text-center font-sans font-black uppercase leading-tight overflow-hidden w-full"
         style={{ fontSize: cornerNameSize, color: BOARD_TILE_COLORS.altText, textShadow: shadowOnColor }}
       >
         {tileName}
       </h3>
       {space.corner === CornerVariant.JAIL && (
         <p
-          className="font-sans uppercase tracking-[0.18em] overflow-hidden whitespace-nowrap"
+          className="relative z-[2] font-sans uppercase tracking-[0.18em] overflow-hidden whitespace-nowrap"
           style={{ fontSize: cornerSubSize, color: BOARD_TILE_COLORS.altText, opacity: 0.80, textShadow: shadowOnColor }}
         >
           {justVisit}

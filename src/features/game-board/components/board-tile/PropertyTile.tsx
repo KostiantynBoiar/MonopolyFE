@@ -23,8 +23,11 @@ import {
   propSymbolSize,
   shadowOnColor,
   shadowOnLight,
+  TILE_BAND_GLOSS,
+  TILE_INTERACTIVE,
+  TILE_SHADOW,
 } from './constants';
-import { DimOverlay, MortgageOverlay, OwnershipOverlay } from './Overlays';
+import { DimOverlay, MortgageOverlay, OwnershipOverlay, TileSheen } from './Overlays';
 import { SelectionRing } from './SelectionRing';
 import { TileText } from './TileText';
 
@@ -74,17 +77,23 @@ export function PropertyTile({
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       className={cn(
-        'relative flex h-full w-full overflow-hidden rounded-[12px] border shadow-sm',
+        'relative flex h-full w-full overflow-hidden rounded-[12px] border',
         isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+        isSelectable && TILE_INTERACTIVE,
       )}
       style={{
         backgroundColor: surface,
         borderColor:     GAME_BOARD_COLORS.tileBorder,
         color:           textColor,
+        boxShadow:       TILE_SHADOW,
       }}
     >
+      <TileSheen />
       {propertyColor && (
-        <div className={cn(EDGE_HEADER[edge], 'z-[45]')} style={getHeaderStyle(edge, propertyColor)} />
+        <div
+          className={cn(EDGE_HEADER[edge], 'z-[45]')}
+          style={{ ...getHeaderStyle(edge, propertyColor), boxShadow: TILE_BAND_GLOSS }}
+        />
       )}
       {ownerColor && (
         <div

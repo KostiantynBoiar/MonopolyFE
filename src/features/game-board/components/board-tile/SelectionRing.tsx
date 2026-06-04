@@ -25,14 +25,25 @@ export function SelectionRing({ selected, tone }: SelectionRingProps) {
         />
       )}
       {selected && (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-[3px] z-[51]"
-          style={{
-            borderRadius: 'inherit',
-            boxShadow: `inset 0 0 0 clamp(2px, 0.35vmin, 4px) ${BOARD_TILE_COLORS.propertyYellow}`,
-          }}
-        />
+        <>
+          {/* Soft inner halo — clipped-safe glow that makes the active tile pop */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-[49]"
+            style={{
+              borderRadius: 'inherit',
+              boxShadow: `inset 0 0 10px 2px rgba(228,192,106,0.55)`,
+            }}
+          />
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-[3px] z-[51]"
+            style={{
+              borderRadius: 'inherit',
+              boxShadow: `inset 0 0 0 clamp(2px, 0.35vmin, 4px) ${BOARD_TILE_COLORS.propertyYellow}`,
+            }}
+          />
+        </>
       )}
     </>
   );

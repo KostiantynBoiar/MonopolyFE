@@ -18,8 +18,10 @@ import {
   specialEmojiSize,
   specialNameSize,
   specialPriceSize,
+  TILE_INTERACTIVE,
+  TILE_SHADOW,
 } from './constants';
-import { DimOverlay, MortgageOverlay, OwnershipOverlay } from './Overlays';
+import { DimOverlay, MortgageOverlay, OwnershipOverlay, TileSheen } from './Overlays';
 import { SelectionRing } from './SelectionRing';
 
 export function SpecialTile({
@@ -52,8 +54,9 @@ export function SpecialTile({
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       className={cn(
-        'relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[12px] border text-center shadow-sm',
+        'relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[12px] border text-center',
         isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
+        isSelectable && TILE_INTERACTIVE,
       )}
       style={{
         backgroundColor: SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.special,
@@ -61,8 +64,10 @@ export function SpecialTile({
         color:           BOARD_TILE_COLORS.altText,
         padding:         getTilePadding(),
         gap:             '0.2em',
+        boxShadow:       TILE_SHADOW,
       }}
     >
+      <TileSheen />
       <span
         className="relative z-[45] shrink-0 leading-none"
         style={{ fontSize: specialEmojiSize, textShadow: shadowEmoji }}
