@@ -306,6 +306,8 @@
     "title": "Профіль",
     "subtitle": "Дані вашого акаунта",
     "displayName": "Ім'я в грі",
+    "rating": "Рейтинг",
+    "provisional": "(калібрування)",
     "email": "Email",
     "memberSince": "Учасник з",
     "userId": "ID користувача",

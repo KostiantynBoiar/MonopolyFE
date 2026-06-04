@@ -19,6 +19,9 @@ export interface UserPublic {
   email: string;
   display_name: string;
   created_at: string;
+  rating: number;
+  games_played: number;
+  calibration_complete: boolean;
 }
 
 export interface TokenResponse {

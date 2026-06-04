@@ -3,6 +3,7 @@ export { Avatar } from './Avatar';
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { Badge } from './Badge';
 export { Brand } from './Brand';
+export { RatingBadge } from './RatingBadge';
 export { Button } from './Button';
 export type { ButtonProps } from './Button';
 export { Container } from './Container';

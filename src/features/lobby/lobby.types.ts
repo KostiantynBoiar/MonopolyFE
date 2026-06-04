@@ -3,6 +3,8 @@ import type { MemberRole, SessionStatus, SessionVisibility } from './lobby.enums
 export interface LobbyHost {
   id: string;
   display_name: string;
+  rating: number;
+  calibration_complete: boolean;
 }
 
 export interface SessionMember {
@@ -10,6 +12,8 @@ export interface SessionMember {
   display_name: string;
   role: MemberRole;
   joined_at: string;
+  rating: number;
+  calibration_complete: boolean;
 }
 
 export interface SessionSummary {
