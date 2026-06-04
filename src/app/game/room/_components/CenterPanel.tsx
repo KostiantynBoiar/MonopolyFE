@@ -30,6 +30,7 @@ export interface CenterPanelProps {
   log: LogEntry[];
   chatMessages: ChatMessage[];
   viewerToken?: TokenColor;
+  viewerUserId?: string;
   onCardProceed: () => void;
   onPayDebt: () => void;
   onManage: () => void;
@@ -65,6 +66,7 @@ export function CenterPanel({
   log,
   chatMessages,
   viewerToken,
+  viewerUserId,
   onCardProceed,
   onPayDebt,
   onManage,
@@ -138,6 +140,7 @@ export function CenterPanel({
       log={log}
       externalMessages={chatMessages}
       viewerToken={viewerToken}
+      viewerUserId={viewerUserId}
       onSendMessage={onSendMessage}
       onSendSticker={onSendSticker}
     />

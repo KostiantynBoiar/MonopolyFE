@@ -97,18 +97,31 @@ export function resetSnapshotPipeline(): void {
   generation++;
   queue = [];
   running = false;
-  closeGate(''); // force-release whatever gate is open
-  useUiStore.getState().setIsRolling(false);
+  closeGate(''); // force-release whatever gate is open (clears pending interaction)
+  // Clear every animation-transient flag. A timeline aborted mid-flight by this reset
+  // bails at its `generation` check and never reaches its own cleanup, so if we don't
+  // clear here the UI stays gated — most visibly `isTimelineRunning` keeps the Roll
+  // button locked forever.
+  const ui = useUiStore.getState();
+  ui.setIsRolling(false);
+  ui.setIsTimelineRunning(false);
+  ui.setWalkState(null);
+  ui.setAnimatedDiceRoll(null);
+  ui.setActiveAnimationCard(null);
 }
 
 async function drain(): Promise<void> {
   const myGeneration = generation;
   running = true;
-  while (queue.length > 0 && generation === myGeneration) {
-    const next = queue.shift()!;
-    await applyTimeline(next, myGeneration);
+  try {
+    while (queue.length > 0 && generation === myGeneration) {
+      const next = queue.shift()!;
+      await applyTimeline(next, myGeneration);
+    }
+  } finally {
+    // Always release the running latch for the current generation, even if a frame threw.
+    if (generation === myGeneration) running = false;
   }
-  if (generation === myGeneration) running = false;
 }
 
 async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<void> {
@@ -124,6 +137,7 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
   ui.setIsTimelineRunning(true);
 
+  try {
   const hasCard = timeline.some((i) => i.type === 'show_card');
   const timelineCard = timeline.find((instruction) => instruction.type === 'show_card')?.card ?? next.game.activeCard ?? null;
   // Track the moving player's last position so show_card can be committed spatially.
@@ -198,8 +212,13 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
   // Clear the animated dice roll only after commit so game.turn.diceRoll already holds
   // the correct values — die1/die2 stay the same, DiceWindow never re-triggers.
   ui.setAnimatedDiceRoll(null);
-  ui.setIsTimelineRunning(false);
   maybeSurfaceDeed(next);
+  } finally {
+    // Release the timeline lock on any exit path (normal end, generation bail, or a
+    // throwing instruction) — but only if this generation still owns it, so we never
+    // unlock a newer timeline that started after a reset.
+    if (generation === myGeneration) ui.setIsTimelineRunning(false);
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

@@ -14,6 +14,8 @@ import { ActionKey } from './chat.enums';
 export interface ChatMessage {
   id: string;
   kind: 'chat' | 'event';
+  /** Sender's user id — the source of truth for "is this mine" (tokens aren't unique). */
+  fromUserId?: string;
   author?: string;
   token?: TokenColor;
   text: string;
@@ -30,6 +32,8 @@ export interface ChatWindowProps {
   /** Live, server-sourced chat messages from ALL players (reactive). */
   externalMessages?: ChatMessage[];
   viewerToken?: TokenColor;
+  /** Authenticated viewer's user id — used to right-align the viewer's own messages. */
+  viewerUserId?: string;
   onSendMessage?: (text: string) => void;
   onSendSticker?: (url: string) => void;
 }

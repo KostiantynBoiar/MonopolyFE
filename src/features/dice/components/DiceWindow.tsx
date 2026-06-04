@@ -156,38 +156,56 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
 
   return (
     <section
-      className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-[16px] border p-[6px]"
+      className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] gap-[6px] overflow-hidden rounded-[16px] border p-[8px]"
       style={{
         backgroundColor: GAME_BOARD_COLORS.tile,
+        backgroundImage: `radial-gradient(${GAME_BOARD_COLORS.border} 0.5px, transparent 0.5px)`,
+        backgroundSize: '14px 14px',
         borderColor: GAME_BOARD_COLORS.border,
         color: GAME_BOARD_COLORS.tileText,
       }}
     >
+      {/* Soft section label — matches the chat's restrained header chips */}
       <div
-        className="rounded-[10px] border px-3 py-1.5 text-center font-display text-[11px] font-semibold uppercase tracking-[0.2em]"
+        className="flex items-center justify-center gap-2 rounded-[10px] border py-[7px] font-display text-[11px] font-bold uppercase tracking-[0.22em]"
         style={{
-          backgroundColor: BOARD_TILE_COLORS.propertyBlue,
-          borderColor: BOARD_TILE_COLORS.propertyBlue,
-          color: BOARD_TILE_COLORS.altText,
+          backgroundColor: GAME_BOARD_COLORS.surface,
+          borderColor: GAME_BOARD_COLORS.border,
+          color: GAME_BOARD_COLORS.tileText,
+          boxShadow: '0 1px 2px rgba(51,48,43,0.08)',
         }}
       >
+        <span
+          className="h-1.5 w-1.5 rounded-full"
+          style={{ backgroundColor: BOARD_TILE_COLORS.propertyBlue }}
+          aria-hidden="true"
+        />
         {t('title')}
       </div>
 
-      <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-3">
+      <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-2">
         <DieFace value={displayDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} justSettled={justSettled} side="left" />
         <DieFace value={displayDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
       </div>
 
-      <div className="flex flex-col items-center gap-1 px-2 py-2 text-[12px]">
-        <span className="text-xl font-semibold" style={{ color: GAME_BOARD_COLORS.tileText }}>
+      <div className="flex flex-col items-center gap-1.5 pb-[2px]">
+        <span
+          className="font-display text-[18px] font-black tracking-[0.02em]"
+          style={{ color: GAME_BOARD_COLORS.tileText }}
+        >
           {t('total', { total })}
         </span>
         <span
-          className="rounded-full px-3 py-1 font-semibold tracking-[0.02em]"
-          style={{
+          className="rounded-full border px-3 py-[3px] text-[11px] font-bold uppercase tracking-[0.14em] transition-colors duration-200"
+          style={isDoubles ? {
             backgroundColor: BOARD_TILE_COLORS.propertyGreen,
+            borderColor: BOARD_TILE_COLORS.propertyGreen,
             color: BOARD_TILE_COLORS.altText,
+            boxShadow: '0 1px 4px rgba(121,180,143,0.45)',
+          } : {
+            backgroundColor: GAME_BOARD_COLORS.surface,
+            borderColor: GAME_BOARD_COLORS.border,
+            color: GAME_BOARD_COLORS.muted,
           }}
         >
           {isDoubles ? t('doubles') : t('noDoubles')}

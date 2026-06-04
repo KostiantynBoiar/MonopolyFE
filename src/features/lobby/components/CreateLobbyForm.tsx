@@ -34,7 +34,7 @@ export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
       const { session } = await createSession({ visibility });
       resetSocket();
       setSession(session);
-      router.push('/game/room');
+      router.push(`/game/room/${session.id}`);
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);
