@@ -3,6 +3,7 @@ import { TOKEN_COLORS } from '@/shared/config/constants';
 import type { GameState } from '@/shared/protocol/game-state';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
 import type { BoardPlayer } from './game-board.types';
+import { resolveTokenShape } from './token-shapes';
 
 export function deriveSidebarPlayers(gs: GameState): Player[] {
   return gs.players.map((p) => ({
@@ -25,6 +26,7 @@ export function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
     id:         p.id,
     position:   p.position,
     tokenColor: TOKEN_COLORS[p.token],
+    tokenShape: resolveTokenShape(gs.gameId, p.turnOrder),
     isBankrupt: p.isBankrupt,
     avatarUrl:  p.avatarUrl,
   }));

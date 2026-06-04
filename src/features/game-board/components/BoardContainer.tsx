@@ -10,6 +10,7 @@ import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
 import { BoardTile } from './BoardTile';
 import { PlayerPanel } from './PlayerPanel';
+import { TokenShapeSvg } from './TokenShapeSvg';
 
 // ─── Animated overlay token ───────────────────────────────────────────────────
 
@@ -23,6 +24,7 @@ function AnimatedBoardToken({
   id,
   currentPos,
   tokenColor,
+  tokenShape,
   variant = WalkingAnimationVariant.NORMAL,
 }: WalkingPlayer) {
   const prevPosRef            = useRef(currentPos);
@@ -49,25 +51,20 @@ function AnimatedBoardToken({
       key={id}
       aria-hidden="true"
       style={{
-        position:        'absolute',
-        left:            `${x}%`,
-        top:             `${y}%`,
-        transform:       'translate(-50%, -50%)',
-        transition:      animate
+        position:      'absolute',
+        left:          `${x}%`,
+        top:           `${y}%`,
+        transform:     'translate(-50%, -50%)',
+        transition:    animate
           ? `left ${duration}ms ${easing}, top ${duration}ms ${easing}`
           : 'none',
-        width:           'clamp(20px, 2.6vmin, 38px)',
-        aspectRatio:     '1 / 1',
-        borderRadius:    '50%',
-        backgroundColor: tokenColor,
-        outline:         '2.5px solid rgba(255,255,255,0.94)',
-        outlineOffset:   '0px',
-        boxShadow:       '0 0 0 1.5px rgba(0,0,0,0.45), 0 3px 10px rgba(0,0,0,0.65)',
-        zIndex:          60,
-        pointerEvents:   'none',
-        willChange:      'left, top',
+        zIndex:        60,
+        pointerEvents: 'none',
+        willChange:    'left, top',
       }}
-    />
+    >
+      <TokenShapeSvg shape={tokenShape} color={tokenColor} size="clamp(20px, 2.6vmin, 38px)" />
+    </div>
   );
 }
 

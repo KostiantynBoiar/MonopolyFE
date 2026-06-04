@@ -4,11 +4,13 @@ import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor, BoardTileSelectionTone } from './game-board.enums';
+import type { TokenShape } from './token-shapes';
 
 export interface WalkingPlayer {
   id: string;
   currentPos: number;
   tokenColor: string;
+  tokenShape: TokenShape;
   variant?: WalkingAnimationVariant;
 }
 
@@ -107,6 +109,7 @@ export interface BoardPlayer {
   id: string;
   position: number;
   tokenColor: string; // resolved hex, e.g. '#2B57C6'
+  tokenShape: TokenShape; // MD3-Expressive silhouette, shuffled per game
   isBankrupt: boolean;
   avatarUrl?: string | null; // PNG / WebP / SVG / any <img>-renderable URL
 }

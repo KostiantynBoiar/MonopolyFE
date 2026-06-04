@@ -3,31 +3,31 @@ import { CornerVariant, SpaceType } from './game-board.enums';
 import type { BoardSpace } from './game-board.types';
 
 export const GAME_BOARD_COLORS = {
-  ink: '#f8f5f0',           // Soft warm background
-  center: '#cab2b2',        // Main board surface
-  panel: '#f2ede6',         // Side panels / UI areas
-  surface: '#fffaf0',       // Cards, modals, popups
-  border: '#d4c9b8',        // Gentle borders
-  muted: '#8c7f6e',         // Secondary text / icons
-  text: '#2c2a26',          // Primary text
-  tile: '#f9f4eb',          // Default tile color
-  tileBorder: '#c9b89f',    // Tile borders
-  tileText: '#2c2a26',      // Tile text
-  special: '#e07a5f',       // Warm accent (soft terracotta)
+  ink: '#FAF8F5',           
+  center: '#EFEAE2',        
+  panel: '#F4EFE6',         
+  surface: '#FFFFFF',       
+  border: '#DCD4C7',        
+  muted: '#8E8576',         
+  text: '#33302B',          
+  tile: '#F7F3EC',          
+  tileBorder: '#D3C8B7',   
+  tileText: '#33302B',      
+  special: '#E88B74',       
 } as const;
 
 export const BOARD_TILE_COLORS = {
-  altText: '#f8f5f0',
-  propertyBrown: '#9c6644',
-  propertyCyan: '#4a9aa6',
-  propertyPink: '#e07a8f',
-  propertyOrange: '#e68a3d',
-  propertyRed: '#d45d5d',
-  propertyYellow: '#e3b23c',
-  propertyGreen: '#4a8c5f',
-  propertyBlue: '#4a7c9d',
-  railroad: '#2c3e50',
-  utility: '#2a6a8f',
+  altText: '#FAF8F5',
+  propertyBrown: '#B08261',
+  propertyCyan: '#62AEC1',
+  propertyPink: '#E297AC',
+  propertyOrange: '#EEA46B',
+  propertyRed: '#E48787',
+  propertyYellow: '#E4C06A',
+  propertyGreen: '#79B48F',
+  propertyBlue: '#74A2CA',
+  railroad: '#687885',
+  utility: '#6AA0A7',
 } as const;
 
 export const PROPERTY_COLOR_MAP: Record<PropertyColor, string> = {

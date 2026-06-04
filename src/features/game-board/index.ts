@@ -4,6 +4,8 @@ export { BOARD, getGridPos, getTileEdge, getWalkSteps, getTileCenter } from '@/s
 export { BoardContainer } from './components/BoardContainer';
 export { BoardTile } from './components/BoardTile';
 export { deriveBoardPlayers, deriveSidebarPlayers } from './game-board.adapters';
+export { TokenShape, TOKEN_SHAPE_PATH, TOKEN_SHAPE_ORDER, resolveTokenShape } from './token-shapes';
+export { TokenShapeSvg } from './components/TokenShapeSvg';
 export { GAME_BOARD_COLORS, BOARD_TILE_COLORS, PROPERTY_COLOR_MAP } from './game-board.colors';
 export { useActionButtons } from './hooks';
 export type { OverlayId } from './hooks';

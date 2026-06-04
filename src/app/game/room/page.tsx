@@ -7,6 +7,7 @@ import {
   BoardContainer,
   deriveBoardPlayers,
   deriveSidebarPlayers,
+  resolveTokenShape,
 } from '@/features/game-board';
 import { getSession, joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import { SessionStatus } from '@/features/lobby';
@@ -472,6 +473,7 @@ export default function GameRoomPage() {
       id: walkState.playerId,
       currentPos: walkState.currentPos,
       tokenColor: player ? TOKEN_COLORS[player.token] : '#10182E',
+      tokenShape: resolveTokenShape(game.gameId, player?.turnOrder ?? 0),
       variant: walkState.variant ?? WalkingAnimationVariant.NORMAL,
     }];
   }, [game.players, walkState]);

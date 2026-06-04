@@ -7,6 +7,29 @@ import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
 
+// Buyable positions sorted by group — 28 total, laid out as a 7×4 rectangle.
+// Only the layout/order is hardcoded; each cell's colour is derived from BOARD
+// so it can never drift from the actual tile colours (getSpaceHeaderColor).
+const SORTED_BUYABLE_POSITIONS: number[] = [
+  1, 3,                 // brown
+  6, 8, 9,              // cyan
+  11, 13, 14,           // pink
+  16, 18, 19,           // orange
+  21, 23, 24,           // red
+  26, 27, 29,           // yellow
+  31, 32, 34,           // green
+  37, 39,               // blue
+  5, 15, 25, 35,        // railroads
+  12, 28,               // utilities
+];
+
+const SORTED_BUYABLE_SPACES: Array<{ pos: number; color: string }> = SORTED_BUYABLE_POSITIONS.map(
+  (pos) => {
+    const space = BOARD.find((boardSpace) => boardSpace.pos === pos);
+    return { pos, color: space ? getSpaceHeaderColor(space) : GAME_BOARD_COLORS.border };
+  },
+);
+
 interface PlayerPanelProps {
   players:     Player[];
   viewerId?:   string;
@@ -121,6 +144,28 @@ function BalanceDelta({
   );
 }
 
+function PropertyGroupGrid({ ownedPositions }: { ownedPositions: number[] }) {
+  const owned = new Set(ownedPositions);
+  return (
+    <div
+      className="shrink-0"
+      style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 8px)', gap: '2px' }}
+    >
+      {SORTED_BUYABLE_SPACES.map(({ pos, color }) => (
+        <span
+          key={pos}
+          className="block rounded-[2px]"
+          style={{
+            width: '8px',
+            height: '8px',
+            backgroundColor: owned.has(pos) ? color : GAME_BOARD_COLORS.border,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── PlayerPanel ──────────────────────────────────────────────────────────────
 
 export function PlayerPanel({ players, viewerId, createdAt, onSurrender }: PlayerPanelProps) {
@@ -207,7 +252,7 @@ export function PlayerPanel({ players, viewerId, createdAt, onSurrender }: Playe
           return (
             <article
               key={player.id}
-              className="grid gap-3 rounded-[14px] px-3 py-3"
+              className="flex items-center gap-2 rounded-[14px] px-3 py-2"
               style={{
                 backgroundColor: player.isActive ? `${tokenColor}18` : GAME_BOARD_COLORS.surface,
                 border: player.isActive
@@ -216,73 +261,46 @@ export function PlayerPanel({ players, viewerId, createdAt, onSurrender }: Playe
                 color: GAME_BOARD_COLORS.text,
               }}
             >
-              <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
-                <PlayerAvatar player={player} />
-                <div className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    <p className="min-w-0 truncate font-display text-lg font-semibold leading-tight">
-                      {player.name}
-                    </p>
-                    <StatusPill backgroundColor={getPositionPillColor(player.position)}>
-                      {t('position', { position: player.position })}
-                    </StatusPill>
-                    {player.isActive && (
-                      <StatusPill backgroundColor={BOARD_TILE_COLORS.propertyBlue}>{t('turn')}</StatusPill>
-                    )}
-                    {player.inJail && (
-                      <StatusPill backgroundColor={jailColor}>
-                        {player.jailTurns != null ? t('jailTurns', { turns: player.jailTurns }) : t('jail')}
-                      </StatusPill>
-                    )}
-                    {player.isBankrupt && (
-                      <StatusPill backgroundColor={BOARD_TILE_COLORS.railroad}>{t('bankrupt')}</StatusPill>
-                    )}
-                  </div>
-
-                  {/* Balance row */}
-                  <div className="mt-1 flex items-baseline gap-1.5">
-                    <p
-                      className="font-mono text-base font-black tabular-nums"
-                      style={{ color: GAME_BOARD_COLORS.text }}
-                    >
-                      ${player.balance.toLocaleString()}
-                    </p>
-                    {delta && (
-                      <BalanceDelta key={delta.id} entry={delta} onDone={() => clearDelta(player.id)} />
-                    )}
-                  </div>
-                  {/* Net worth */}
-                  <p className="font-mono text-[10px] tabular-nums" style={{ color: GAME_BOARD_COLORS.muted }}>
-                    {t('netWorth', { amount: netWorth.toLocaleString() })}
+              <PlayerAvatar player={player} />
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <p className="min-w-0 truncate font-display text-base font-semibold leading-tight">
+                    {player.name}
                   </p>
+                  <StatusPill backgroundColor={getPositionPillColor(player.position)}>
+                    {t('position', { position: player.position })}
+                  </StatusPill>
+                  {player.isActive && (
+                    <StatusPill backgroundColor={BOARD_TILE_COLORS.propertyBlue}>{t('turn')}</StatusPill>
+                  )}
+                  {player.inJail && (
+                    <StatusPill backgroundColor={jailColor}>
+                      {player.jailTurns != null ? t('jailTurns', { turns: player.jailTurns }) : t('jail')}
+                    </StatusPill>
+                  )}
+                  {player.isBankrupt && (
+                    <StatusPill backgroundColor={BOARD_TILE_COLORS.railroad}>{t('bankrupt')}</StatusPill>
+                  )}
+                </div>
+
+                <div className="mt-0.5 flex items-baseline gap-1.5">
+                  <p
+                    className="font-mono text-sm font-black tabular-nums"
+                    style={{ color: GAME_BOARD_COLORS.text }}
+                  >
+                    ${player.balance.toLocaleString()}
+                  </p>
+                  {delta && (
+                    <BalanceDelta key={delta.id} entry={delta} onDone={() => clearDelta(player.id)} />
+                  )}
                 </div>
               </div>
 
-              <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(14, 1fr)', gap: '0.125rem' }}
-                aria-label={t('ownedProperties', { name: player.name })}
-              >
-                {ownedProperties.length > 0 ? (
-                  ownedProperties.slice(0, 28).map((property) => (
-                    <span
-                      key={property.pos}
-                      className="aspect-square rounded-[3px] border"
-                      style={{
-                        backgroundColor: getSpaceHeaderColor(property),
-                        borderColor: BOARD_TILE_COLORS.altText,
-                        boxShadow: '0 0.5px 1.5px rgba(0,0,0,.22)',
-                      }}
-                      title={property.name}
-                    />
-                  ))
-                ) : (
-                  <span
-                    className="text-[11px] font-semibold"
-                    style={{ gridColumn: '1 / -1', color: GAME_BOARD_COLORS.muted }}
-                  >
-                    {t('noProperties')}
-                  </span>
-                )}
+              <div className="flex shrink-0 flex-col items-center gap-1">
+                <PropertyGroupGrid ownedPositions={player.ownedPositions} />
+                <p className="font-mono text-[10px] tabular-nums" style={{ color: GAME_BOARD_COLORS.muted }}>
+                  {t('netWorth', { amount: netWorth.toLocaleString() })}
+                </p>
               </div>
             </article>
           );
