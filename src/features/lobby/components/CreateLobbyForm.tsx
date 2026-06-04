@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { Alert } from '@/shared/ui';
 import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { SessionVisibility } from '../lobby.enums';
@@ -85,11 +86,7 @@ export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
         </p>
       </div>
 
-      {error && (
-        <p className="rounded-sm border border-red/30 bg-red/5 px-3 py-2 text-sm text-red">
-          {error}
-        </p>
-      )}
+      {error && <Alert>{error}</Alert>}
 
       <button
         type="submit"

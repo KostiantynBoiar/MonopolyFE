@@ -41,6 +41,8 @@ function AnimatedBoardToken({
       setAnimate(true);
     }
     prevPosRef.current = currentPos;
+    // Only react to position changes; `variant` is read as the latest value, not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPos]);
 
   const { x, y }             = getTileOuterEdgePct(currentPos);

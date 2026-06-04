@@ -1,334 +1,75 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  BoardTileSelectionTone,
   BoardContainer,
   deriveBoardPlayers,
   deriveSidebarPlayers,
   resolveTokenShape,
 } from '@/features/game-board';
-import { getSession, joinByCode, leaveSession, startGame } from '@/features/lobby/api';
 import { SessionStatus } from '@/features/lobby';
-import type { ManageProperty } from '@/features/manage';
-import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade/components/TradeBuilder';
-import type { TradeParticipant } from '@/features/trade/trade.types';
 import { BOARD } from '@/shared/config/board-layout';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
-import {
-  getPlayerProperties,
-  getPropertyRent,
-  getViewerPlayer,
-  hasMonopoly,
-} from '@/shared/protocol/selectors';
-import { GameStatus, TradeStatus, TurnPhase } from '@/shared/protocol/game-state.enums';
-import type { GameState, PlayerState, TradeOffer } from '@/shared/protocol/game-state';
+import { getViewerPlayer } from '@/shared/protocol/selectors';
+import { GameStatus } from '@/shared/protocol/game-state.enums';
+import type { TradeOffer } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { useGameSocket } from '@/shared/socket';
 import { resolveAnimationGate } from '@/shared/socket/timeline-executor';
-import { Button } from '@/shared/ui/Button';
-import { FullScreenSpinner, Spinner } from '@/shared/ui/Spinner';
-import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
+import { FullScreenSpinner, MessageScreen, WsErrorBanner } from '@/shared/ui';
 import { useGameStore } from '@/stores/game-store';
-import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useUiStore } from '@/stores/ui-store';
 import { useGameDispatch } from './useGameDispatch';
 import { ActiveOverlay, type TradeBuilderData } from './_components/FullOverlay';
 import { GameCenterGrid } from './_components/GameCenterGrid';
 import { WaitingCenterGrid } from './_components/WaitingCenterGrid';
-
-const SESSION_RESTORE_TIMEOUT_MS = 5_000;
-const ROOM_BOOT_TIMEOUT_MS = 7_000;
-
-interface TradeDraftState {
-  targetId: string | null;
-  giveMoney: number;
-  getMoney: number;
-  giveCards: number;
-  getCards: number;
-  givePositions: Set<number>;
-  getPositions: Set<number>;
-}
-
-function createTradeDraftState(): TradeDraftState {
-  return {
-    targetId: null,
-    giveMoney: 0,
-    getMoney: 0,
-    giveCards: 0,
-    getCards: 0,
-    givePositions: new Set(),
-    getPositions: new Set(),
-  };
-}
-
-function withToggledPosition(source: Set<number>, position: number): Set<number> {
-  const next = new Set(source);
-  if (next.has(position)) {
-    next.delete(position);
-    return next;
-  }
-
-  next.add(position);
-  return next;
-}
-
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-  }
-}
-
-function toTradeParticipant(game: GameState, player: PlayerState): TradeParticipant {
-  return {
-    id: player.id,
-    name: player.displayName,
-    token: player.token,
-    balance: player.balance,
-    ownedPositions: getPlayerProperties(game, player.id).map((space) => space.position),
-  };
-}
-
-function toTradePlayer(player: PlayerState): TradePlayer {
-  return {
-    id: player.id,
-    name: player.displayName,
-    balance: player.balance,
-    getOutOfJailCards: player.getOutOfJailCards,
-  };
-}
-
-function toTradeCounterparty(game: GameState, player: PlayerState): TradeCounterparty {
-  return {
-    ...toTradePlayer(player),
-    propertyCount: getPlayerProperties(game, player.id).length,
-  };
-}
-
-function toTradeAsset(game: GameState, position: number): TradeAsset {
-  const boardSpace = BOARD[position];
-  return { position, name: boardSpace?.name ?? `Space ${position}`, color: boardSpace?.color };
-}
-
-function getManageProperties(game: GameState, viewerPlayerId: string | null): ManageProperty[] {
-  if (!viewerPlayerId) return [];
-  return getPlayerProperties(game, viewerPlayerId).map((space) => {
-    const boardSpace = BOARD[space.position];
-    const color = boardSpace?.color;
-    return {
-      position: space.position,
-      name: boardSpace?.name ?? `Space ${space.position}`,
-      color,
-      houses: space.houses,
-      hotel: space.hotel,
-      isMortgaged: space.isMortgaged,
-      inMonopoly: color ? hasMonopoly(game, viewerPlayerId, color) : false,
-      rent: getPropertyRent(game, space.position),
-    };
-  });
-}
-
-function getSpaceOwnerId(game: GameState, position: number): string | null {
-  return game.spaces.find((space) => space.position === position)?.ownerId ?? null;
-}
-
-function isSpaceMortgaged(game: GameState, position: number): boolean {
-  return game.spaces.find((space) => space.position === position)?.isMortgaged ?? false;
-}
-
-function resolveTradeTargetIdFromPosition(
-  game: GameState,
-  viewerPlayerId: string | null,
-  position: number,
-  currentTargetId: string | null,
-): string | null {
-  const ownerId = getSpaceOwnerId(game, position);
-  if (ownerId && ownerId !== viewerPlayerId) {
-    const owner = game.players.find((player) => player.id === ownerId);
-    return owner && !owner.isBankrupt ? owner.id : null;
-  }
-
-  const playersOnPosition = game.players.filter(
-    (player) => player.position === position && player.id !== viewerPlayerId && !player.isBankrupt,
-  );
-  if (playersOnPosition.length === 1) {
-    return playersOnPosition[0].id;
-  }
-
-  return playersOnPosition.find((player) => player.id === currentTargetId)?.id ?? null;
-}
-
-function buildTradeSelectionTones(
-  givePositions: Set<number>,
-  getPositions: Set<number>,
-): Partial<Record<number, BoardTileSelectionTone>> {
-  const tones: Partial<Record<number, BoardTileSelectionTone>> = {};
-
-  for (const position of givePositions) {
-    tones[position] = BoardTileSelectionTone.TRADE_OFFER;
-  }
-
-  for (const position of getPositions) {
-    tones[position] = BoardTileSelectionTone.TRADE_REQUEST;
-  }
-
-  return tones;
-}
-
-function setsAreEqual(left: Set<number>, right: Set<number>): boolean {
-  if (left.size !== right.size) return false;
-
-  for (const value of left) {
-    if (!right.has(value)) return false;
-  }
-
-  return true;
-}
-
-function normalizeTradeDraft(
-  draft: TradeDraftState,
-  game: GameState,
-  viewerPlayer: PlayerState | null,
-): TradeDraftState {
-  if (!viewerPlayer) {
-    return createTradeDraftState();
-  }
-
-  const ownedByViewer = new Set(getPlayerProperties(game, viewerPlayer.id).map((space) => space.position));
-  const nextGivePositions = new Set(
-    [...draft.givePositions].filter(
-      (position) => ownedByViewer.has(position) && !isSpaceMortgaged(game, position),
-    ),
-  );
-
-  const target = draft.targetId
-    ? game.players.find((player) => player.id === draft.targetId && !player.isBankrupt)
-    : null;
-  const ownedByTarget = target
-    ? new Set(getPlayerProperties(game, target.id).map((space) => space.position))
-    : new Set<number>();
-  const nextGetPositions = new Set(
-    [...draft.getPositions].filter(
-      (position) => ownedByTarget.has(position) && !isSpaceMortgaged(game, position),
-    ),
-  );
-
-  const nextGiveMoney = Math.min(draft.giveMoney, viewerPlayer.balance);
-  const nextGiveCards = Math.min(draft.giveCards, viewerPlayer.getOutOfJailCards);
-  const nextGetMoney = target ? Math.min(draft.getMoney, target.balance) : 0;
-  const nextGetCards = target ? Math.min(draft.getCards, target.getOutOfJailCards) : 0;
-
-  const isUnchanged =
-    draft.targetId === (target?.id ?? null) &&
-    draft.giveMoney === nextGiveMoney &&
-    draft.getMoney === nextGetMoney &&
-    draft.giveCards === nextGiveCards &&
-    draft.getCards === nextGetCards &&
-    setsAreEqual(draft.givePositions, nextGivePositions) &&
-    setsAreEqual(draft.getPositions, nextGetPositions);
-
-  if (isUnchanged) {
-    return draft;
-  }
-
-  return {
-    targetId: target?.id ?? null,
-    giveMoney: nextGiveMoney,
-    getMoney: nextGetMoney,
-    giveCards: nextGiveCards,
-    getCards: nextGetCards,
-    givePositions: nextGivePositions,
-    getPositions: nextGetPositions,
-  };
-}
-
-function EmptyGameState({ sessionCode, status }: { sessionCode: string | null; status: string }) {
-  return (
-    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-3 rounded-[18px] border border-line bg-surface px-5 text-center">
-      <Spinner size="lg" />
-      <div>
-        <p className="font-display text-lg font-semibold text-ink">Loading game state</p>
-        <p className="mt-1 text-sm text-muted">
-          {sessionCode ? `Room ${sessionCode}` : 'Room'} is connected as {status}.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function FinishedGameState({
-  winnerName,
-  onLeave,
-  isLeaving,
-}: {
-  winnerName: string | null;
-  onLeave: () => void;
-  isLeaving: boolean;
-}) {
-  return (
-    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 rounded-[18px] border border-line bg-surface px-5 text-center">
-      <div>
-        <p className="font-display text-lg font-semibold text-ink">Game finished</p>
-        <p className="mt-1 text-sm text-muted">
-          {winnerName ? `${winnerName} won the game.` : 'This game has ended.'}
-        </p>
-      </div>
-      <Button onClick={onLeave} variant="blue" disabled={isLeaving}>
-        {isLeaving ? 'Leaving…' : 'Back to lobby'}
-      </Button>
-    </div>
-  );
-}
-
-function NoActiveRoomState() {
-  return (
-    <main className="flex min-h-screen items-center justify-center bg-paper px-4">
-      <section className="w-full max-w-md rounded-[12px] border border-line bg-surface p-5 text-center">
-        <h1 className="font-display text-xl font-bold text-ink">No active room</h1>
-        <p className="mt-2 text-sm text-muted">
-          Join or create a room from the lobby to continue.
-        </p>
-        <Button as="a" href="/lobby" variant="blue" className="mt-4">
-          Back to lobby
-        </Button>
-      </section>
-    </main>
-  );
-}
+import { EmptyGameState, FinishedGameState } from './_components/RoomStates';
+import { useRoomSession } from './_hooks/useRoomSession';
+import { useTradeDraft } from './_hooks/useTradeDraft';
+import { getManageProperties } from './_lib/game-spaces';
+import { buildTradeSelectionTones } from './_lib/trade-draft';
+import {
+  toTradeAsset,
+  toTradeCounterparty,
+  toTradeParticipant,
+  toTradePlayer,
+} from './_lib/trade-mappers';
 
 export default function GameRoomPage() {
-  const router = useRouter();
   const { ready, user } = useRequireAuth();
   const { dispatch } = useGameDispatch();
 
-  const currentSession = useSessionStore((state) => state.currentSession);
-  const sessionHydrated = useSessionStore((state) => state._hasHydrated);
-  const setSession = useSessionStore((state) => state.setSession);
-  const clearSession = useSessionStore((state) => state.clearSession);
+  const session = useRoomSession(ready);
+  const {
+    currentSession,
+    sessionHydrated,
+    sessionId,
+    canConnectSocket,
+    joinError,
+    isJoiningByCode,
+    isValidatingSession,
+    validatedSessionId,
+    sessionRestoreFailed,
+    roomBootTimedOut,
+    isLeaving,
+    isStarting,
+    handleStartGame,
+    handleLeaveRoom,
+  } = session;
 
   const snapshot = useGameStore((state) => state.snapshot);
   const game = snapshot.game;
   const permissions = snapshot.permissions;
-  const resetGame = useGameStore((state) => state.reset);
 
   const status = useSocketStore((state) => state.status);
   const wsError = useSocketStore((state) => state.wsError);
-  const wasKicked = useSocketStore((state) => state.wasKicked);
   const socketMessages = useSocketStore((state) => state.messages);
   const clearWsError = useSocketStore((state) => state.clearWsError);
-  const resetSocket = useSocketStore((state) => state.reset);
 
   const isRolling = useUiStore((state) => state.isRolling);
   const isTimelineRunning = useUiStore((state) => state.isTimelineRunning);
@@ -340,113 +81,20 @@ export default function GameRoomPage() {
   const selectedTile = useUiStore((state) => state.selectedTile);
   const setSelectedTile = useUiStore((state) => state.setSelectedTile);
 
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [isJoiningByCode, setIsJoiningByCode] = useState(false);
-  const [isValidatingSession, setIsValidatingSession] = useState(false);
-  const [validatedSessionId, setValidatedSessionId] = useState<string | null>(null);
-  const [sessionRestoreFailed, setSessionRestoreFailed] = useState(false);
-  const [roomBootTimedOut, setRoomBootTimedOut] = useState(false);
-  const [isLeaving, setIsLeaving] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
   const [activeOverlay, setActiveOverlay] = useState<ActiveOverlay | null>(null);
-  const [tradeDraft, setTradeDraft] = useState<TradeDraftState>(createTradeDraftState);
 
-  const sessionId = currentSession?.id ?? null;
-  const canConnectSocket = Boolean(ready && sessionId && validatedSessionId === sessionId);
   const { sendChat, sendSticker } = useGameSocket(canConnectSocket ? sessionId : null);
   const isScreenShaking = useOnWsError(wsError);
 
   useBoardSfx(game);
 
-  // ─── Boot timeout ─────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (ready && sessionHydrated && !isJoiningByCode && !isValidatingSession) {
-      setRoomBootTimedOut(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setRoomBootTimedOut(true), ROOM_BOOT_TIMEOUT_MS);
-    return () => window.clearTimeout(timer);
-  }, [isJoiningByCode, isValidatingSession, ready, sessionHydrated]);
-
-  // ─── Join by invite code ───────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!ready || !sessionHydrated || currentSession || isJoiningByCode) return;
-    const code = new URLSearchParams(window.location.search).get('code');
-    if (!code) return;
-
-    setIsJoiningByCode(true);
-    joinByCode({ invite_code: code })
-      .then(({ session }) => { resetSocket(); setSession(session); setJoinError(null); router.replace('/game/room'); })
-      .catch((error) => setJoinError((error as Error).message))
-      .finally(() => setIsJoiningByCode(false));
-  }, [currentSession, isJoiningByCode, ready, router, sessionHydrated, setSession]);
-
-  // ─── Session validation ────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!ready || !sessionHydrated || isJoiningByCode) return;
-
-    const sessionIdToValidate = currentSession?.id;
-    if (!sessionIdToValidate) {
-      setValidatedSessionId(null);
-      setSessionRestoreFailed(false);
-      return;
-    }
-    if (validatedSessionId === sessionIdToValidate) return;
-
-    let cancelled = false;
-    setIsValidatingSession(true);
-    setSessionRestoreFailed(false);
-
-    withTimeout(getSession(sessionIdToValidate), SESSION_RESTORE_TIMEOUT_MS, 'Could not restore the room session.')
-      .then(({ session }) => {
-        if (cancelled) return;
-        setSession(session);
-        setValidatedSessionId(session.id);
-        setSessionRestoreFailed(false);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setValidatedSessionId(null);
-        setSessionRestoreFailed(true);
-        clearSession();
-        resetSocket();
-        resetGame();
-        router.replace('/lobby');
-      })
-      .finally(() => {
-
-        setIsValidatingSession(false);
-      });
-
-    return () => { cancelled = true; };
-  }, [
-    clearSession, currentSession?.id, isJoiningByCode, ready,
-    resetGame, resetSocket, router, sessionHydrated, setSession, validatedSessionId,
-  ]);
-
-  // ─── Kick handling ─────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!wasKicked) return;
-    clearSession();
-    resetSocket();
-    router.replace('/lobby?kicked=1');
-  }, [clearSession, resetSocket, router, wasKicked]);
-
-  useEffect(() => {
-    const finished =
-      currentSession?.status === SessionStatus.FINISHED ||
-      game.status === GameStatus.FINISHED;
-    if (finished) useGameStore.persist.clearStorage();
-  }, [currentSession?.status, game.status]);
-
   // ─── Derived values ────────────────────────────────────────────────────────
 
   const viewerPlayer = useMemo(() => getViewerPlayer(game, user?.id), [game, user?.id]);
   const viewerPlayerId = viewerPlayer?.id ?? (game.viewerId || null);
+
+  const trade = useTradeDraft({ game, viewerPlayer, viewerPlayerId, activeOverlay, setSelectedTile });
+  const tradeDraft = trade.tradeDraft;
 
   const boardPlayers = useMemo(() => deriveBoardPlayers(game), [game]);
   const sidebarPlayers = useMemo(() => deriveSidebarPlayers(game), [game]);
@@ -476,7 +124,7 @@ export default function GameRoomPage() {
       tokenShape: resolveTokenShape(game.gameId, player?.turnOrder ?? 0),
       variant: walkState.variant ?? WalkingAnimationVariant.NORMAL,
     }];
-  }, [game.players, walkState]);
+  }, [game.players, game.gameId, walkState]);
 
   const manageProperties = useMemo(
     () => getManageProperties(game, viewerPlayerId),
@@ -595,91 +243,13 @@ export default function GameRoomPage() {
 
   const handleCloseOverlay = useCallback(() => {
     setActiveOverlay(null);
-    setTradeDraft(createTradeDraftState());
-  }, []);
+    trade.resetDraft();
+  }, [trade]);
 
   const handleTradeOpen = useCallback(() => {
-    setTradeDraft(createTradeDraftState());
+    trade.resetDraft();
     setActiveOverlay(ActiveOverlay.TRADE_BUILDER);
-  }, []);
-
-  const handleSelectBoardPosition = useCallback((position: number) => {
-    setSelectedTile(position);
-    if (activeOverlay !== ActiveOverlay.TRADE_BUILDER || !viewerPlayerId) return;
-
-    if (isSpaceMortgaged(game, position)) return;
-
-    const ownerId = getSpaceOwnerId(game, position);
-    if (ownerId === viewerPlayerId) {
-      setTradeDraft((currentDraft) => ({
-        ...currentDraft,
-        givePositions: withToggledPosition(currentDraft.givePositions, position),
-      }));
-      return;
-    }
-
-    const targetId = resolveTradeTargetIdFromPosition(game, viewerPlayerId, position, tradeDraft.targetId);
-    if (!targetId) return;
-
-    setTradeDraft((currentDraft) => {
-      const nextTarget = targetId;
-      const isRequestedProperty = getSpaceOwnerId(game, position) === nextTarget;
-      const nextGetPositions = currentDraft.targetId === nextTarget
-        ? (isRequestedProperty ? withToggledPosition(currentDraft.getPositions, position) : currentDraft.getPositions)
-        : (isRequestedProperty ? new Set([position]) : new Set<number>());
-
-      return {
-        ...currentDraft,
-        targetId: nextTarget,
-        getMoney: currentDraft.targetId === nextTarget ? currentDraft.getMoney : 0,
-        getCards: currentDraft.targetId === nextTarget ? currentDraft.getCards : 0,
-        getPositions: nextGetPositions,
-      };
-    });
-  }, [activeOverlay, game, setSelectedTile, tradeDraft.targetId, viewerPlayerId]);
-
-  const handleStartGame = useCallback(async () => {
-    if (!sessionId || isStarting) return;
-    setIsStarting(true);
-    try { await startGame(sessionId); } finally { setIsStarting(false); }
-  }, [isStarting, sessionId]);
-
-  const handleLeaveRoom = useCallback(async () => {
-    if (!sessionId || isLeaving) return;
-    setIsLeaving(true);
-    try {
-      await leaveSession(sessionId);
-      clearSession();
-      resetSocket();
-      router.replace('/lobby');
-    } finally {
-      setIsLeaving(false);
-    }
-  }, [clearSession, isLeaving, resetSocket, router, sessionId]);
-
-  const handleTradeGiveMoneyChange = useCallback((value: number) => {
-    setTradeDraft((currentDraft) => ({ ...currentDraft, giveMoney: value }));
-  }, []);
-
-  const handleTradeGetMoneyChange = useCallback((value: number) => {
-    setTradeDraft((currentDraft) => ({ ...currentDraft, getMoney: value }));
-  }, []);
-
-  const handleTradeGiveCardsChange = useCallback((value: number) => {
-    setTradeDraft((currentDraft) => ({ ...currentDraft, giveCards: value }));
-  }, []);
-
-  const handleTradeGetCardsChange = useCallback((value: number) => {
-    setTradeDraft((currentDraft) => ({ ...currentDraft, getCards: value }));
-  }, []);
-
-  const handleTradeClearOfferAssets = useCallback(() => {
-    setTradeDraft((currentDraft) => ({ ...currentDraft, givePositions: new Set() }));
-  }, []);
-
-  const handleTradeClearRequestAssets = useCallback(() => {
-    setTradeDraft((currentDraft) => ({ ...currentDraft, getPositions: new Set() }));
-  }, []);
+  }, [trade]);
 
   const handleTradePropose = useCallback(() => {
     if (!tradeDraft.targetId) return;
@@ -709,10 +279,6 @@ export default function GameRoomPage() {
     dispatch({ type: CommandType.ResolveCard });
   }, [dispatch]);
 
-  useEffect(() => {
-    setTradeDraft((currentDraft) => normalizeTradeDraft(currentDraft, game, viewerPlayer));
-  }, [game, viewerPlayer]);
-
   // ─── Boot guards ──────────────────────────────────────────────────────────
 
   if (
@@ -724,18 +290,23 @@ export default function GameRoomPage() {
   }
 
   if (roomBootTimedOut && (!ready || !sessionHydrated || isJoiningByCode || isValidatingSession)) {
-    return <NoActiveRoomState />;
+    return (
+      <MessageScreen
+        title="No active room"
+        message="Join or create a room from the lobby to continue."
+        action={{ label: 'Back to lobby', href: '/lobby' }}
+      />
+    );
   }
 
   if (joinError) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-paper px-4">
-        <section className="w-full max-w-md rounded-[12px] border border-red/30 bg-surface p-5 text-center">
-          <h1 className="font-display text-xl font-bold text-ink">Could not join room</h1>
-          <p className="mt-2 text-sm text-red">{joinError}</p>
-          <Button as="a" href="/lobby" variant="blue" className="mt-4">Back to lobby</Button>
-        </section>
-      </main>
+      <MessageScreen
+        tone="error"
+        title="Could not join room"
+        message={joinError}
+        action={{ label: 'Back to lobby', href: '/lobby' }}
+      />
     );
   }
 
@@ -749,8 +320,15 @@ export default function GameRoomPage() {
     ? game.players.find((player) => player.id === game.winnerId)?.displayName ?? null
     : null;
 
-  if (!currentSession) return <NoActiveRoomState />;
-  if (validatedSessionId !== currentSession.id) return <NoActiveRoomState />;
+  const noActiveRoom = (
+    <MessageScreen
+      title="No active room"
+      message="Join or create a room from the lobby to continue."
+      action={{ label: 'Back to lobby', href: '/lobby' }}
+    />
+  );
+  if (!currentSession) return noActiveRoom;
+  if (validatedSessionId !== currentSession.id) return noActiveRoom;
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -886,12 +464,12 @@ export default function GameRoomPage() {
               onUnmortgage={(position) => dispatch({ type: CommandType.Unmortgage, position })}
               onSellProperty={(position) => dispatch({ type: CommandType.SellProperty, position })}
               onCloseOverlay={handleCloseOverlay}
-              onTradeGiveMoneyChange={handleTradeGiveMoneyChange}
-              onTradeGetMoneyChange={handleTradeGetMoneyChange}
-              onTradeGiveCardsChange={handleTradeGiveCardsChange}
-              onTradeGetCardsChange={handleTradeGetCardsChange}
-              onTradeClearOfferAssets={handleTradeClearOfferAssets}
-              onTradeClearRequestAssets={handleTradeClearRequestAssets}
+              onTradeGiveMoneyChange={trade.onGiveMoneyChange}
+              onTradeGetMoneyChange={trade.onGetMoneyChange}
+              onTradeGiveCardsChange={trade.onGiveCardsChange}
+              onTradeGetCardsChange={trade.onGetCardsChange}
+              onTradeClearOfferAssets={trade.onClearOfferAssets}
+              onTradeClearRequestAssets={trade.onClearRequestAssets}
               onTradePropose={handleTradePropose}
             />
           )}
@@ -901,7 +479,7 @@ export default function GameRoomPage() {
           sidebarPlayers={sidebarPlayers}
           selectedPosition={highlightedBoardPosition}
           tileSelectionTones={tradeSelectionTones}
-          onSelectPosition={handleSelectBoardPosition}
+          onSelectPosition={trade.selectBoardPosition}
           focusPosition={isBuyDecisionForViewer ? pendingBuyPosition : null}
           viewerId={viewerPlayerId ?? undefined}
           createdAt={game.createdAt}
