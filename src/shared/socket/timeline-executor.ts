@@ -24,6 +24,7 @@ import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DUR
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 import { DICE_SPIN_MS, DICE_LINGER_MS } from '@/shared/config/constants';
+import { env } from '@/shared/config/env';
 
 // ─── Animation event listeners ────────────────────────────────────────────────
 
@@ -59,8 +60,23 @@ let generation = 0;
 // Active wait gate, keyed by interactionId so a stale continue can't resolve a new gate.
 let gate: { id: string; resolve: () => void } | null = null;
 let gateTimer: ReturnType<typeof setTimeout> | null = null;
+// Continue signals that arrived before their gate opened. The server's
+// `game.animation_continue` broadcast can outrun a client that is still animating
+// toward its own `wait_for_player` instruction (other players watch the same card
+// resolve, but reach the gate a beat later). Without this, that early signal is
+// dropped and the gate hangs until GATE_TIMEOUT_MS — the "stuck until refresh" bug.
+const preResolvedGates = new Set<string>();
+
+// Id of the most recent card this client has already shown + acknowledged. The BE keeps
+// `active_card` set on frames for one extra command (so late joiners can still see it), so
+// once acknowledged we suppress that same card on every later commit — otherwise the
+// overlay reappears with no gate and spectators must refresh to clear it.
+let acknowledgedCardId: string | null = null;
 
 function openGate(id: string, affectedPlayerId: string): Promise<void> {
+  // The continue for this gate already arrived → don't pause at all.
+  if (preResolvedGates.delete(id)) return Promise.resolve();
+
   const ui = useUiStore.getState();
   ui.setPendingInteractionId(id);
   ui.setPendingAnimationInteraction({ interactionId: id, affectedPlayerId });
@@ -82,9 +98,15 @@ function closeGate(id: string): void {
 }
 
 /** Resume the paused timeline. Called by the affected player's Continue click and by the
- *  server's `game.animation_continue` broadcast (idempotent). */
+ *  server's `game.animation_continue` broadcast (idempotent). If the matching gate has not
+ *  opened yet on this client, remember the signal so the gate resolves the instant it does. */
 export function resolveAnimationGate(interactionId: string): void {
-  closeGate(interactionId);
+  if (gate && gate.id === interactionId) {
+    closeGate(interactionId);
+    return;
+  }
+  // Gate not open yet (this client is still animating toward it) — buffer the continue.
+  preResolvedGates.add(interactionId);
 }
 
 /** Queue an adapted snapshot for replay. Safe to call rapidly. */
@@ -98,6 +120,8 @@ export function resetSnapshotPipeline(): void {
   generation++;
   queue = [];
   running = false;
+  preResolvedGates.clear(); // drop buffered continues from the previous generation
+  acknowledgedCardId = null; // forget acknowledged cards from the previous generation
   closeGate(''); // force-release whatever gate is open (clears pending interaction)
   // Clear every animation-transient flag. A timeline aborted mid-flight by this reset
   // bails at its `generation` check and never reaches its own cleanup, so if we don't
@@ -253,12 +277,10 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
   if (generation !== myGeneration) return;
 
-  // Final authoritative commit. If a card was shown, the player has now acknowledged it,
-  // so clear it (the BE keeps active_card one extra command for late joiners).
-  const finalSnapshot = hasCard
-    ? { ...next, game: { ...next.game, activeCard: null } }
-    : next;
-  commit(finalSnapshot);
+  // A card shown in this timeline has now been acknowledged (the gate resolved). Record its
+  // id so this final commit — and every later frame the BE keeps it on — drops it via commit().
+  if (hasCard && timelineCard) acknowledgedCardId = timelineCard.id;
+  commit(next);
   // Clear the animated dice roll only after commit so game.turn.diceRoll already holds
   // the correct values — die1/die2 stay the same, DiceWindow never re-triggers.
   ui.setAnimatedDiceRoll(null);
@@ -391,5 +413,29 @@ function walkSteps(
 }
 
 function commit(snapshot: GameSnapshot): void {
-  useGameStore.getState().setSnapshot(snapshot);
+  // Drop a card the BE still carries on this frame but that the player already acknowledged,
+  // so the overlay doesn't reappear after the gate has resolved. A genuinely new card (or one
+  // a late joiner is seeing for the first time) has a different id and is committed as-is.
+  const card = snapshot.game.activeCard;
+  const cleaned = card && card.id === acknowledgedCardId
+    ? { ...snapshot, game: { ...snapshot.game, activeCard: null } }
+    : snapshot;
+  logGameState(cleaned);
+  useGameStore.getState().setSnapshot(cleaned);
+}
+
+/** Dev aid: dump every committed snapshot so balance/position changes are traceable per update. */
+function logGameState(snapshot: GameSnapshot): void {
+  if (!env.debugGameRoom) return;
+  const g = snapshot.game;
+  console.debug(
+    '[gamestate]',
+    {
+      status: g.status,
+      turn: { phase: g.turn.phase, currentPlayerId: g.turn.currentPlayerId, diceRoll: g.turn.diceRoll },
+      activeCard: g.activeCard,
+      players: g.players.map((p) => ({ id: p.id, name: p.displayName, balance: p.balance, position: p.position })),
+    },
+    g, // full snapshot, expandable in the console
+  );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { BOARD } from '@/shared/config/board-layout';
@@ -78,10 +79,12 @@ export function ManagePropertiesOverlay({
   onMortgage, onUnmortgage, onSellProperty, onClose,
 }: ManagePropertiesOverlayProps) {
   const t = useTranslations('Manage');
+  const dialog = useDialog<HTMLDivElement>({ onClose, label: t('title') });
 
   return (
     <div
-      className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border"
+      {...dialog}
+      className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border focus:outline-none"
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,

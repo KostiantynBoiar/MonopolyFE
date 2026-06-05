@@ -2,6 +2,7 @@
 
 import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
+import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { useTranslations } from 'next-intl';
 
@@ -199,6 +200,8 @@ export function TradeBuilder({
   onClose,
 }: TradeBuilderProps) {
   const t = useTranslations('Trade');
+  // Non-modal: the builder needs the player to click their own/the target's tiles on the board.
+  const dialog = useDialog<HTMLDivElement>({ onClose, label: t('builder.header'), modal: false });
   const nothingOffered =
     giveMoney === 0 &&
     getMoney === 0 &&
@@ -208,7 +211,7 @@ export function TradeBuilder({
     requestAssets.length === 0;
 
   return (
-    <div className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-white">
+    <div {...dialog} className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-white focus:outline-none">
       <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
         <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>
           {t('builder.header')}

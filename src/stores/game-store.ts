@@ -4,6 +4,7 @@ import type { GameSnapshot } from '@/shared/protocol/permissions';
 import type { GameState } from '@/shared/protocol/game-state';
 import { GameStatus } from '@/shared/protocol/game-state.enums';
 import { emptySnapshot } from '@/shared/transport/state-adapter';
+import { PERSIST_VERSION, migratePersistedState } from '@/shared/lib/persist';
 
 interface GameStore {
   snapshot: GameSnapshot;
@@ -63,6 +64,8 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: 'tycoon-game',
+      version: PERSIST_VERSION,
+      migrate: migratePersistedState,
       storage: createJSONStorage(() => debouncedStorage),
       partialize: (s) => (
         shouldPersistSnapshot(s.snapshot)
@@ -77,7 +80,8 @@ export const useGameStore = create<GameStore>()(
           : {}
       ),
       merge: (persisted, current) => {
-        const p = persisted as PersistedSlice;
+        // `persisted` is undefined when migrate discards a stale-version slice.
+        const p = (persisted ?? {}) as PersistedSlice;
         if (!shouldPersistSnapshot(current.snapshot)) {
           return current;
         }

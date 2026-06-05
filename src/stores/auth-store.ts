@@ -8,6 +8,7 @@ import {
   getMe,
 } from '@/features/auth/api';
 import type { UserPublic } from '@/features/auth/auth.schema';
+import { PERSIST_VERSION, migratePersistedState } from '@/shared/lib/persist';
 
 interface AuthState {
   user: UserPublic | null;
@@ -113,6 +114,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'tycoon-auth',
+      version: PERSIST_VERSION,
+      migrate: migratePersistedState,
       partialize: (s) => ({ token: s.token, refreshToken: s.refreshToken, user: s.user }),
     },
   ),

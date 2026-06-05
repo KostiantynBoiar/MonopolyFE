@@ -9,7 +9,9 @@ import {
   CARD_PROCEED_APPEAR_DELAY_MS,
 } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
+import { useDialog } from '@/shared/hooks/useDialog';
 import { CardFlipState, CardKind } from '../card.enums';
+import { localizeCardEffect } from '../card.text';
 import type { CardFlipOverlayProps } from '../card.types';
 
 // ─── Card theme — colors match board tile palette ─────────────────────────────
@@ -26,7 +28,7 @@ const CARD_THEME = {
 
 // ─── Card faces ───────────────────────────────────────────────────────────────
 
-function CardFront({ card, label }: { card: CardFlipOverlayProps['card']; label: string }) {
+function CardFront({ card, label, text }: { card: CardFlipOverlayProps['card']; label: string; text: string }) {
   const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
 
   return (
@@ -56,7 +58,7 @@ function CardFront({ card, label }: { card: CardFlipOverlayProps['card']; label:
           className="text-center font-sans font-medium leading-snug"
           style={{ fontSize: '0.88rem', color: GAME_BOARD_COLORS.text }}
         >
-          {card.text}
+          {text}
         </p>
       </div>
 
@@ -95,6 +97,8 @@ function CardBack({ card, label }: { card: CardFlipOverlayProps['card']; label: 
 export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlipOverlayProps) {
   const t = useTranslations('Card');
   const label = t(card.kind as CardKind);
+  const text = localizeCardEffect(t, card);
+  const dialog = useDialog<HTMLDivElement>({ label });
   const [flipState, setFlipState] = useState<CardFlipState>(CardFlipState.IDLE);
   const [showProceed, setShowProceed] = useState(false);
 
@@ -121,7 +125,7 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
   const isFlipped = flipState === CardFlipState.FLIPPING || flipState === CardFlipState.REVEALED;
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-5">
+    <div {...dialog} className="flex h-full w-full flex-col items-center justify-center gap-5 focus:outline-none">
       {/* 3-D flip card */}
       <div style={{ perspective: '700px', height: '14em', width: '9.5em' }}>
         <div
@@ -148,7 +152,7 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
               inset:              0,
             }}
           >
-            <CardFront card={card} label={label} />
+            <CardFront card={card} label={label} text={text} />
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useDialog } from '@/shared/hooks/useDialog';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 
 export interface DebtOverlayProps {
@@ -13,10 +14,12 @@ export interface DebtOverlayProps {
 
 export function DebtOverlay({ amount, canPay, onPay, onManage, onBankrupt }: DebtOverlayProps) {
   const t = useTranslations('Debt');
+  const dialog = useDialog<HTMLDivElement>({ label: t('paymentDue') });
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-y-auto rounded-[16px] border"
+      {...dialog}
+      className="flex h-full w-full flex-col overflow-y-auto rounded-[16px] border focus:outline-none"
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,

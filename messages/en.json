@@ -21,7 +21,20 @@
     "chance": "CHANCE",
     "community_chest": "COMMUNITY CHEST",
     "proceed": "Proceed",
-    "waiting": "Waiting…"
+    "waiting": "Waiting…",
+    "effect": {
+      "advanceTo": "Advance to {place}.",
+      "advanceToNearestRailroad": "Advance to the nearest station.",
+      "advanceToNearestUtility": "Advance to the nearest utility.",
+      "goToJail": "Go directly to Jail. Do not pass GO.",
+      "goBack": "Go back {count, plural, one {# space} other {# spaces}}.",
+      "collect": "Collect M{amount}.",
+      "pay": "Pay M{amount}.",
+      "collectFromEachPlayer": "Collect M{amount} from each player.",
+      "payEachPlayer": "Pay each player M{amount}.",
+      "getOutOfJailFree": "Get Out of Jail Free — keep this card.",
+      "repairs": "Pay M{perHouse} per house and M{perHotel} per hotel."
+    }
   },
 
   "Deed": {

@@ -2,18 +2,15 @@
 
 import { AuctionOverlay } from '@/features/auction';
 import { DebtOverlay } from '@/features/bankruptcy';
-import { CardFlipOverlay } from '@/features/card';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { JailOverlay } from '@/features/jail';
 import { BOARD } from '@/shared/config/board-layout';
-import type { ActiveCard, AuctionState, DebtState, DiceRoll, JailStatus, LogEntry } from '@/shared/protocol/game-state';
+import type { AuctionState, DebtState, DiceRoll, JailStatus, LogEntry } from '@/shared/protocol/game-state';
 import { AuctionTargetKind, TurnPhase } from '@/shared/protocol/game-state.enums';
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
 
 export interface CenterPanelProps {
-  activeCard: ActiveCard | null;
-  pendingInteractionPlayerId: string | null;
   viewerPlayerId: string | null;
   debt: DebtState | null;
   auction: AuctionState | null;
@@ -31,7 +28,6 @@ export interface CenterPanelProps {
   chatMessages: ChatMessage[];
   viewerToken?: TokenColor;
   viewerUserId?: string;
-  onCardProceed: () => void;
   onPayDebt: () => void;
   onManage: () => void;
   onBankrupt: () => void;
@@ -48,8 +44,6 @@ function getBoardSpaceName(position: number) {
 }
 
 export function CenterPanel({
-  activeCard,
-  pendingInteractionPlayerId,
   viewerPlayerId,
   debt,
   auction,
@@ -67,7 +61,6 @@ export function CenterPanel({
   chatMessages,
   viewerToken,
   viewerUserId,
-  onCardProceed,
   onPayDebt,
   onManage,
   onBankrupt,
@@ -78,17 +71,6 @@ export function CenterPanel({
   onSendMessage,
   onSendSticker,
 }: CenterPanelProps) {
-  if (activeCard) {
-    const isAffectedPlayer = pendingInteractionPlayerId !== null && pendingInteractionPlayerId === viewerPlayerId;
-    return (
-      <CardFlipOverlay
-        card={activeCard}
-        onProceed={onCardProceed}
-        canProceed={isAffectedPlayer}
-      />
-    );
-  }
-
   if (debt && debt.debtorId === viewerPlayerId) {
     return (
       <DebtOverlay

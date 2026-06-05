@@ -16,7 +16,7 @@ import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import { getViewerPlayer } from '@/shared/protocol/selectors';
-import { GameStatus } from '@/shared/protocol/game-state.enums';
+import { GameStatus, TradeStatus } from '@/shared/protocol/game-state.enums';
 import type { TradeOffer } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
 import { useGameSocket } from '@/shared/socket';
@@ -190,12 +190,20 @@ export default function GameRoomPage() {
   const deedBrowseSpace = BOARD[deedBrowsePosition] ?? BOARD[0];
   const highlightedBoardPosition = isBuyDecisionForViewer ? pendingBuyPosition : deedBrowsePosition;
   const deedPanelSpace = isBuyDecisionForViewer && pendingBuySpace ? pendingBuySpace : deedBrowseSpace;
-  const tradeSelectionTones = useMemo(
-    () => activeOverlay === ActiveOverlay.TRADE_BUILDER
-      ? buildTradeSelectionTones(tradeDraft.givePositions, tradeDraft.getPositions)
-      : undefined,
-    [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions],
-  );
+  const tradeSelectionTones = useMemo(() => {
+    if (activeOverlay === ActiveOverlay.TRADE_BUILDER) {
+      return buildTradeSelectionTones(tradeDraft.givePositions, tradeDraft.getPositions);
+    }
+    // While a proposed trade is on the table, highlight the properties it moves on the board:
+    // green for what the proposer offers, cyan for what they request from the target.
+    if (game.trade && game.trade.status === TradeStatus.PENDING) {
+      return buildTradeSelectionTones(
+        new Set(game.trade.proposerOffer.positions),
+        new Set(game.trade.targetRequest.positions),
+      );
+    }
+    return undefined;
+  }, [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions, game.trade]);
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling && !isTimelineRunning;
   const canManagePendingBuyShortfall = Boolean(
     pendingBuySpace &&
