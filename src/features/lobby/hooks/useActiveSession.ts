@@ -13,20 +13,25 @@ export interface ActiveSession {
   checking: boolean;
 }
 
-/** A session is rejoinable only if it still exists, has not finished, and we are still a member. */
-function isRejoinable(session: SessionDetail): boolean {
-  return session.status !== SessionStatus.FINISHED && session.your_role !== null;
+/**
+ * A session is rejoinable only if it still exists, has not finished, we are
+ * still a member, and we haven't gone bankrupt in it (game still ongoing).
+ */
+function isRejoinable(session: SessionDetail, viewerBankrupt: boolean): boolean {
+  return session.status !== SessionStatus.FINISHED && session.your_role !== null && !viewerBankrupt;
 }
 
 /**
  * Validates the persisted "current session" pointer against the server before
  * the lobby offers a "Back to game" shortcut. The persisted value can be stale
- * — the game may have finished, or we may have been removed — so we re-fetch it
- * and drop the pointer when it is no longer rejoinable.
+ * — the game may have finished, we may have been removed, or we went bankrupt
+ * while the game continued — so we re-fetch it and drop the pointer when it is
+ * no longer rejoinable.
  */
 export function useActiveSession(ready: boolean): ActiveSession {
   const persistedId = useSessionStore((s) => s.currentSession?.id ?? null);
   const hasHydrated = useSessionStore((s) => s._hasHydrated);
+  const viewerBankruptInSession = useSessionStore((s) => s.viewerBankruptInSession);
   const setSession = useSessionStore((s) => s.setSession);
   const clearSession = useSessionStore((s) => s.clearSession);
 
@@ -48,7 +53,7 @@ export function useActiveSession(ready: boolean): ActiveSession {
     getSession(persistedId)
       .then(({ session: fresh }) => {
         if (!alive) return;
-        if (isRejoinable(fresh)) {
+        if (isRejoinable(fresh, viewerBankruptInSession)) {
           setSession(fresh);
           setActive(fresh);
         } else {
@@ -69,7 +74,7 @@ export function useActiveSession(ready: boolean): ActiveSession {
     return () => {
       alive = false;
     };
-  }, [ready, hasHydrated, persistedId, setSession, clearSession]);
+  }, [ready, hasHydrated, persistedId, viewerBankruptInSession, setSession, clearSession]);
 
   return { session, checking };
 }

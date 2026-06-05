@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   BoardContainer,
@@ -23,6 +23,7 @@ import { useGameSocket } from '@/shared/socket';
 import { resolveAnimationGate } from '@/shared/socket/timeline-executor';
 import { FullScreenSpinner, MessageScreen, WsErrorBanner } from '@/shared/ui';
 import { useGameStore } from '@/stores/game-store';
+import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useUiStore } from '@/stores/ui-store';
@@ -90,6 +91,16 @@ export default function GameRoomPage() {
   // ─── Derived values ────────────────────────────────────────────────────────
 
   const viewerPlayer = useMemo(() => getViewerPlayer(game, user?.id), [game, user?.id]);
+
+  // When the viewer goes bankrupt and the game continues, flag the session store
+  // so the lobby's useActiveSession knows not to offer a "back to game" shortcut
+  // and will let the player join a new game.
+  const setViewerBankruptInSession = useSessionStore((s) => s.setViewerBankruptInSession);
+  useEffect(() => {
+    if (viewerPlayer?.isBankrupt && game.status === GameStatus.IN_PROGRESS) {
+      setViewerBankruptInSession();
+    }
+  }, [viewerPlayer?.isBankrupt, game.status, setViewerBankruptInSession]);
   const viewerPlayerId = viewerPlayer?.id ?? (game.viewerId || null);
 
   const trade = useTradeDraft({ game, viewerPlayer, viewerPlayerId, activeOverlay, setSelectedTile });
