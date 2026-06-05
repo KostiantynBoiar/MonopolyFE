@@ -36,11 +36,14 @@ export interface SessionCardProps {
   session: SessionSummary;
   onJoin: (id: string) => void;
   isJoining?: boolean;
+  /** Blocks joining while the player already has an active game to return to. */
+  disabled?: boolean;
 }
 
-export function SessionCard({ session, onJoin, isJoining }: SessionCardProps) {
+export function SessionCard({ session, onJoin, isJoining, disabled }: SessionCardProps) {
   const t = useTranslations('Lobby');
   const isFull = session.member_count >= session.max_players;
+  const cannotJoin = isFull || disabled;
 
   return (
     <div className="flex items-center gap-4 rounded-sm border border-line bg-surface px-4 py-3 transition-shadow hover:shadow-sm">
@@ -69,10 +72,10 @@ export function SessionCard({ session, onJoin, isJoining }: SessionCardProps) {
       <button
         type="button"
         onClick={() => onJoin(session.id)}
-        disabled={isFull || isJoining}
+        disabled={cannotJoin || isJoining}
         className={cn(
           'ml-2 shrink-0 rounded-sm border px-3 py-1.5 text-xs font-semibold transition-colors',
-          isFull
+          cannotJoin
             ? 'cursor-not-allowed border-line bg-paper text-muted'
             : 'border-blue bg-blue text-white hover:bg-blue-600',
           isJoining && 'opacity-60',

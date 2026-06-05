@@ -1,0 +1,75 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getSession } from '../api';
+import { SessionStatus } from '../lobby.enums';
+import type { SessionDetail } from '../lobby.types';
+import { useSessionStore } from '@/stores/session-store';
+
+export interface ActiveSession {
+  /** The validated session you currently belong to and can rejoin, or null. */
+  session: SessionDetail | null;
+  /** True until the persisted session has been validated against the server. */
+  checking: boolean;
+}
+
+/** A session is rejoinable only if it still exists, has not finished, and we are still a member. */
+function isRejoinable(session: SessionDetail): boolean {
+  return session.status !== SessionStatus.FINISHED && session.your_role !== null;
+}
+
+/**
+ * Validates the persisted "current session" pointer against the server before
+ * the lobby offers a "Back to game" shortcut. The persisted value can be stale
+ * — the game may have finished, or we may have been removed — so we re-fetch it
+ * and drop the pointer when it is no longer rejoinable.
+ */
+export function useActiveSession(ready: boolean): ActiveSession {
+  const persistedId = useSessionStore((s) => s.currentSession?.id ?? null);
+  const hasHydrated = useSessionStore((s) => s._hasHydrated);
+  const setSession = useSessionStore((s) => s.setSession);
+  const clearSession = useSessionStore((s) => s.clearSession);
+
+  const [session, setActive] = useState<SessionDetail | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!ready || !hasHydrated) return;
+
+    if (!persistedId) {
+      setActive(null);
+      setChecking(false);
+      return;
+    }
+
+    let alive = true;
+    setChecking(true);
+
+    getSession(persistedId)
+      .then(({ session: fresh }) => {
+        if (!alive) return;
+        if (isRejoinable(fresh)) {
+          setSession(fresh);
+          setActive(fresh);
+        } else {
+          clearSession();
+          setActive(null);
+        }
+      })
+      .catch(() => {
+        // Session no longer exists / not accessible → drop the stale pointer.
+        if (!alive) return;
+        clearSession();
+        setActive(null);
+      })
+      .finally(() => {
+        if (alive) setChecking(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [ready, hasHydrated, persistedId, setSession, clearSession]);
+
+  return { session, checking };
+}

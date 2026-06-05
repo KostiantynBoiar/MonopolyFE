@@ -274,6 +274,7 @@
     "invalidCode": "Invalid code",
     "inviteCodePlaceholder": "TYC-XXXX",
     "backToGame": "Back to game",
+    "alreadyInGame": "You already have an active game. Return to it or leave before joining another.",
     "createGame": "New Game",
     "creating": "Creating…",
     "visibility": {
@@ -347,6 +348,7 @@
     "invalidCode": "Enter a valid code like TYC-7XK2",
     "join": "Join",
     "howToPlay": "How to play",
+    "lobbies": "Lobbies",
     "leaderboard": "Leaderboard",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
