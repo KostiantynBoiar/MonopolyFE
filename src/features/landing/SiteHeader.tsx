@@ -9,6 +9,7 @@ export async function SiteHeader() {
   const t = await getTranslations('Landing');
 
   const navLinks = [
+    { href: '/lobby', label: t('lobbies') },
     { href: '/how-to-play', label: t('howToPlay') },
     { href: '/leaderboard', label: t('leaderboard') },
   ] as const;

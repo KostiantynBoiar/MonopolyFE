@@ -12,9 +12,11 @@ import { createSession } from '../api';
 
 interface CreateLobbyFormProps {
   onBack?: () => void;
+  /** Blocks creating while the player already has an active game to return to. */
+  disabled?: boolean;
 }
 
-export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
+export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
   const t = useTranslations('Lobby.newLobby');
   const tLobby = useTranslations('Lobby');
   const router = useRouter();
@@ -27,6 +29,7 @@ export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
+    if (disabled) return;
     setLoading(true);
     setError(null);
 
@@ -90,10 +93,10 @@ export function CreateLobbyForm({ onBack }: CreateLobbyFormProps) {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || disabled}
         className={cn(
           'h-10 w-full rounded-sm border text-sm font-semibold transition-colors',
-          loading
+          loading || disabled
             ? 'cursor-not-allowed border-line bg-paper text-muted'
             : 'border-gold-600 bg-gold text-white hover:bg-gold-600',
         )}

@@ -7,9 +7,11 @@ import { inviteCodeSchema } from '../lobby.schema';
 
 export interface JoinByCodeFormProps {
   onSubmit: (code: string) => Promise<void>;
+  /** Blocks joining while the player already has an active game to return to. */
+  disabled?: boolean;
 }
 
-export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
+export function JoinByCodeForm({ onSubmit, disabled }: JoinByCodeFormProps) {
   const t = useTranslations('Lobby');
   const [raw, setRaw] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
     }
   }
 
-  const isValid = raw.length === 8 && /^TYC-[A-Z0-9]{4}$/.test(raw);
+  const isValid = raw.length === 8 && /^TYC-[A-Z0-9]{4}$/.test(raw) && !disabled;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-1.5">
@@ -57,6 +59,7 @@ export function JoinByCodeForm({ onSubmit }: JoinByCodeFormProps) {
           placeholder={t('inviteCodePlaceholder')}
           maxLength={8}
           spellCheck={false}
+          disabled={disabled}
           className={cn(
             'h-9 w-full rounded-sm border bg-surface px-3 font-mono text-sm tracking-widest text-ink placeholder:text-muted/50',
             'focus:outline-none focus:ring-2 focus:ring-blue focus:ring-offset-1',

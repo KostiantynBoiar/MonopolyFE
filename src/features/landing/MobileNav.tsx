@@ -13,6 +13,7 @@ export function MobileNav() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const navLinks = [
+    { href: '/lobby', label: t('lobbies') },
     { href: '/how-to-play', label: t('howToPlay') },
     { href: '/leaderboard', label: t('leaderboard') },
   ] as const;

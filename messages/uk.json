@@ -256,6 +256,7 @@
     "invalidCode": "Неправильний код",
     "inviteCodePlaceholder": "TYC-XXXX",
     "backToGame": "Повернутися до гри",
+    "alreadyInGame": "У вас вже є активна гра. Поверніться до неї або вийдіть, перш ніж приєднуватися до іншої.",
     "createGame": "Нова гра",
     "creating": "Створюємо…",
     "visibility": {
@@ -329,6 +330,7 @@
     "invalidCode": "Введіть правильний код, наприклад TYC-7XK2",
     "join": "Приєднатися",
     "howToPlay": "Як грати",
+    "lobbies": "Лобі",
     "leaderboard": "Рейтинг",
     "openMenu": "Відкрити меню",
     "closeMenu": "Закрити меню",
