@@ -6,6 +6,8 @@ import { BOARD } from '@/shared/config/board-layout';
 import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
+import { TokenShape } from '../token-shapes';
+import { TokenShapeSvg } from './TokenShapeSvg';
 
 // Buyable positions sorted by group — 28 total, laid out as a 7×4 rectangle.
 // Only the layout/order is hardcoded; each cell's colour is derived from BOARD
@@ -77,33 +79,16 @@ function getPositionPillColor(position: number) {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function PlayerAvatar({ player }: { player: Player }) {
-  const t = useTranslations('Player');
-  const tokenColor = TOKEN_COLORS[player.token];
-
-  if (player.avatarUrl) {
-    return (
-      <span
-        className="block h-10 w-10 shrink-0 overflow-hidden rounded-full border-2"
-        style={{ borderColor: tokenColor, boxShadow: '0 2px 6px rgba(0,0,0,.22)' }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element -- remote, user-provided avatar URL; next/image adds little here */}
-        <img src={player.avatarUrl} alt={t('avatarAlt', { name: player.name })} className="h-full w-full object-cover" />
-      </span>
-    );
-  }
-
+  // Render the player's actual board token silhouette (avatar clipped to the
+  // shape when present) so the panel mirrors what's on the board.
   return (
-    <span
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-mono text-sm font-black"
-      style={{
-        backgroundColor: tokenColor,
-        borderColor: BOARD_TILE_COLORS.altText,
-        color: BOARD_TILE_COLORS.altText,
-        boxShadow: '0 2px 6px rgba(0,0,0,.22)',
-      }}
-    >
-      {player.name.slice(0, 1)}
-    </span>
+    <TokenShapeSvg
+      shape={player.tokenShape ?? TokenShape.CIRCLE}
+      color={TOKEN_COLORS[player.token]}
+      avatarUrl={player.avatarUrl}
+      size="40px"
+      className="shrink-0"
+    />
   );
 }
 

@@ -137,6 +137,26 @@ export function DeedWindow({
     }
   }, [spaceName, compact]);
 
+  // Rent-rows auto-fit: pick the largest font that fits the available height so
+  // the list never overflows (esp. full color sets with 5 rows in a short cell).
+  // Re-measured on container resize since the board scales with the viewport.
+  const rentRowsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = rentRowsRef.current;
+    if (!el) return;
+    const candidates = compact ? [13, 12, 11, 10, 9, 8] : [16, 15, 14, 13, 12];
+    const fit = () => {
+      for (const px of candidates) {
+        el.style.fontSize = `${px}px`;
+        if (el.scrollHeight <= el.clientHeight) break;
+      }
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [compact, showActions, renderBuildingsInsideInfo, activeSpace.pos]);
+
   // Decision mode uses a gold accent border to signal urgency.
   const outerBorder = isDecisionMode ? BOARD_TILE_COLORS.propertyYellow : GAME_BOARD_COLORS.border;
 
@@ -210,15 +230,17 @@ export function DeedWindow({
             style={{ color: GAME_BOARD_COLORS.tileText }}
           >
             <div
+              ref={rentRowsRef}
               className="grid min-h-0 h-full gap-[6px] overflow-hidden"
               style={{
-                alignContent: renderBuildingsInsideInfo ? 'start' : (!showActions ? 'center' : 'center'),
+                fontSize: compact ? '13px' : '16px',
+                alignContent: renderBuildingsInsideInfo ? 'start' : 'center',
               }}
             >
               {deed.rentRows.slice(1).map((row) => (
                 <div
                   key={row.labelKey}
-                  className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[13px]' : 'text-base'}`}
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2"
                 >
                   <span className="font-medium leading-[1.2] tracking-[0.01em]">
                     {formatLabel(row.labelKey, t)}
