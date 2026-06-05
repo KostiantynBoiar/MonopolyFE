@@ -179,6 +179,7 @@
     "noMessagesYet": "Повідомлень ще немає.",
     "table": "Стіл",
     "player": "Гравець",
+    "you": "Ви",
     "messagePlaceholder": "Введіть повідомлення...",
     "stickers": "Стікери",
     "openStickers": "Відкрити стікери",
@@ -360,6 +361,7 @@
   "Board": {
     "boardLabel": "Поле Tycoon",
     "justVisiting": "Просто проїжджаю",
+    "inJail": "У в'язниці",
     "tiles": {
       "p0":  "TYCOON",
       "p1":  "вул. Константинівська",

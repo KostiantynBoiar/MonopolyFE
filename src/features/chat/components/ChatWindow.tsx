@@ -9,21 +9,19 @@ import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { ChatWindowTab } from '../chat.enums';
 import type { ChatMessage, ChatWindowProps, StickerPack } from '../chat.types';
 
-const TAB_BUTTON_CLASS =
-  'flex min-h-0 items-center justify-center gap-2 rounded-[10px] border px-3 py-2 text-center font-display text-[14px] font-semibold uppercase tracking-[0.16em]';
+const C = GAME_BOARD_COLORS;
+const T = BOARD_TILE_COLORS;
+
 const PANEL_BORDER_STYLE = {
-  borderColor: GAME_BOARD_COLORS.border,
-  backgroundColor: GAME_BOARD_COLORS.surface,
+  borderColor: C.border,
+  backgroundColor: C.surface,
 } as const;
-const MESSAGE_CARD_STYLE = {
-  backgroundColor: GAME_BOARD_COLORS.surface,
-} as const;
-const TIMESTAMP_TEXT_STYLE = {
-  color: GAME_BOARD_COLORS.muted,
-} as const;
-const BODY_TEXT_STYLE = {
-  color: GAME_BOARD_COLORS.text,
-  overflowWrap: 'anywhere' as const,
+
+// Faint paper-dot texture for the transcript, so empty space still feels like a surface.
+const TRANSCRIPT_TEXTURE = {
+  backgroundColor: C.panel,
+  backgroundImage: `radial-gradient(${C.border} 0.5px, transparent 0.5px)`,
+  backgroundSize: '14px 14px',
 } as const;
 
 function formatTime(ts: number) {
@@ -46,11 +44,10 @@ function clampMessage(text: string) {
   return text.slice(0, 128);
 }
 
-function getActiveStyle(isActive: boolean, withBorder = false) {
+function getActiveStyle(isActive: boolean) {
   return {
-    backgroundColor: isActive ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
-    color: isActive ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
-    ...(withBorder ? { borderColor: GAME_BOARD_COLORS.border } : {}),
+    backgroundColor: isActive ? T.propertyBlue : C.surface,
+    color: isActive ? T.altText : C.text,
   };
 }
 
@@ -74,9 +71,9 @@ function StickerFallback({ size, label = 'TGS' }: { size: number; label?: string
       style={{
         width: size,
         height: size,
-        backgroundColor: GAME_BOARD_COLORS.panel,
-        borderColor: GAME_BOARD_COLORS.border,
-        color: GAME_BOARD_COLORS.muted,
+        backgroundColor: C.panel,
+        borderColor: C.border,
+        color: C.muted,
       }}
       aria-hidden="true"
     >
@@ -167,7 +164,7 @@ function StickerCell({
     <button
       type="button"
       onClick={() => onSelect(url)}
-      className="flex h-[60px] w-[60px] items-center justify-center rounded-[8px] border"
+      className="flex h-[60px] w-[60px] items-center justify-center rounded-[10px] border transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
       style={PANEL_BORDER_STYLE}
     >
       {isTgs && !mounted
@@ -190,31 +187,47 @@ function ChatTabs({
   eventsLabel: string;
   chatLabel: string;
 }) {
+  const isChat = activeTab === ChatWindowTab.CHAT;
+  const tabClass =
+    'relative z-10 flex min-h-0 items-center justify-center gap-2 rounded-[9px] py-2 text-center font-display text-[13px] font-semibold uppercase tracking-[0.16em] transition-colors duration-200';
+
   return (
-    <header className="grid grid-cols-[3fr_1fr] gap-[3px]">
+    <header
+      className="relative grid grid-cols-2 rounded-[12px] border p-[3px]"
+      style={{ borderColor: C.border, backgroundColor: C.panel }}
+    >
+      {/* Sliding active indicator */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-[3px] left-[3px] rounded-[9px] transition-transform duration-300 ease-out"
+        style={{
+          width: 'calc(50% - 3px)',
+          backgroundColor: C.surface,
+          boxShadow: '0 1px 3px rgba(51,48,43,0.14)',
+          transform: isChat ? 'translateX(100%)' : 'translateX(0)',
+        }}
+      />
+
       <button
         type="button"
-        className={TAB_BUTTON_CLASS}
-        style={getActiveStyle(activeTab === ChatWindowTab.EVENTS, true)}
+        className={tabClass}
+        style={{ color: isChat ? C.muted : C.text }}
         onClick={() => onTabChange(ChatWindowTab.EVENTS)}
       >
-        <span>{eventsLabel}</span>
+        {eventsLabel}
       </button>
 
       <button
         type="button"
-        className={TAB_BUTTON_CLASS}
-        style={getActiveStyle(activeTab === ChatWindowTab.CHAT, true)}
+        className={tabClass}
+        style={{ color: isChat ? C.text : C.muted }}
         onClick={() => onTabChange(ChatWindowTab.CHAT)}
       >
-        <span>{chatLabel}</span>
+        {chatLabel}
         {unreadCount > 0 && (
           <span
-            className="flex min-w-5 items-center justify-center rounded-full px-1.5 text-[14px] font-bold"
-            style={{
-              backgroundColor: BOARD_TILE_COLORS.propertyRed,
-              color: BOARD_TILE_COLORS.altText,
-            }}
+            className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold tabular-nums"
+            style={{ backgroundColor: T.propertyRed, color: T.altText }}
           >
             {unreadCount}
           </span>
@@ -227,95 +240,169 @@ function ChatTabs({
 function EmptyState({ label }: { label: string }) {
   return (
     <div
-      className="flex h-full items-center justify-center rounded-[8px] text-center text-[15px]"
-      style={{ color: GAME_BOARD_COLORS.muted }}
+      className="flex h-full flex-col items-center justify-center gap-2 text-center"
+      style={{ color: C.muted }}
     >
-      {label}
+      <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 opacity-40">
+        <path
+          d="M4 5h16v11H8l-4 3.5V5Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="text-[13px]">{label}</span>
     </div>
   );
 }
 
-function EventEntries({
-  entries,
-}: {
-  entries: ChatWindowProps['log'];
-}) {
+function EventEntries({ entries }: { entries: ChatWindowProps['log'] }) {
   return (
-    <div className="flex flex-col gap-[2px] py-1">
-      {entries.map((entry) => {
-        return (
-          <div
-            key={entry.id}
-            className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 px-2 py-0.5 text-[13.5px] leading-snug"
-            style={{ color: GAME_BOARD_COLORS.text }}
+    <div className="flex flex-col gap-[1px] py-1">
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className="group flex min-w-0 items-baseline gap-2 rounded-[7px] px-2 py-1 text-[13.5px] leading-snug transition-colors"
+          style={{ color: C.text }}
+        >
+          <span
+            className="mt-[6px] h-1.5 w-1.5 shrink-0 self-start rounded-full"
+            style={{ backgroundColor: C.special }}
+            aria-hidden="true"
+          />
+          <span
+            className="shrink-0 font-mono text-[10.5px] tabular-nums"
+            style={{ color: C.muted }}
           >
-            <span
-              className="shrink-0 font-mono text-[11px]"
-              style={TIMESTAMP_TEXT_STYLE}
-            >
-              [{formatTime(new Date(entry.ts).getTime())}]
-            </span>
-            <p className="min-w-0 flex-1 whitespace-pre-wrap" style={BODY_TEXT_STYLE}>
-              {entry.text}
-            </p>
-          </div>
-        );
-      })}
+            {formatTime(new Date(entry.ts).getTime())}
+          </span>
+          <p
+            className="min-w-0 flex-1 whitespace-pre-wrap"
+            style={{ color: C.text, overflowWrap: 'anywhere' }}
+          >
+            {entry.text}
+          </p>
+        </div>
+      ))}
     </div>
   );
+}
+
+function isOwnMessage(message: ChatMessage, viewerUserId?: string) {
+  return Boolean(viewerUserId && message.fromUserId === viewerUserId);
+}
+
+function sameSender(a: ChatMessage, b: ChatMessage) {
+  // Group by sender identity. Prefer user id; fall back to author label for
+  // log-sourced entries that carry no user id.
+  const keyA = a.fromUserId ?? `name:${a.author ?? ''}`;
+  const keyB = b.fromUserId ?? `name:${b.author ?? ''}`;
+  return keyA === keyB;
 }
 
 function MessageEntries({
   entries,
+  viewerUserId,
   playerLabel,
+  youLabel,
   stickerAlt,
 }: {
   entries: ChatMessage[];
+  viewerUserId?: string;
   playerLabel: string;
+  youLabel: string;
   stickerAlt: string;
 }) {
   return (
-    <div className="grid gap-[3px]">
-      {entries.map((entry) => {
+    <div className="flex flex-col px-1.5 py-1">
+      {entries.map((entry, i) => {
+        const prev = entries[i - 1];
+        const next = entries[i + 1];
+        const own = isOwnMessage(entry, viewerUserId);
+        const firstOfRun = !prev || !sameSender(prev, entry);
+        const lastOfRun = !next || !sameSender(next, entry);
+
         const stickerUrl = getStickerUrl(entry.text);
-        const author = entry.author ?? playerLabel;
+        const author = own ? youLabel : entry.author ?? playerLabel;
+        const tokenColor = entry.token ? TOKEN_COLORS[entry.token] : C.muted;
+
+        // Connected-stack corners: tail only on the last bubble of a run,
+        // and the inner corner tightens when stacked under the same sender.
+        const corners = [
+          'rounded-[16px]',
+          own
+            ? (lastOfRun ? 'rounded-br-[5px]' : '')
+            : (lastOfRun ? 'rounded-bl-[5px]' : ''),
+          !firstOfRun && (own ? 'rounded-tr-[5px]' : 'rounded-tl-[5px]'),
+        ]
+          .filter(Boolean)
+          .join(' ');
+
+        const bubbleStyle = own
+          ? {
+              backgroundColor: C.text,
+              color: T.altText,
+              boxShadow: '0 1px 2px rgba(51,48,43,0.18)',
+            }
+          : {
+              backgroundColor: C.surface,
+              color: C.text,
+              border: `1px solid ${C.border}`,
+            };
 
         return (
-          <article
+          <div
             key={entry.id}
-            className="grid min-w-0 gap-[2px] rounded-[8px] px-2 py-1.5"
-            style={MESSAGE_CARD_STYLE}
+            className={`flex w-full ${own ? 'justify-end' : 'justify-start'}`}
+            style={{
+              marginTop: firstOfRun ? (i === 0 ? 0 : 8) : 2,
+              animation: 'chatBubbleIn 0.22s ease-out both',
+            }}
           >
-            <div className="flex flex-wrap items-center gap-2 text-[13px] uppercase tracking-[0.12em]" style={TIMESTAMP_TEXT_STYLE}>
-              <span>{formatTime(entry.ts)}</span>
-              {entry.token && (
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: TOKEN_COLORS[entry.token] }}
-                />
+            <div className={`flex max-w-[86%] flex-col ${own ? 'items-end' : 'items-start'}`}>
+              {firstOfRun && !own && (
+                <div className="mb-[3px] flex items-center gap-1.5 pl-1.5">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: tokenColor, boxShadow: `0 0 0 2px ${C.panel}` }}
+                  />
+                  <span
+                    className="font-display text-[11px] font-bold uppercase tracking-[0.1em]"
+                    style={{ color: tokenColor }}
+                  >
+                    {author}
+                  </span>
+                </div>
               )}
-              <span
-                className="font-semibold"
-                style={{ color: entry.token ? TOKEN_COLORS[entry.token] : GAME_BOARD_COLORS.muted }}
-              >
-                {author}
-              </span>
-            </div>
 
-            {stickerUrl ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <StickerPreview url={stickerUrl} alt={stickerAlt} size={80} />
-              </div>
-            ) : (
-              <p
-                className="min-w-0 whitespace-pre-wrap text-left text-[15px] leading-[1.35]"
-                style={BODY_TEXT_STYLE}
-                title={`${formatTime(entry.ts)} | ${author}: ${entry.text}`}
-              >
-                {entry.text}
-              </p>
-            )}
-          </article>
+              {stickerUrl ? (
+                <div
+                  className="drop-shadow-sm"
+                  title={`${formatTime(entry.ts)} | ${author}`}
+                >
+                  <StickerPreview url={stickerUrl} alt={stickerAlt} size={92} />
+                </div>
+              ) : (
+                <div className={`group/bubble relative ${corners} px-3 py-1.5`} style={bubbleStyle}>
+                  <p
+                    className="whitespace-pre-wrap text-left text-[14.5px] leading-[1.4]"
+                    style={{ overflowWrap: 'anywhere' }}
+                  >
+                    {entry.text}
+                  </p>
+                  <span
+                    className="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] tabular-nums opacity-0 transition-opacity duration-150 group-hover/bubble:opacity-100"
+                    style={{
+                      color: C.muted,
+                      ...(own ? { right: 'calc(100% + 8px)' } : { left: 'calc(100% + 8px)' }),
+                    }}
+                  >
+                    {formatTime(entry.ts)}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         );
       })}
     </div>
@@ -337,21 +424,22 @@ function StickerPicker({
 
   return (
     <div
-      className="absolute inset-x-0 bottom-[54px] z-10 overflow-hidden rounded-[10px] border"
+      className="absolute inset-x-0 bottom-[56px] z-10 overflow-hidden rounded-[14px] border"
       style={{
         maxHeight: 'calc(100% - 108px)',
+        boxShadow: '0 8px 24px rgba(51,48,43,0.18)',
         ...PANEL_BORDER_STYLE,
       }}
     >
       {packs.length > 1 && (
-        <div className="flex gap-[3px] border-b p-2" style={{ borderColor: GAME_BOARD_COLORS.border }}>
+        <div className="flex gap-[4px] border-b p-2" style={{ borderColor: C.border }}>
           {packs.map((pack, index) => (
             <button
               key={pack.id}
               type="button"
               onClick={() => onPackChange(index)}
-              className="rounded-[8px] px-2 py-1 text-[14px] font-semibold uppercase tracking-[0.16em]"
-              style={getActiveStyle(index === packIndex)}
+              className="rounded-full border px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.14em] transition-colors"
+              style={{ ...getActiveStyle(index === packIndex), borderColor: C.border }}
             >
               {pack.name}
             </button>
@@ -359,7 +447,7 @@ function StickerPicker({
         </div>
       )}
 
-      <div className="grid grid-cols-5 gap-[4px] overflow-y-auto p-2" style={{ maxHeight: '240px' }}>
+      <div className="grid grid-cols-5 gap-[2px] overflow-y-auto p-1.5" style={{ maxHeight: '240px' }}>
         {activePack?.stickers.map((file, index) => (
           <StickerCell
             key={`${activePack.id}-${file}`}
@@ -397,52 +485,68 @@ function Composer({
   onToggleStickers: () => void;
   onSend: () => void;
 }) {
+  const canSend = draft.trim().length > 0;
+
   return (
-    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] gap-[3px]">
+    <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] gap-2">
       <div
-        className="relative h-12 min-h-0 rounded-[10px] border"
+        className="relative h-12 min-h-0 rounded-full border transition-colors"
         style={PANEL_BORDER_STYLE}
       >
-        <textarea
-          value={draft}
-          onChange={(event) => onDraftChange(event.target.value)}
-          onKeyDown={onKeyDown}
-          placeholder={placeholder}
-          className="h-full min-h-0 w-full resize-none bg-transparent py-[14px] pl-3 pr-12 text-[15px] leading-tight outline-none"
-          maxLength={128}
-          style={{ color: GAME_BOARD_COLORS.text }}
-        />
         <button
           type="button"
           onClick={onToggleStickers}
-          className="absolute right-[4px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[8px] p-0"
+          className="absolute left-[5px] top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full transition-colors"
           style={{
-            backgroundColor: showStickers ? BOARD_TILE_COLORS.propertyBlue : GAME_BOARD_COLORS.surface,
-            color: showStickers ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.text,
+            backgroundColor: showStickers ? T.propertyBlue : 'transparent',
+            color: showStickers ? T.altText : C.muted,
           }}
           title={stickersLabel}
           aria-label={openStickersLabel}
         >
-          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+          <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]">
             <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
             <circle cx="7.5" cy="8" r="1" fill="currentColor" />
             <circle cx="12.5" cy="8" r="1" fill="currentColor" />
             <path d="M7 12c1 1 5 1 6 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
+
+        <textarea
+          value={draft}
+          onChange={(event) => onDraftChange(event.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          className="h-full min-h-0 w-full resize-none bg-transparent py-[14px] pl-12 pr-4 text-[15px] leading-tight outline-none placeholder:opacity-60"
+          maxLength={128}
+          style={{ color: C.text }}
+        />
       </div>
 
-        <button
-          type="button"
-          onClick={onSend}
-          className="flex h-12 min-w-12 items-center justify-center rounded-[10px] border px-3 text-center text-[13px] font-bold uppercase tracking-[0.06em] leading-none"
-          style={{
-            backgroundColor: BOARD_TILE_COLORS.propertyYellow,
-            borderColor: BOARD_TILE_COLORS.propertyOrange,
-            color: BOARD_TILE_COLORS.altText,
+      <button
+        type="button"
+        onClick={onSend}
+        disabled={!canSend}
+        aria-label={sendLabel}
+        title={sendLabel}
+        className="flex h-12 w-12 items-center justify-center rounded-full border transition-all duration-200 disabled:cursor-default"
+        style={{
+          backgroundColor: canSend ? T.propertyBlue : C.surface,
+          borderColor: canSend ? T.propertyBlue : C.border,
+          color: canSend ? T.altText : C.muted,
+          transform: canSend ? 'scale(1)' : 'scale(0.96)',
+          boxShadow: canSend ? '0 2px 6px rgba(116,162,202,0.4)' : 'none',
         }}
       >
-        {sendLabel}
+        <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 -translate-x-[1px]">
+          <path
+            d="M4 12 20 4l-5 16-3.5-6.5L4 12Z"
+            fill="currentColor"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
     </div>
   );
@@ -451,6 +555,7 @@ function Composer({
 export function ChatWindow({
   log,
   externalMessages,
+  viewerUserId,
   onSendMessage,
   onSendSticker,
 }: ChatWindowProps) {
@@ -462,7 +567,6 @@ export function ChatWindow({
   const [showStickers, setShowStickers] = useState(false);
   const [packIndex,    setPackIndex]    = useState(0);
   const scrollRef  = useRef<HTMLDivElement>(null);
-  const prevExternalLenRef = useRef((externalMessages ?? []).length);
   const stickerPacks = useStickerPacks();
 
   const eventEntries = useMemo(
@@ -470,49 +574,24 @@ export function ChatWindow({
     [log],
   );
 
-  // Chat history derived from game log — persisted across reloads via game-store localStorage.
-  const serverChatEntries = useMemo(() =>
-    log
-      .filter((e) => e.kind === LogKind.CHAT || e.kind === LogKind.STICKER)
-      .map((e): ChatMessage => ({
-        id:     e.id,
-        kind:   'chat',
-        author: e.playerName,
-        token:  e.playerToken,
-        text:   e.stickerUrl ? `[sticker:${e.stickerUrl}]` : e.text,
-        ts:     Date.parse(e.ts),
-      })),
-    [log],
-  );
+  // Chat is sourced entirely from the client-persisted store (passed in as
+  // externalMessages) — the backend doesn't persist chat, so the game log carries none.
+  // Dedup by id and order by timestamp.
+  const displayMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return (externalMessages ?? [])
+      .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)))
+      .sort((a, b) => a.ts - b.ts);
+  }, [externalMessages]);
 
-  // Real-time socket messages not yet confirmed in the server log (no id overlap).
-  const realtimeOnly = useMemo(() => {
-    const serverIds = new Set(serverChatEntries.map((m) => m.id));
-    return (externalMessages ?? []).filter((m) => !serverIds.has(m.id));
-  }, [externalMessages, serverChatEntries]);
-
-  const displayMessages = useMemo(
-    () => [...serverChatEntries, ...realtimeOnly].sort((a, b) => a.ts - b.ts),
-    [serverChatEntries, realtimeOnly],
-  );
-
-  // Unread badge: count new server chat messages while not on the chat tab.
-  const prevServerLenRef = useRef(serverChatEntries.length);
+  // Unread badge: count new chat messages that arrive while not on the Chat tab.
+  const prevChatLenRef = useRef(displayMessages.length);
   useEffect(() => {
-    if (serverChatEntries.length > prevServerLenRef.current && activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((c) => c + (serverChatEntries.length - prevServerLenRef.current));
+    if (displayMessages.length > prevChatLenRef.current && activeTab !== ChatWindowTab.CHAT) {
+      setUnreadCount((c) => c + (displayMessages.length - prevChatLenRef.current));
     }
-    prevServerLenRef.current = serverChatEntries.length;
-  }, [serverChatEntries.length, activeTab]);
-
-  // Socket messages arrive reactively (incl. sender echo) — bump unread on Events tab.
-  useEffect(() => {
-    const externalLen = (externalMessages ?? []).length;
-    if (externalLen > prevExternalLenRef.current && activeTab !== ChatWindowTab.CHAT) {
-      setUnreadCount((count) => count + (externalLen - prevExternalLenRef.current));
-    }
-    prevExternalLenRef.current = externalLen;
-  }, [externalMessages, activeTab]);
+    prevChatLenRef.current = displayMessages.length;
+  }, [displayMessages.length, activeTab]);
 
   useEffect(() => {
     if (activeTab === ChatWindowTab.CHAT) setUnreadCount(0);
@@ -544,9 +623,11 @@ export function ChatWindow({
 
   return (
     <section
-      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_48px] gap-[3px]"
-      style={{ color: GAME_BOARD_COLORS.text }}
+      className="relative grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_48px] gap-[6px]"
+      style={{ color: C.text }}
     >
+      <style>{`@keyframes chatBubbleIn{from{opacity:0;transform:translateY(6px) scale(0.985)}to{opacity:1;transform:none}}`}</style>
+
       <ChatTabs
         activeTab={activeTab}
         unreadCount={unreadCount}
@@ -556,10 +637,10 @@ export function ChatWindow({
       />
 
       <div
-        className="min-h-0 overflow-hidden rounded-[10px] border"
-        style={PANEL_BORDER_STYLE}
+        className="min-h-0 overflow-hidden rounded-[12px] border"
+        style={{ borderColor: C.border }}
       >
-        <div className="flex h-full min-h-0 flex-col overflow-y-auto p-[3px]">
+        <div className="flex h-full min-h-0 flex-col overflow-y-auto" style={TRANSCRIPT_TEXTURE}>
           {activeTab === ChatWindowTab.EVENTS ? (
             eventEntries.length === 0
               ? <EmptyState label={t('noEventsYet')} />
@@ -569,7 +650,9 @@ export function ChatWindow({
               ? <EmptyState label={t('noMessagesYet')} />
               : <MessageEntries
                   entries={displayMessages}
+                  viewerUserId={viewerUserId}
                   playerLabel={t('player')}
+                  youLabel={t('you')}
                   stickerAlt={t('stickerAlt')}
                 />
           )}

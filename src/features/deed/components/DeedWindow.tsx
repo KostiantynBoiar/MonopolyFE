@@ -30,6 +30,10 @@ interface DeedWindowProps {
 
 type DeedTranslator = (key: string, values?: Record<string, string | number>) => string;
 
+// Shared modern button chrome — matches the action buttons + chat/dice widgets.
+const DEED_BTN =
+  'rounded-[12px] border text-sm font-black uppercase tracking-[0.06em] will-change-transform transition-[transform,box-shadow,opacity] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:-translate-y-[2px] enabled:active:translate-y-0 enabled:active:scale-[0.97]';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getRentTitle(deed: DeedInfo, t: DeedTranslator) {
@@ -133,6 +137,26 @@ export function DeedWindow({
     }
   }, [spaceName, compact]);
 
+  // Rent-rows auto-fit: pick the largest font that fits the available height so
+  // the list never overflows (esp. full color sets with 5 rows in a short cell).
+  // Re-measured on container resize since the board scales with the viewport.
+  const rentRowsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = rentRowsRef.current;
+    if (!el) return;
+    const candidates = compact ? [13, 12, 11, 10, 9, 8] : [16, 15, 14, 13, 12];
+    const fit = () => {
+      for (const px of candidates) {
+        el.style.fontSize = `${px}px`;
+        if (el.scrollHeight <= el.clientHeight) break;
+      }
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [compact, showActions, renderBuildingsInsideInfo, activeSpace.pos]);
+
   // Decision mode uses a gold accent border to signal urgency.
   const outerBorder = isDecisionMode ? BOARD_TILE_COLORS.propertyYellow : GAME_BOARD_COLORS.border;
 
@@ -148,18 +172,24 @@ export function DeedWindow({
             : 'auto minmax(0,1fr)')
           : 'auto minmax(0,1fr)',
         backgroundColor: GAME_BOARD_COLORS.panel,
+        backgroundImage: `radial-gradient(${GAME_BOARD_COLORS.border} 0.5px, transparent 0.5px)`,
+        backgroundSize:  '14px 14px',
         borderColor:     outerBorder,
         borderWidth:     isDecisionMode ? '2px' : '1px',
+        boxShadow:       isDecisionMode
+          ? '0 0 0 3px rgba(228,192,106,0.25), 0 8px 24px rgba(51,48,43,0.14)'
+          : 'none',
         color:           GAME_BOARD_COLORS.text,
       }}
     >
       {/* Space name / color header */}
       <div
-        className="relative overflow-hidden rounded-[10px] border px-3 py-2 text-center"
+        className="relative overflow-hidden rounded-[12px] border px-3 py-2 text-center"
         style={{
           backgroundColor: headerColor,
           borderColor:     headerColor,
           color:           headerTextColor,
+          boxShadow:       '0 1px 3px rgba(51,48,43,0.16)',
         }}
       >
         <p ref={headerTextRef} className={`font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
@@ -169,16 +199,17 @@ export function DeedWindow({
 
       {/* Rent / info body */}
       <div
-        className="grid min-h-0 overflow-hidden rounded-[10px] border px-3 py-3 self-stretch"
+        className="grid min-h-0 overflow-hidden rounded-[12px] border px-3 py-3 self-stretch"
         style={{
           gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : isSpecialCard ? '1fr' : 'auto 1fr',
           backgroundColor:  GAME_BOARD_COLORS.surface,
           borderColor:      GAME_BOARD_COLORS.border,
+          boxShadow:        '0 1px 2px rgba(51,48,43,0.06)',
         }}
       >
         {!isSpecialCard && (
           <div className="text-center">
-            <p className={`font-semibold ${compact ? 'text-[10px]' : 'text-sm'}`} style={{ color: GAME_BOARD_COLORS.text }}>
+            <p className={`font-semibold ${compact ? 'text-[12px]' : 'text-base'}`} style={{ color: GAME_BOARD_COLORS.text }}>
               {isDeed && deed ? getRentTitle(deed, t) : cornerText?.eyebrow ?? t('status')}
             </p>
             <p className={`mt-1 font-black leading-none ${compact ? 'text-xl' : showActions ? 'text-2xl' : 'text-4xl'}`} style={{ color: GAME_BOARD_COLORS.tileText }}>
@@ -199,15 +230,17 @@ export function DeedWindow({
             style={{ color: GAME_BOARD_COLORS.tileText }}
           >
             <div
-              className="grid min-h-0 h-full gap-[5px] overflow-hidden"
+              ref={rentRowsRef}
+              className="grid min-h-0 h-full gap-[6px] overflow-hidden"
               style={{
-                alignContent: renderBuildingsInsideInfo ? 'start' : (!showActions ? 'center' : 'center'),
+                fontSize: compact ? '13px' : '16px',
+                alignContent: renderBuildingsInsideInfo ? 'start' : 'center',
               }}
             >
               {deed.rentRows.slice(1).map((row) => (
                 <div
                   key={row.labelKey}
-                  className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2 ${compact ? 'text-[10px]' : 'text-sm'}`}
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-2"
                 >
                   <span className="font-medium leading-[1.2] tracking-[0.01em]">
                     {formatLabel(row.labelKey, t)}
@@ -225,7 +258,7 @@ export function DeedWindow({
 
             {renderBuildingsInsideInfo && ownership && (
               <div
-                className="mt-auto flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
+                className="mt-auto flex items-center justify-center gap-1 rounded-[10px] px-2 py-2"
                 style={{ backgroundColor: headerColor }}
               >
                 {ownership.hotel ? (
@@ -271,16 +304,17 @@ export function DeedWindow({
 
       {/* Buy / Auction actions */}
       {showActions && (
-        <div className="grid grid-cols-2 gap-[3px]" style={{ color: GAME_BOARD_COLORS.text }}>
+        <div className="grid grid-cols-2 gap-[4px]" style={{ color: GAME_BOARD_COLORS.text }}>
           <button
             type="button"
             onClick={onBuy}
             disabled={!canBuy}
-            className="rounded-[6px] border px-1.5 py-0.5 text-sm font-black uppercase tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-40"
+            className={`${DEED_BTN} px-1.5 py-1.5`}
             style={{
               backgroundColor: BOARD_TILE_COLORS.propertyGreen,
               borderColor:     BOARD_TILE_COLORS.propertyGreen,
               color:           BOARD_TILE_COLORS.altText,
+              boxShadow:       '0 2px 10px rgba(121,180,143,0.45)',
             }}
           >
             {t('buyWithAmount', { amount: activeSpace.price ?? 0 })}
@@ -288,11 +322,12 @@ export function DeedWindow({
           <button
             type="button"
             onClick={onAuction}
-            className="rounded-[6px] border px-1.5 py-0.5 text-sm font-black uppercase tracking-[0.04em]"
+            className={`${DEED_BTN} px-1.5 py-1.5`}
             style={{
-              backgroundColor: GAME_BOARD_COLORS.tile,
+              backgroundColor: GAME_BOARD_COLORS.surface,
               borderColor:     GAME_BOARD_COLORS.border,
               color:           BOARD_TILE_COLORS.propertyBlue,
+              boxShadow:       '0 1px 2px rgba(51,48,43,0.08)',
             }}
           >
             {t('auction')}
@@ -303,7 +338,7 @@ export function DeedWindow({
       {/* Buildings strip — shown in viewOnly mode when ownership data is provided */}
       {showBuildings && ownership && !renderBuildingsInsideInfo && (
         <div
-          className="flex items-center justify-center gap-1 rounded-[8px] px-2 py-2"
+          className="flex items-center justify-center gap-1 rounded-[10px] px-2 py-2"
           style={{ backgroundColor: headerColor }}
         >
           {ownership.hotel ? (

@@ -20,6 +20,7 @@ import { serializeCommand } from '@/shared/transport/command-serializer';
 import { enqueueSnapshot, resetSnapshotPipeline, resolveAnimationGate } from './timeline-executor';
 import { useCommandBus } from '@/stores/command-bus';
 import { useUiStore } from '@/stores/ui-store';
+import { useChatStore } from '@/stores/chat-store';
 import { GameSocket } from './GameSocket';
 
 export function useGameSocket(sessionId: string | null) {
@@ -28,7 +29,7 @@ export function useGameSocket(sessionId: string | null) {
   const viewerId = useAuthStore((s) => s.user?.id);
 
   const {
-    bindSession, setStatus, setWsError, setWasKicked, addMessage,
+    bindSession, setStatus, setWsError, setWasKicked,
     incrementReconnect, resetReconnect,
   } = useSocketStore();
   const setSendCommand = useCommandBus((s) => s.setSendCommand);
@@ -64,7 +65,7 @@ export function useGameSocket(sessionId: string | null) {
 
         case WsInboundType.CHAT_MESSAGE: {
           const p = msg.payload as WsChatMessagePayload;
-          addMessage({
+          if (sessionId) useChatStore.getState().addEntry(sessionId, {
             kind: 'chat',
             id:           p.message_id,
             from_user_id: p.from_user_id,
@@ -77,7 +78,7 @@ export function useGameSocket(sessionId: string | null) {
 
         case WsInboundType.CHAT_STICKER: {
           const p = msg.payload as WsChatStickerPayload;
-          addMessage({
+          if (sessionId) useChatStore.getState().addEntry(sessionId, {
             kind: 'sticker',
             id:           p.message_id,
             from_user_id: p.from_user_id,
@@ -108,7 +109,7 @@ export function useGameSocket(sessionId: string | null) {
         case WsInboundType.GAME_STATE: {
           // Server-authoritative full snapshot + the animation timeline describing how
           // it was reached. The executor replays the timeline, then commits the state.
-          const snapshot = adaptGameStateFrame(msg.payload as unknown as BeGameState);
+          const snapshot = adaptGameStateFrame(msg.payload as unknown as BeGameState, viewerIdRef.current);
           enqueueSnapshot(snapshot);
           break;
         }
@@ -151,7 +152,7 @@ export function useGameSocket(sessionId: string | null) {
       setSendCommand(null);
       resetSnapshotPipeline();
     };
-  }, [bindSession, incrementReconnect, resetReconnect, sessionId, setSendCommand, setSession, setStatus, setWasKicked, setWsError, addMessage, token]);
+  }, [bindSession, incrementReconnect, resetReconnect, sessionId, setSendCommand, setSession, setStatus, setWasKicked, setWsError, token]);
 
   const sendChat    = useCallback((text: string) => socketRef.current?.sendChat(text),   []);
   const sendSticker = useCallback((url: string)  => socketRef.current?.sendSticker(url), []);

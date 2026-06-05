@@ -197,6 +197,7 @@
     "noMessagesYet": "No messages yet.",
     "table": "Table",
     "player": "Player",
+    "you": "You",
     "messagePlaceholder": "Type a message...",
     "stickers": "Stickers",
     "openStickers": "Open stickers",
@@ -378,6 +379,7 @@
   "Board": {
     "boardLabel": "Tycoon board",
     "justVisiting": "Just Visiting",
+    "inJail": "In Jail",
     "tiles": {
       "p0":  "TYCOON",
       "p1":  "Konstantynivska St.",

@@ -39,7 +39,38 @@ const DISABLED_BUTTON = {
   color: GAME_BOARD_COLORS.muted,
 };
 
-const TRANSITION = 'background-color 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.22, 1, 0.36, 1)';
+// Shared modern action-button chrome: rounded, lifts on hover, presses in on click,
+// and stays put when disabled. Transitions live here so the inline accent styles below
+// only carry colors + shadow.
+const ACTION_CLASS =
+  'rounded-[14px] border will-change-transform transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out disabled:cursor-not-allowed enabled:hover:-translate-y-[2px] enabled:active:translate-y-0 enabled:active:scale-[0.97]';
+
+const ACTION_PAD = {
+  paddingTop: 'clamp(4px,0.6vmin,8px)',
+  paddingBottom: 'clamp(4px,0.6vmin,8px)',
+} as const;
+
+const DISABLED_ACTION = { ...DISABLED_BUTTON, boxShadow: 'none', ...ACTION_PAD } as const;
+
+const GHOST_ACTION = {
+  backgroundColor: GAME_BOARD_COLORS.surface,
+  borderColor: GAME_BOARD_COLORS.border,
+  color: GAME_BOARD_COLORS.text,
+  boxShadow: '0 1px 2px rgba(51,48,43,0.08)',
+  ...ACTION_PAD,
+} as const;
+
+function accentAction(color: string, shadow: string) {
+  return {
+    backgroundColor: color,
+    borderColor: color,
+    color: BOARD_TILE_COLORS.altText,
+    boxShadow: shadow,
+    ...ACTION_PAD,
+  } as const;
+}
+
+const ROLL_FONT = { fontSize: 'clamp(12px,1.8vmin,20px)' } as const;
 
 export function GameCenterGrid({
   // Layout
@@ -85,6 +116,7 @@ export function GameCenterGrid({
   log,
   chatMessages,
   viewerToken,
+  viewerUserId,
   onCardProceed,
   onPayDebt,
   onManage,
@@ -151,22 +183,10 @@ export function GameCenterGrid({
             type="button"
             onClick={onRoll}
             disabled={!canRoll}
-            className="col-span-2 rounded-[12px] border px-3 font-display font-black uppercase tracking-[0.12em] disabled:cursor-not-allowed"
-            style={canRoll ? {
-              ...DISABLED_BUTTON,
-              fontSize: 'clamp(12px,1.8vmin,20px)',
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-              backgroundColor: BOARD_TILE_COLORS.propertyGreen,
-              borderColor: BOARD_TILE_COLORS.propertyGreen,
-              color: BOARD_TILE_COLORS.altText,
-              transition: TRANSITION,
-            } : {
-              ...DISABLED_BUTTON,
-              fontSize: 'clamp(12px,1.8vmin,20px)',
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-            }}
+            className={`${ACTION_CLASS} col-span-2 px-3 font-display font-black uppercase tracking-[0.12em]`}
+            style={canRoll
+              ? { ...accentAction(BOARD_TILE_COLORS.propertyGreen, '0 2px 10px rgba(121,180,143,0.45)'), ...ROLL_FONT }
+              : { ...DISABLED_ACTION, ...ROLL_FONT }}
           >
             {isRolling ? t('rolling') : t('roll')}
           </button>
@@ -175,20 +195,10 @@ export function GameCenterGrid({
             type="button"
             onClick={onEndTurn}
             disabled={!canEndTurn}
-            className="rounded-[12px] border px-3 font-display text-sm font-black uppercase tracking-[0.1em] disabled:cursor-not-allowed"
-            style={canEndTurn ? {
-              ...DISABLED_BUTTON,
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-              backgroundColor: BOARD_TILE_COLORS.propertyRed,
-              borderColor: BOARD_TILE_COLORS.propertyRed,
-              color: BOARD_TILE_COLORS.altText,
-              transition: TRANSITION,
-            } : {
-              ...DISABLED_BUTTON,
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-            }}
+            className={`${ACTION_CLASS} px-3 font-display text-sm font-black uppercase tracking-[0.1em]`}
+            style={canEndTurn
+              ? accentAction(BOARD_TILE_COLORS.propertyRed, '0 2px 10px rgba(228,135,135,0.45)')
+              : DISABLED_ACTION}
           >
             {t('endTurn')}
           </button>
@@ -197,20 +207,8 @@ export function GameCenterGrid({
             type="button"
             onClick={onManageOpen}
             disabled={!canManage}
-            className="rounded-[12px] border px-3 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed"
-            style={canManage ? {
-              ...DISABLED_BUTTON,
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-              backgroundColor: GAME_BOARD_COLORS.surface,
-              borderColor: GAME_BOARD_COLORS.border,
-              color: GAME_BOARD_COLORS.text,
-              transition: TRANSITION,
-            } : {
-              ...DISABLED_BUTTON,
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-            }}
+            className={`${ACTION_CLASS} px-3 text-sm font-bold uppercase tracking-[0.08em]`}
+            style={canManage ? GHOST_ACTION : DISABLED_ACTION}
           >
             {t('manage')}
           </button>
@@ -219,30 +217,19 @@ export function GameCenterGrid({
             type="button"
             onClick={onTradeOpen}
             disabled={!canTrade || !hasOtherTraders}
-            className="rounded-[12px] border px-3 text-sm font-bold uppercase tracking-[0.08em] disabled:cursor-not-allowed"
-            style={(canTrade && hasOtherTraders) ? {
-              ...DISABLED_BUTTON,
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-              backgroundColor: GAME_BOARD_COLORS.surface,
-              borderColor: GAME_BOARD_COLORS.border,
-              color: GAME_BOARD_COLORS.text,
-              transition: TRANSITION,
-            } : {
-              ...DISABLED_BUTTON,
-              paddingTop: 'clamp(4px,0.6vmin,8px)',
-              paddingBottom: 'clamp(4px,0.6vmin,8px)',
-            }}
+            className={`${ACTION_CLASS} px-3 text-sm font-bold uppercase tracking-[0.08em]`}
+            style={(canTrade && hasOtherTraders) ? GHOST_ACTION : DISABLED_ACTION}
           >
             {t('trade')}
           </button>
 
           <div
-            className="flex min-w-0 flex-col items-center justify-center gap-[2px] rounded-[12px] border px-2 py-1 text-center"
+            className="flex min-w-0 flex-col items-center justify-center gap-[2px] rounded-[14px] border px-2 py-1 text-center"
             style={{
               backgroundColor: GAME_BOARD_COLORS.surface,
               borderColor: GAME_BOARD_COLORS.border,
               color: GAME_BOARD_COLORS.muted,
+              boxShadow: '0 1px 2px rgba(51,48,43,0.08)',
             }}
           >
             <TurnTimer deadlineMs={turnDeadlineMs} />
@@ -280,6 +267,7 @@ export function GameCenterGrid({
             log={log}
             chatMessages={chatMessages}
             viewerToken={viewerToken}
+            viewerUserId={viewerUserId}
             onCardProceed={onCardProceed}
             onPayDebt={onPayDebt}
             onManage={onManage}

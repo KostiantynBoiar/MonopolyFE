@@ -41,6 +41,25 @@ export const shadowOnColor = '0 1px 3px rgba(0,0,0,0.35)';
 export const shadowOnLight = '0 0.5px 2px rgba(0,0,0,0.18)';
 export const shadowEmoji   = '0 2px 6px rgba(0,0,0,0.40)';
 
+// ─── Tile elevation / surface treatment ────────────────────────────────────────
+// Layered warm-paper elevation, matching the dice/deed/button widgets — a tile
+// reads like a printed chip resting on the board rather than a flat rectangle.
+export const TILE_SHADOW =
+  '0 1px 2px rgba(51,48,43,0.10), 0 3px 8px rgba(51,48,43,0.12)';
+
+// Soft top-down sheen: a bright highlight along the top edge fading to a faint
+// bottom shade. Sits beneath the content so labels stay crisp.
+export const TILE_SHEEN =
+  'linear-gradient(180deg, rgba(255,255,255,0.32) 0%, rgba(255,255,255,0.06) 22%, rgba(0,0,0,0) 62%, rgba(0,0,0,0.07) 100%)';
+
+// Subtle gloss line printed along the color band's leading edge.
+export const TILE_BAND_GLOSS = 'inset 0 1px 0 rgba(255,255,255,0.30), inset 0 -1px 2px rgba(0,0,0,0.14)';
+
+// Hover/press feedback for selectable tiles. Kept to brightness + a hair of
+// scale so neighbours (2px gap) never visually collide.
+export const TILE_INTERACTIVE =
+  'transition-[transform,filter] duration-150 ease-out hover:brightness-[1.04] active:scale-[0.985]';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function getTilePadding() {

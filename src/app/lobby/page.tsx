@@ -45,7 +45,7 @@ export default function LobbyPage() {
       const session = await join(sessionId);
       resetSocket();
       setSession(session);
-      router.push('/game/room');
+      router.push(`/game/room/${session.id}`);
     } catch (err) {
       setJoinError((err as Error).message);
     }
@@ -55,7 +55,7 @@ export default function LobbyPage() {
     const session = await joinWithCode(code);
     resetSocket();
     setSession(session);
-    router.push('/game/room');
+    router.push(`/game/room/${session.id}`);
   }
 
   function switchPanel(panel: LobbyPanel) {
@@ -106,7 +106,7 @@ export default function LobbyPage() {
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {hasSessionHydrated && currentSession && (
-            <Button as="a" href="/game/room" variant="blue" size="md">
+            <Button as="a" href={`/game/room/${currentSession.id}`} variant="blue" size="md">
               {t('backToGame')}
             </Button>
           )}

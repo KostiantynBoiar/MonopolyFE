@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, joinByCode, leaveSession, startGame } from '@/features/lobby/api';
+import { getSession, leaveSession, startGame } from '@/features/lobby/api';
 import { SessionStatus, type SessionDetail } from '@/features/lobby';
 import { GameStatus } from '@/shared/protocol/game-state.enums';
 import { withTimeout } from '@/shared/lib/withTimeout';
@@ -11,19 +11,13 @@ import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 
 const SESSION_RESTORE_TIMEOUT_MS = 5_000;
-const ROOM_BOOT_TIMEOUT_MS = 7_000;
 
 export interface RoomSession {
   currentSession: SessionDetail | null;
-  sessionHydrated: boolean;
-  sessionId: string | null;
+  sessionId: string;
   canConnectSocket: boolean;
-  joinError: string | null;
-  isJoiningByCode: boolean;
-  isValidatingSession: boolean;
-  validatedSessionId: string | null;
-  sessionRestoreFailed: boolean;
-  roomBootTimedOut: boolean;
+  loadError: string | null;
+  isLoading: boolean;
   isLeaving: boolean;
   isStarting: boolean;
   handleStartGame: () => Promise<void>;
@@ -31,15 +25,17 @@ export interface RoomSession {
 }
 
 /**
- * Owns the room's session lifecycle: boot-timeout guard, join-by-invite-code,
- * session restoration/validation, kick handling, finished-game cleanup, plus the
- * leave/start actions. Keeps all of this churn out of the page component.
+ * Owns the room's session lifecycle for the canonical `/game/room/[sessionId]`
+ * route. The session id comes straight from the URL — the single source of
+ * truth — so there is no localStorage-rehydration race to guard against. On
+ * mount it fetches+validates the session server-side (which doubles as the
+ * membership check), wires up kick handling and finished-game cleanup, and
+ * exposes the leave/start actions.
  */
-export function useRoomSession(ready: boolean): RoomSession {
+export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
   const router = useRouter();
 
   const currentSession = useSessionStore((state) => state.currentSession);
-  const sessionHydrated = useSessionStore((state) => state._hasHydrated);
   const setSession = useSessionStore((state) => state.setSession);
   const clearSession = useSessionStore((state) => state.clearSession);
 
@@ -48,85 +44,47 @@ export function useRoomSession(ready: boolean): RoomSession {
   const resetGame = useGameStore((state) => state.reset);
   const gameStatus = useGameStore((state) => state.snapshot.game.status);
 
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [isJoiningByCode, setIsJoiningByCode] = useState(false);
-  const [isValidatingSession, setIsValidatingSession] = useState(false);
-  const [validatedSessionId, setValidatedSessionId] = useState<string | null>(null);
-  const [sessionRestoreFailed, setSessionRestoreFailed] = useState(false);
-  const [roomBootTimedOut, setRoomBootTimedOut] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadedSessionId, setLoadedSessionId] = useState<string | null>(null);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
 
-  const sessionId = currentSession?.id ?? null;
-  const canConnectSocket = Boolean(ready && sessionId && validatedSessionId === sessionId);
+  const canConnectSocket = Boolean(ready && loadedSessionId === sessionId);
 
-  // ─── Boot timeout ─────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (ready && sessionHydrated && !isJoiningByCode && !isValidatingSession) {
-      setRoomBootTimedOut(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setRoomBootTimedOut(true), ROOM_BOOT_TIMEOUT_MS);
-    return () => window.clearTimeout(timer);
-  }, [isJoiningByCode, isValidatingSession, ready, sessionHydrated]);
-
-  // ─── Join by invite code ───────────────────────────────────────────────────
+  // ─── Load + validate the session named in the URL ──────────────────────────
+  // Keyed strictly on the URL `sessionId` (not on the id echoed back by the
+  // server) so a missing param or a normalized response id can never spin us
+  // into a refetch loop. Re-runs only when auth becomes ready or the id changes.
 
   useEffect(() => {
-    if (!ready || !sessionHydrated || currentSession || isJoiningByCode) return;
-    const code = new URLSearchParams(window.location.search).get('code');
-    if (!code) return;
+    if (!ready) return;
+    if (!sessionId) { setIsLoading(false); return; }
 
-    setIsJoiningByCode(true);
-    joinByCode({ invite_code: code })
-      .then(({ session }) => { resetSocket(); setSession(session); setJoinError(null); router.replace('/game/room'); })
-      .catch((error) => setJoinError((error as Error).message))
-      .finally(() => setIsJoiningByCode(false));
-  }, [currentSession, isJoiningByCode, ready, router, sessionHydrated, resetSocket, setSession]);
+    let active = true;
+    setIsLoading(true);
+    setLoadError(null);
+    setLoadedSessionId(null);
 
-  // ─── Session validation ────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!ready || !sessionHydrated || isJoiningByCode) return;
-
-    const sessionIdToValidate = currentSession?.id;
-    if (!sessionIdToValidate) {
-      setValidatedSessionId(null);
-      setSessionRestoreFailed(false);
-      return;
-    }
-    if (validatedSessionId === sessionIdToValidate) return;
-
-    let cancelled = false;
-    setIsValidatingSession(true);
-    setSessionRestoreFailed(false);
-
-    withTimeout(getSession(sessionIdToValidate), SESSION_RESTORE_TIMEOUT_MS, 'Could not restore the room session.')
+    withTimeout(getSession(sessionId), SESSION_RESTORE_TIMEOUT_MS, 'Could not load the room session.')
       .then(({ session }) => {
-        if (cancelled) return;
+        if (!active) return;
         setSession(session);
-        setValidatedSessionId(session.id);
-        setSessionRestoreFailed(false);
+        setLoadedSessionId(sessionId);
       })
-      .catch(() => {
-        if (cancelled) return;
-        setValidatedSessionId(null);
-        setSessionRestoreFailed(true);
+      .catch((error) => {
+        if (!active) return;
         clearSession();
         resetSocket();
         resetGame();
-        router.replace('/lobby');
+        setLoadError((error as Error).message);
       })
       .finally(() => {
-        setIsValidatingSession(false);
+        if (active) setIsLoading(false);
       });
 
-    return () => { cancelled = true; };
-  }, [
-    clearSession, currentSession?.id, isJoiningByCode, ready,
-    resetGame, resetSocket, router, sessionHydrated, setSession, validatedSessionId,
-  ]);
+    return () => { active = false; };
+  }, [clearSession, ready, resetGame, resetSocket, sessionId, setSession]);
 
   // ─── Kick handling ─────────────────────────────────────────────────────────
 
@@ -149,13 +107,13 @@ export function useRoomSession(ready: boolean): RoomSession {
   // ─── Actions ───────────────────────────────────────────────────────────────
 
   const handleStartGame = useCallback(async () => {
-    if (!sessionId || isStarting) return;
+    if (isStarting) return;
     setIsStarting(true);
     try { await startGame(sessionId); } finally { setIsStarting(false); }
   }, [isStarting, sessionId]);
 
   const handleLeaveRoom = useCallback(async () => {
-    if (!sessionId || isLeaving) return;
+    if (isLeaving) return;
     setIsLeaving(true);
     try {
       await leaveSession(sessionId);
@@ -169,15 +127,10 @@ export function useRoomSession(ready: boolean): RoomSession {
 
   return {
     currentSession,
-    sessionHydrated,
     sessionId,
     canConnectSocket,
-    joinError,
-    isJoiningByCode,
-    isValidatingSession,
-    validatedSessionId,
-    sessionRestoreFailed,
-    roomBootTimedOut,
+    loadError,
+    isLoading,
     isLeaving,
     isStarting,
     handleStartGame,

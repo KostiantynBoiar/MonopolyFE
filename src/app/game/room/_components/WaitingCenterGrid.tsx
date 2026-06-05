@@ -40,6 +40,7 @@ interface WaitingCenterGridProps {
   maxPlayers: number;
   yourRole: MemberRole | null;
   messages: ChatMessage[];
+  viewerUserId?: string;
   isLeaving?: boolean;
   isStarting?: boolean;
   onLeave: () => void;
@@ -54,6 +55,7 @@ export function WaitingCenterGrid({
   maxPlayers,
   yourRole,
   messages,
+  viewerUserId,
   isLeaving = false,
   isStarting = false,
   onLeave,
@@ -164,6 +166,7 @@ export function WaitingCenterGrid({
         <ChatWindow
           log={waitingLog}
           externalMessages={messages}
+          viewerUserId={viewerUserId}
           onSendMessage={onSendMessage}
           onSendSticker={onSendSticker}
         />

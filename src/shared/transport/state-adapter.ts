@@ -430,21 +430,34 @@ function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
 
 // ─── Permissions ──────────────────────────────────────────────────────────────
 
-function derivePermissions(state: BeGameState): PlayerPermissions {
+/**
+ * Resolve which player the local client is looking through. The BE broadcasts the same
+ * frame to everyone and its `viewer_id` is unreliable (empty on the first/broadcast
+ * frame), so we identify the viewer from the authenticated user id whenever we have it,
+ * and only fall back to the BE-provided `viewer_id`.
+ */
+function resolveViewerPlayerId(state: BeGameState, viewerUserId?: string): string | null {
+  if (viewerUserId) {
+    const player = state.players.find((p) => p.user_id === viewerUserId);
+    if (player) return player.id;
+  }
+  return state.viewer_id && state.viewer_id !== '' ? state.viewer_id : null;
+}
+
+function derivePermissions(state: BeGameState, viewerPlayerId: string | null): PlayerPermissions {
   // The BE broadcasts the current player's actions_available to all viewers in the
   // same frame, so we must gate every turn-specific action on viewer identity.
   // Auction bidding is the exception: all players can bid simultaneously.
-  // When viewer_id is absent or empty we deny all turn-specific actions to be safe —
-  // treating a missing viewer_id as "everyone is the active player" would expose the
-  // Roll Dice / End Turn buttons to every connected client on the first game frame.
+  // viewerPlayerId is resolved from the authenticated user (see resolveViewerPlayerId);
+  // a null viewer denies all turn-specific actions rather than inheriting the active
+  // player's actions_available — which would expose Roll/End Turn to every client.
   const isCurrentPlayer =
-    state.viewer_id != null &&
-    state.viewer_id !== '' &&
-    state.viewer_id === state.turn.current_player_id;
+    viewerPlayerId != null &&
+    viewerPlayerId === state.turn.current_player_id;
   const a = isCurrentPlayer ? (state.turn.actions_available ?? {}) : {};
   const rawA = state.turn.actions_available ?? {};
   const inJail = state.turn.phase === TurnPhase.JAIL_DECISION;
-  const viewerPlayer = state.players.find((p) => p.id === state.viewer_id);
+  const viewerPlayer = state.players.find((p) => p.id === viewerPlayerId);
   const isViewerBankrupt = viewerPlayer?.is_bankrupt ?? false;
   return {
     canRoll: !!a.can_roll && !inJail,
@@ -469,7 +482,8 @@ function derivePermissions(state: BeGameState): PlayerPermissions {
 // ─── Public entry point ───────────────────────────────────────────────────────
 
 /** Translate a backend `game.state` payload into a frontend GameSnapshot. */
-export function adaptGameStateFrame(payload: BeGameState): GameSnapshot {
+export function adaptGameStateFrame(payload: BeGameState, viewerUserId?: string): GameSnapshot {
+  const viewerPlayerId = resolveViewerPlayerId(payload, viewerUserId);
   const game: GameState = {
     gameId: payload.game_id,
     sessionCode: payload.session_code,
@@ -478,7 +492,7 @@ export function adaptGameStateFrame(payload: BeGameState): GameSnapshot {
     startedAt: payload.started_at ?? null,
     finishedAt: payload.finished_at ?? null,
     winnerId: payload.winner_id ?? null,
-    viewerId: payload.viewer_id ?? '',
+    viewerId: viewerPlayerId ?? '',
     players: payload.players.map(mapPlayer),
     turn: mapTurn(payload.turn),
     bank: {
@@ -499,7 +513,7 @@ export function adaptGameStateFrame(payload: BeGameState): GameSnapshot {
 
   return {
     game,
-    permissions: derivePermissions(payload),
+    permissions: derivePermissions(payload, viewerPlayerId),
     animationTimeline: mapTimeline(payload.animation_timeline),
   };
 }

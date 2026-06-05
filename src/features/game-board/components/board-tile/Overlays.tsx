@@ -1,5 +1,21 @@
 'use client';
 
+import { TILE_SHEEN } from './constants';
+
+// ─── TileSheen ────────────────────────────────────────────────────────────────
+// Glossy top-light overlay shared by every tile flavor. Sits just above the
+// surface fill (z-[1]) and below the color band / content so labels stay sharp.
+
+export function TileSheen() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 z-[1]"
+      style={{ borderRadius: 'inherit', backgroundImage: TILE_SHEEN }}
+    />
+  );
+}
+
 // ─── OwnershipOverlay ─────────────────────────────────────────────────────────
 
 interface OwnershipOverlayProps {
@@ -30,7 +46,10 @@ export function MortgageOverlay() {
       className="pointer-events-none absolute inset-0 z-[46] flex items-center justify-center"
       style={{
         borderRadius:    'inherit',
-        backgroundColor: 'rgba(8,10,22,0.62)',
+        backgroundColor: 'rgba(8,10,22,0.55)',
+        backdropFilter:  'blur(2px) saturate(0.6)',
+        WebkitBackdropFilter: 'blur(2px) saturate(0.6)',
+        boxShadow:       'inset 0 0 0 1px rgba(255,255,255,0.10)',
       }}
     >
       <span
@@ -53,7 +72,12 @@ export function DimOverlay() {
     <div
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 z-[47] transition-opacity duration-300"
-      style={{ borderRadius: 'inherit', backgroundColor: 'rgba(0,0,0,0.55)' }}
+      style={{
+        borderRadius:    'inherit',
+        backgroundColor: 'rgba(16,24,46,0.50)',
+        backdropFilter:  'blur(1px) saturate(0.85)',
+        WebkitBackdropFilter: 'blur(1px) saturate(0.85)',
+      }}
     />
   );
 }

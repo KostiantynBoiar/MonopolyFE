@@ -13,6 +13,7 @@
  */
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
+import type { GameState } from '@/shared/protocol/game-state';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
 import { WalkingAnimationVariant, type AnimationInstruction, type MoveAnimation } from '@/shared/protocol/animation';
 import type { ActiveCard } from '@/shared/protocol/game-state';
@@ -97,23 +98,85 @@ export function resetSnapshotPipeline(): void {
   generation++;
   queue = [];
   running = false;
-  closeGate(''); // force-release whatever gate is open
-  useUiStore.getState().setIsRolling(false);
+  closeGate(''); // force-release whatever gate is open (clears pending interaction)
+  // Clear every animation-transient flag. A timeline aborted mid-flight by this reset
+  // bails at its `generation` check and never reaches its own cleanup, so if we don't
+  // clear here the UI stays gated — most visibly `isTimelineRunning` keeps the Roll
+  // button locked forever.
+  const ui = useUiStore.getState();
+  ui.setIsRolling(false);
+  ui.setIsTimelineRunning(false);
+  ui.setWalkState(null);
+  ui.setAnimatedDiceRoll(null);
+  ui.setActiveAnimationCard(null);
 }
 
 async function drain(): Promise<void> {
   const myGeneration = generation;
   running = true;
-  while (queue.length > 0 && generation === myGeneration) {
-    const next = queue.shift()!;
-    await applyTimeline(next, myGeneration);
+  try {
+    while (queue.length > 0 && generation === myGeneration) {
+      const next = queue.shift()!;
+      await applyTimeline(next, myGeneration);
+    }
+  } finally {
+    // Always release the running latch for the current generation, even if a frame threw.
+    if (generation === myGeneration) running = false;
   }
-  if (generation === myGeneration) running = false;
+}
+
+/**
+ * Fallback animation: when a frame ships without an `animationTimeline` (the
+ * backend may omit it), synthesize one by diffing the previously-committed state
+ * against this frame — so token movement still glides instead of teleporting.
+ * Mirrors what the /debug scenarios do from hardcoded scripts.
+ */
+function inferTimeline(prev: GameState, next: GameState): AnimationInstruction[] {
+  // Need a prior frame from the same ongoing game to diff against.
+  if (!prev.gameId || prev.gameId !== next.gameId || prev.players.length === 0) return [];
+
+  const instructions: AnimationInstruction[] = [];
+
+  // A fresh dice value → tumble the dice before the move.
+  const pd = prev.turn.diceRoll;
+  const nd = next.turn.diceRoll;
+  if (nd && (!pd || pd.die1 !== nd.die1 || pd.die2 !== nd.die2)) {
+    instructions.push({
+      type: 'roll_dice',
+      playerId: next.turn.currentPlayerId,
+      die1: nd.die1,
+      die2: nd.die2,
+      isDoubles: nd.isDoubles,
+    });
+  }
+
+  // Any player whose tile changed walks from → to.
+  const prevById = new Map(prev.players.map((p) => [p.id, p]));
+  for (const np of next.players) {
+    const op = prevById.get(np.id);
+    if (!op || op.position === np.position || np.isBankrupt) continue;
+    const sentToJail = op.jailStatus == null && np.jailStatus != null && np.position === JAIL_POSITION;
+    instructions.push({
+      type: 'move',
+      playerId: np.id,
+      fromPosition: op.position,
+      toPosition: np.position,
+      speed: 'normal',
+      reason: sentToJail ? 'jail' : 'dice',
+    });
+  }
+
+  return instructions;
 }
 
 async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<void> {
   const ui = useUiStore.getState();
-  const timeline = next.animationTimeline;
+  let timeline = next.animationTimeline;
+
+  // No server-authored timeline → infer one from the state diff so movement animates.
+  if (timeline.length === 0) {
+    timeline = inferTimeline(useGameStore.getState().snapshot.game, next.game);
+  }
 
   // Nothing to replay (buy/build/reconnect/system frames) → commit immediately.
   if (timeline.length === 0) {
@@ -124,6 +187,7 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
   ui.setIsTimelineRunning(true);
 
+  try {
   const hasCard = timeline.some((i) => i.type === 'show_card');
   const timelineCard = timeline.find((instruction) => instruction.type === 'show_card')?.card ?? next.game.activeCard ?? null;
   // Track the moving player's last position so show_card can be committed spatially.
@@ -198,8 +262,13 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
   // Clear the animated dice roll only after commit so game.turn.diceRoll already holds
   // the correct values — die1/die2 stay the same, DiceWindow never re-triggers.
   ui.setAnimatedDiceRoll(null);
-  ui.setIsTimelineRunning(false);
   maybeSurfaceDeed(next);
+  } finally {
+    // Release the timeline lock on any exit path (normal end, generation bail, or a
+    // throwing instruction) — but only if this generation still owns it, so we never
+    // unlock a newer timeline that started after a reset.
+    if (generation === myGeneration) ui.setIsTimelineRunning(false);
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

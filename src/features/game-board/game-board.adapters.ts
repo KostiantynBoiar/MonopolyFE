@@ -12,6 +12,7 @@ export function deriveSidebarPlayers(gs: GameState): Player[] {
     balance:        p.balance,
     position:       p.position,
     token:          p.token,
+    tokenShape:     resolveTokenShape(gs.gameId, p.turnOrder),
     avatarUrl:      p.avatarUrl,
     ownedPositions: getPlayerPositions(gs, p.id),
     isActive:       p.id === gs.turn.currentPlayerId,
@@ -29,6 +30,7 @@ export function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
     tokenColor: TOKEN_COLORS[p.token],
     tokenShape: resolveTokenShape(gs.gameId, p.turnOrder),
     isBankrupt: p.isBankrupt,
+    inJail:     p.jailStatus != null,
     avatarUrl:  p.avatarUrl,
   }));
 }
