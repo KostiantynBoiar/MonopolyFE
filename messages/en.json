@@ -437,5 +437,26 @@
       "p38": "Luxury Tax",
       "p39": "Independence Square"
     }
+  },
+
+  "Settings": {
+    "title": "Settings",
+    "close": "Close settings",
+    "modeLabel": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "boardThemeLabel": "Board theme",
+    "classic": "Classic",
+    "midnight": "Midnight Neon",
+    "sepia": "Sepia",
+    "noir": "Noir",
+    "diceThemeLabel": "Dice",
+    "sync": "Sync with board",
+    "ruby": "Ruby",
+    "ivory": "Ivory",
+    "onyx": "Onyx",
+    "emerald": "Emerald",
+    "gold": "Gold"
   }
 }

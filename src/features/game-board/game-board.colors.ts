@@ -3,31 +3,31 @@ import { CornerVariant, SpaceType } from './game-board.enums';
 import type { BoardSpace } from './game-board.types';
 
 export const GAME_BOARD_COLORS = {
-  ink: '#FAF8F5',           
-  center: '#EFEAE2',        
-  panel: '#F4EFE6',         
-  surface: '#FFFFFF',       
-  border: '#DCD4C7',        
-  muted: '#8E8576',         
-  text: '#33302B',          
-  tile: '#F7F3EC',          
-  tileBorder: '#D3C8B7',   
-  tileText: '#33302B',      
-  special: '#E88B74',       
+  ink: 'var(--board-ink)',
+  center: 'var(--board-center)',
+  panel: 'var(--board-panel)',
+  surface: 'var(--board-surface)',
+  border: 'var(--board-border)',
+  muted: 'var(--board-muted)',
+  text: 'var(--board-text)',
+  tile: 'var(--board-tile)',
+  tileBorder: 'var(--board-tile-border)',
+  tileText: 'var(--board-tile-text)',
+  special: 'var(--board-special)',
 } as const;
 
 export const BOARD_TILE_COLORS = {
-  altText: '#FAF8F5',
-  propertyBrown: '#B08261',
-  propertyCyan: '#62AEC1',
-  propertyPink: '#E297AC',
-  propertyOrange: '#EEA46B',
-  propertyRed: '#E48787',
-  propertyYellow: '#E4C06A',
-  propertyGreen: '#79B48F',
-  propertyBlue: '#74A2CA',
-  railroad: '#687885',
-  utility: '#6AA0A7',
+  altText: 'var(--prop-alt-text)',
+  propertyBrown: 'var(--prop-brown)',
+  propertyCyan: 'var(--prop-cyan)',
+  propertyPink: 'var(--prop-pink)',
+  propertyOrange: 'var(--prop-orange)',
+  propertyRed: 'var(--prop-red)',
+  propertyYellow: 'var(--prop-yellow)',
+  propertyGreen: 'var(--prop-green)',
+  propertyBlue: 'var(--prop-blue)',
+  railroad: 'var(--prop-railroad)',
+  utility: 'var(--prop-utility)',
 } as const;
 
 export const PROPERTY_COLOR_MAP: Record<PropertyColor, string> = {
