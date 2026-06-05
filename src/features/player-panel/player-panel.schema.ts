@@ -7,7 +7,7 @@ export { PropertyColor };
 
 export type PlayerPanelPlayer = Pick<
   PlayerState,
-  'id' | 'balance' | 'position' | 'token' | 'isBankrupt'
+  'id' | 'balance' | 'position' | 'token' | 'isBankrupt' | 'rating'
 > & {
   name: PlayerState['displayName'];
   avatarUrl?: PlayerState['avatarUrl'];

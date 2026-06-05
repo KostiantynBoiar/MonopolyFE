@@ -84,6 +84,7 @@ interface BePlayer {
   is_connected?: boolean;
   net_worth?: number;
   afk_strikes?: number;
+  rating?: number;
 }
 
 interface BeSpace {
@@ -245,6 +246,7 @@ function mapPlayer(p: BePlayer): PlayerState {
     isBankrupt: p.is_bankrupt ?? false,
     isConnected: p.is_connected ?? true,
     afkStrikes: p.afk_strikes ?? 0,
+    rating: p.rating ?? 800,
   };
 }
 

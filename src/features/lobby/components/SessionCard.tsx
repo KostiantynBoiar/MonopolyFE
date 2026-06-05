@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { RatingBadge } from '@/shared/ui/RatingBadge';
 import type { SessionSummary } from '../lobby.types';
 
 function timeAgo(iso: string): string {
@@ -44,8 +45,12 @@ export function SessionCard({ session, onJoin, isJoining }: SessionCardProps) {
   return (
     <div className="flex items-center gap-4 rounded-sm border border-line bg-surface px-4 py-3 transition-shadow hover:shadow-sm">
       <div className="min-w-0 flex-1">
-        <p className="truncate font-display text-sm font-semibold text-ink">
-          {session.host.display_name}&apos;s game
+        <p className="flex items-center gap-1.5 font-display text-sm font-semibold text-ink">
+          <span className="truncate">{session.host.display_name}&apos;s game</span>
+          <RatingBadge
+            rating={session.host.rating}
+            provisional={!session.host.calibration_complete}
+          />
         </p>
         <p className="mt-0.5 font-mono text-xs text-muted">
           {session.invite_code}

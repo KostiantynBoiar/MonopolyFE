@@ -19,6 +19,7 @@ export function deriveSidebarPlayers(gs: GameState): Player[] {
     isBankrupt:     p.isBankrupt,
     inJail:         p.jailStatus !== null,
     jailTurns:      p.jailStatus?.attempts,
+    rating:         p.rating,
   }));
 }
 
