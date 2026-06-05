@@ -13,6 +13,7 @@
  */
 
 import type { GameSnapshot } from '@/shared/protocol/permissions';
+import type { GameState } from '@/shared/protocol/game-state';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
 import { WalkingAnimationVariant, type AnimationInstruction, type MoveAnimation } from '@/shared/protocol/animation';
 import type { ActiveCard } from '@/shared/protocol/game-state';
@@ -124,9 +125,58 @@ async function drain(): Promise<void> {
   }
 }
 
+/**
+ * Fallback animation: when a frame ships without an `animationTimeline` (the
+ * backend may omit it), synthesize one by diffing the previously-committed state
+ * against this frame — so token movement still glides instead of teleporting.
+ * Mirrors what the /debug scenarios do from hardcoded scripts.
+ */
+function inferTimeline(prev: GameState, next: GameState): AnimationInstruction[] {
+  // Need a prior frame from the same ongoing game to diff against.
+  if (!prev.gameId || prev.gameId !== next.gameId || prev.players.length === 0) return [];
+
+  const instructions: AnimationInstruction[] = [];
+
+  // A fresh dice value → tumble the dice before the move.
+  const pd = prev.turn.diceRoll;
+  const nd = next.turn.diceRoll;
+  if (nd && (!pd || pd.die1 !== nd.die1 || pd.die2 !== nd.die2)) {
+    instructions.push({
+      type: 'roll_dice',
+      playerId: next.turn.currentPlayerId,
+      die1: nd.die1,
+      die2: nd.die2,
+      isDoubles: nd.isDoubles,
+    });
+  }
+
+  // Any player whose tile changed walks from → to.
+  const prevById = new Map(prev.players.map((p) => [p.id, p]));
+  for (const np of next.players) {
+    const op = prevById.get(np.id);
+    if (!op || op.position === np.position || np.isBankrupt) continue;
+    const sentToJail = op.jailStatus == null && np.jailStatus != null && np.position === JAIL_POSITION;
+    instructions.push({
+      type: 'move',
+      playerId: np.id,
+      fromPosition: op.position,
+      toPosition: np.position,
+      speed: 'normal',
+      reason: sentToJail ? 'jail' : 'dice',
+    });
+  }
+
+  return instructions;
+}
+
 async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<void> {
   const ui = useUiStore.getState();
-  const timeline = next.animationTimeline;
+  let timeline = next.animationTimeline;
+
+  // No server-authored timeline → infer one from the state diff so movement animates.
+  if (timeline.length === 0) {
+    timeline = inferTimeline(useGameStore.getState().snapshot.game, next.game);
+  }
 
   // Nothing to replay (buy/build/reconnect/system frames) → commit immediately.
   if (timeline.length === 0) {
