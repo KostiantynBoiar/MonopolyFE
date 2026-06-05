@@ -114,32 +114,36 @@ export function JailTile({
           boxShadow:       'inset 0 1px 3px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.25)',
         }}
       >
-        {/* Prison bars */}
+        {/* IN JAIL header — solid strip so the label is never crossed by bars */}
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-[2]"
-          style={{
-            backgroundImage: `repeating-linear-gradient(90deg, transparent 0, transparent 14%, ${BAR_COLOR} 14%, ${BAR_COLOR} 18%)`,
-            opacity: 0.85,
-          }}
-        />
-
-        {/* IN JAIL label */}
-        <span
-          className="relative z-[3] pt-[3px] text-center font-sans font-black uppercase leading-none"
-          style={{
-            fontSize:   'clamp(6px, 0.95vmin, 12px)',
-            letterSpacing: '0.1em',
-            color:      BAR_COLOR,
-            textShadow: '0 1px 0 rgba(255,255,255,0.5)',
-          }}
+          className="flex shrink-0 items-center justify-center"
+          style={{ backgroundColor: BAR_COLOR, paddingBlock: 'clamp(2px, 0.35vmin, 5px)' }}
         >
-          {tBoard('inJail')}
-        </span>
+          <span
+            className="text-center font-sans font-black uppercase leading-none"
+            style={{
+              fontSize:      'clamp(6px, 0.95vmin, 12px)',
+              letterSpacing: '0.14em',
+              color:         CELL_BG,
+            }}
+          >
+            {tBoard('inJail')}
+          </span>
+        </div>
 
-        {/* Jailed tokens — behind the bars, centered in the cell */}
-        <div className="relative z-[1] flex flex-1 flex-wrap items-center justify-center gap-[2px] p-[3px]">
-          <JailTokenRow players={jailed} size="clamp(13px, 1.7vmin, 24px)" />
+        {/* Cell body — prison bars over the jailed tokens */}
+        <div className="relative flex-1 overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-[2]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(90deg, transparent 0, transparent 13%, ${BAR_COLOR} 13%, ${BAR_COLOR} 17%)`,
+              opacity: 0.8,
+            }}
+          />
+          <div className="relative z-[1] flex h-full flex-wrap items-center justify-center gap-[2px] p-[3px]">
+            <JailTokenRow players={jailed} size="clamp(13px, 1.7vmin, 24px)" />
+          </div>
         </div>
       </div>
 
