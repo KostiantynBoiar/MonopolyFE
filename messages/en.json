@@ -377,6 +377,7 @@
   "Board": {
     "boardLabel": "Tycoon board",
     "justVisiting": "Just Visiting",
+    "inJail": "In Jail",
     "tiles": {
       "p0":  "TYCOON",
       "p1":  "Konstantynivska St.",

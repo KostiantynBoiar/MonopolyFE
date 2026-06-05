@@ -28,6 +28,7 @@ export function deriveBoardPlayers(gs: GameState): BoardPlayer[] {
     tokenColor: TOKEN_COLORS[p.token],
     tokenShape: resolveTokenShape(gs.gameId, p.turnOrder),
     isBankrupt: p.isBankrupt,
+    inJail:     p.jailStatus != null,
     avatarUrl:  p.avatarUrl,
   }));
 }

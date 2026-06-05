@@ -111,6 +111,7 @@ export interface BoardPlayer {
   tokenColor: string; // resolved hex, e.g. '#2B57C6'
   tokenShape: TokenShape; // MD3-Expressive silhouette, shuffled per game
   isBankrupt: boolean;
+  inJail?: boolean; // true when jailed — placed inside the Jail cell, not the margin
   avatarUrl?: string | null; // PNG / WebP / SVG / any <img>-renderable URL
 }
 

@@ -359,6 +359,7 @@
   "Board": {
     "boardLabel": "Поле Tycoon",
     "justVisiting": "Просто проїжджаю",
+    "inJail": "У в'язниці",
     "tiles": {
       "p0":  "TYCOON",
       "p1":  "вул. Константинівська",
