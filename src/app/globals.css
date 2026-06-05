@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* — Website palette — */
     --ink: 16 24 46;
     --navy: 12 23 48;
     --navy-700: 21 36 74;
@@ -23,9 +24,38 @@
     --r-sm: 6px;
     --r: 10px;
     --r-lg: 14px;
+    /* — Board chrome (Classic light — exact current values) — */
+    --board-ink: #FAF8F5;
+    --board-center: #EFEAE2;
+    --board-panel: #F4EFE6;
+    --board-surface: #FFFFFF;
+    --board-border: #DCD4C7;
+    --board-muted: #8E8576;
+    --board-text: #33302B;
+    --board-tile: #F7F3EC;
+    --board-tile-border: #D3C8B7;
+    --board-tile-text: #33302B;
+    --board-special: #E88B74;
+    /* — Property bands (Classic light) — */
+    --prop-alt-text: #FAF8F5;
+    --prop-brown: #B08261;
+    --prop-cyan: #62AEC1;
+    --prop-pink: #E297AC;
+    --prop-orange: #EEA46B;
+    --prop-red: #E48787;
+    --prop-yellow: #E4C06A;
+    --prop-green: #79B48F;
+    --prop-blue: #74A2CA;
+    --prop-railroad: #687885;
+    --prop-utility: #6AA0A7;
+    /* — Dice (default: follow board accent — no data-dice-theme attr) — */
+    --dice-face: var(--prop-red);
+    --dice-pip: #ffffff;
+    --dice-doubles: var(--prop-green);
   }
 
   .dark {
+    /* — Website palette (dark) — */
     --ink: 226 232 246;
     --navy: 8 12 24;
     --navy-700: 15 22 40;
@@ -42,7 +72,165 @@
     --muted: 139 148 178;
     --green: 38 160 108;
     --red: 212 88 80;
+    /* — Board chrome (Classic dark) — */
+    --board-ink: #1a2035;
+    --board-center: #141929;
+    --board-panel: #1e2640;
+    --board-surface: #232d4a;
+    --board-border: #2e3a5e;
+    --board-muted: #6b7494;
+    --board-text: #e2e8f6;
+    --board-tile: #1e2842;
+    --board-tile-border: #2d3d60;
+    --board-tile-text: #e2e8f6;
+    --board-special: #c2584a;
+    /* — Property bands (Classic dark — brightened for contrast on dark bg) — */
+    --prop-alt-text: #1a2035;
+    --prop-brown: #c49070;
+    --prop-cyan: #5ac4da;
+    --prop-pink: #f5a8bf;
+    --prop-orange: #f0b87a;
+    --prop-red: #f29898;
+    --prop-yellow: #f0d070;
+    --prop-green: #8dcba3;
+    --prop-blue: #88b8e0;
+    --prop-railroad: #8098a8;
+    --prop-utility: #80b8c0;
   }
+
+  /* ── Board theme: Midnight Neon ─────────────────────────────────────────── */
+  /* Dark slate board, vivid saturated neon bands. Works in both light & dark. */
+  [data-board-theme="midnight"] {
+    --board-ink: #0d1726;
+    --board-center: #0a1520;
+    --board-panel: #0f1d30;
+    --board-surface: #152038;
+    --board-border: #1e304d;
+    --board-muted: #5c7a9a;
+    --board-text: #c8e0f8;
+    --board-tile: #121e35;
+    --board-tile-border: #1c2e48;
+    --board-tile-text: #c8e0f8;
+    --board-special: #ff6b6b;
+    --prop-alt-text: #e8f0ff;
+    --prop-brown: #c8702a;
+    --prop-cyan: #00d4ff;
+    --prop-pink: #ff4da6;
+    --prop-orange: #ff8c1a;
+    --prop-red: #ff3d3d;
+    --prop-yellow: #ffd600;
+    --prop-green: #00e676;
+    --prop-blue: #2196f3;
+    --prop-railroad: #546e7a;
+    --prop-utility: #00bcd4;
+  }
+  .dark[data-board-theme="midnight"] {
+    --board-ink: #050d18;
+    --board-center: #04090f;
+    --board-panel: #071018;
+    --board-surface: #0d1828;
+    --board-border: #142030;
+    --board-tile: #080f20;
+    --board-tile-border: #102030;
+  }
+
+  /* ── Board theme: Sepia / Vintage ───────────────────────────────────────── */
+  /* Aged-paper board with muted desaturated retro bands.                      */
+  [data-board-theme="sepia"] {
+    --board-ink: #f5e6c8;
+    --board-center: #e8d5a8;
+    --board-panel: #ede0bb;
+    --board-surface: #faf2e0;
+    --board-border: #c8a87a;
+    --board-muted: #7a6040;
+    --board-text: #3d2b10;
+    --board-tile: #f0e4c8;
+    --board-tile-border: #c4a078;
+    --board-tile-text: #3d2b10;
+    --board-special: #c07848;
+    --prop-alt-text: #faf2e0;
+    --prop-brown: #8b5c3a;
+    --prop-cyan: #5c9aa0;
+    --prop-pink: #c47a90;
+    --prop-orange: #c87840;
+    --prop-red: #a84040;
+    --prop-yellow: #c8a030;
+    --prop-green: #4a7a58;
+    --prop-blue: #4a6888;
+    --prop-railroad: #585048;
+    --prop-utility: #5a8080;
+  }
+  .dark[data-board-theme="sepia"] {
+    --board-ink: #2a1e0e;
+    --board-center: #1e1608;
+    --board-panel: #251a0c;
+    --board-surface: #2e2010;
+    --board-border: #4a3520;
+    --board-muted: #9a7a50;
+    --board-text: #e8c88a;
+    --board-tile: #281c0c;
+    --board-tile-border: #3d2a14;
+    --board-tile-text: #e8c88a;
+  }
+
+  /* ── Board theme: Monochrome / Noir ─────────────────────────────────────── */
+  /* Greyscale board with property bands as hue-tinted greys.                  */
+  [data-board-theme="noir"] {
+    --board-ink: #f0f0f0;
+    --board-center: #e0e0e0;
+    --board-panel: #ebebeb;
+    --board-surface: #fafafa;
+    --board-border: #c0c0c0;
+    --board-muted: #888888;
+    --board-text: #1a1a1a;
+    --board-tile: #f5f5f5;
+    --board-tile-border: #d0d0d0;
+    --board-tile-text: #1a1a1a;
+    --board-special: #8a8a8a;
+    --prop-alt-text: #f5f5f5;
+    --prop-brown: #8a7060;
+    --prop-cyan: #7090a0;
+    --prop-pink: #a08898;
+    --prop-orange: #9a8070;
+    --prop-red: #9a7070;
+    --prop-yellow: #9a9070;
+    --prop-green: #708a78;
+    --prop-blue: #7080a0;
+    --prop-railroad: #707070;
+    --prop-utility: #708080;
+  }
+  .dark[data-board-theme="noir"] {
+    --board-ink: #0a0a0a;
+    --board-center: #050505;
+    --board-panel: #0d0d0d;
+    --board-surface: #121212;
+    --board-border: #282828;
+    --board-muted: #606060;
+    --board-text: #e0e0e0;
+    --board-tile: #151515;
+    --board-tile-border: #252525;
+    --board-tile-text: #e0e0e0;
+    --board-special: #505050;
+    --prop-alt-text: #151515;
+    --prop-brown: #6a5040;
+    --prop-cyan: #506878;
+    --prop-pink: #806870;
+    --prop-orange: #785a48;
+    --prop-red: #785050;
+    --prop-yellow: #786858;
+    --prop-green: #506058;
+    --prop-blue: #506080;
+    --prop-railroad: #505050;
+    --prop-utility: #506060;
+  }
+
+  /* ── Dice themes ────────────────────────────────────────────────────────── */
+  /* Omitting the attribute = "sync" mode: --dice-face inherits var(--prop-red) */
+  [data-dice-theme="ruby"]    { --dice-face: #c0392b; --dice-pip: #ffe6e6; --dice-doubles: #e74c3c; }
+  [data-dice-theme="ivory"]   { --dice-face: #f5f0e8; --dice-pip: #3d3020; --dice-doubles: #d4a840; }
+  [data-dice-theme="onyx"]    { --dice-face: #1b1b1f; --dice-pip: #f5f5f5; --dice-doubles: #9b9bad; }
+  [data-dice-theme="emerald"] { --dice-face: #1a7a52; --dice-pip: #d0ffe8; --dice-doubles: #00e676; }
+  [data-dice-theme="gold"]    { --dice-face: #c8a020; --dice-pip: #fff8e0; --dice-doubles: #ffd600; }
 
   body {
     @apply bg-paper font-sans text-ink antialiased;

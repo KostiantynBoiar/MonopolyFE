@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { WsChatEntry } from './socket-store';
+import { PERSIST_VERSION, migratePersistedState } from '@/shared/lib/persist';
 
 /**
  * Client-side chat history, persisted to localStorage and keyed by session id.
@@ -41,6 +42,8 @@ export const useChatStore = create<ChatStore>()(
     }),
     {
       name: 'tycoon-chat',
+      version: PERSIST_VERSION,
+      migrate: migratePersistedState,
       partialize: (s) => ({ bySession: s.bySession }),
     },
   ),

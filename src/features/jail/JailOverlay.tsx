@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useDialog } from '@/shared/hooks/useDialog';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 
@@ -56,13 +57,15 @@ export function JailOverlay({
   onPayFine, onUseCard, onRoll,
 }: JailOverlayProps) {
   const t = useTranslations('Jail');
+  const dialog = useDialog<HTMLDivElement>({ label: t('inJail') });
   const triesLeft = Math.max(0, attempts);
   const showDice = isRolling || diceRoll !== null;
   const accentColor = triesLeft > 0 ? BOARD_TILE_COLORS.propertyOrange : BOARD_TILE_COLORS.propertyRed;
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-y-auto rounded-[16px] border"
+      {...dialog}
+      className="flex h-full w-full flex-col overflow-y-auto rounded-[16px] border focus:outline-none"
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,

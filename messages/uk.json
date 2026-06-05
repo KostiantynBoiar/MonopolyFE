@@ -3,7 +3,20 @@
     "chance": "ШАНС",
     "community_chest": "СКАРБНИЦЯ",
     "proceed": "Далі",
-    "waiting": "Очікування…"
+    "waiting": "Очікування…",
+    "effect": {
+      "advanceTo": "Перейдіть до {place}.",
+      "advanceToNearestRailroad": "Перейдіть до найближчої станції.",
+      "advanceToNearestUtility": "Перейдіть до найближчої компанії.",
+      "goToJail": "Вирушайте до в'язниці. Не проходьте СТАРТ.",
+      "goBack": "Поверніться на {count, plural, one {# клітинку} few {# клітинки} many {# клітинок} other {# клітинки}}.",
+      "collect": "Отримайте M{amount}.",
+      "pay": "Сплатіть M{amount}.",
+      "collectFromEachPlayer": "Отримайте M{amount} від кожного гравця.",
+      "payEachPlayer": "Сплатіть кожному гравцю M{amount}.",
+      "getOutOfJailFree": "Картка звільнення з в'язниці — залиште її собі.",
+      "repairs": "Сплатіть M{perHouse} за будинок і M{perHotel} за готель."
+    }
   },
 
   "Deed": {
@@ -406,5 +419,26 @@
       "p38": "Податок на розкіш",
       "p39": "Майдан Незалежності"
     }
+  },
+
+  "Settings": {
+    "title": "Налаштування",
+    "close": "Закрити налаштування",
+    "modeLabel": "Вигляд",
+    "light": "Світла",
+    "dark": "Темна",
+    "system": "Системна",
+    "boardThemeLabel": "Тема дошки",
+    "classic": "Класика",
+    "midnight": "Нічний неон",
+    "sepia": "Сепія",
+    "noir": "Нуар",
+    "diceThemeLabel": "Кубики",
+    "sync": "Як дошка",
+    "ruby": "Рубін",
+    "ivory": "Слонова кістка",
+    "onyx": "Онікс",
+    "emerald": "Смарагд",
+    "gold": "Золото"
   }
 }

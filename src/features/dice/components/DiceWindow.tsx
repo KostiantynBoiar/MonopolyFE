@@ -48,7 +48,7 @@ function DieFace({
         animation: rolling
           ? `${side === 'left' ? 'monopoly-die-roll-left' : 'monopoly-die-roll-right'} ${DICE_SPIN_MS}ms cubic-bezier(.16,.84,.28,1)`
           : undefined,
-        background: `${DIE_BG}, ${BOARD_TILE_COLORS.propertyRed}`,
+        background: `${DIE_BG}, var(--dice-face)`,
         borderColor: 'rgba(255,255,255,0.10)',
         boxShadow: rolling
           ? '0 12px 0 rgba(0,0,0,0.35), 0 20px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.18)'
@@ -65,7 +65,7 @@ function DieFace({
             left: `${col * 25}%`,
             width: 'clamp(7px, 14%, 11px)',
             height: 'clamp(7px, 14%, 11px)',
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--dice-pip)',
             boxShadow: '0 0 4px rgba(255,255,255,0.6)',
           }}
         />
@@ -198,9 +198,9 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
         <span
           className="rounded-full border px-3 py-[3px] text-[11px] font-bold uppercase tracking-[0.14em] transition-colors duration-200"
           style={isDoubles ? {
-            backgroundColor: BOARD_TILE_COLORS.propertyGreen,
-            borderColor: BOARD_TILE_COLORS.propertyGreen,
-            color: BOARD_TILE_COLORS.altText,
+            backgroundColor: 'var(--dice-doubles)',
+            borderColor: 'var(--dice-doubles)',
+            color: 'var(--prop-alt-text)',
             boxShadow: '0 1px 4px rgba(121,180,143,0.45)',
           } : {
             backgroundColor: GAME_BOARD_COLORS.surface,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useDialog } from '@/shared/hooks/useDialog';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import type { AuctionPanelProps } from '../auction.types';
 
@@ -14,6 +15,7 @@ export function AuctionOverlay({
   auctionState, propertyName, viewerId, players, canBid: canBidPermission, onBid,
 }: AuctionPanelProps) {
   const t = useTranslations('Auction');
+  const dialog = useDialog<HTMLDivElement>({ label: t('header') });
   const [bidInput, setBidInput] = useState('');
   const [displayMs, setDisplayMs] = useState(auctionState.timeRemainingMs);
 
@@ -42,7 +44,8 @@ export function AuctionOverlay({
 
   return (
     <div
-      className="flex h-full flex-col overflow-hidden rounded-[16px] border"
+      {...dialog}
+      className="flex h-full flex-col overflow-hidden rounded-[16px] border focus:outline-none"
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,

@@ -19,4 +19,8 @@ export { StatusDot } from './StatusDot';
 export { WsErrorBanner } from './WsErrorBanner';
 export { TgsPlayer } from './TgsPlayer';
 export { ThemeProvider, useTheme } from './ThemeProvider';
+export type { Mode, BoardTheme, DiceTheme, ResolvedMode } from './ThemeProvider';
 export { ThemeToggle } from './ThemeToggle';
+export { SettingsButton } from './SettingsButton';
+export { SettingsDrawer } from './SettingsDrawer';
+export { SettingsControl } from './SettingsControl';

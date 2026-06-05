@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useDialog } from '@/shared/hooks/useDialog';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { BOARD } from '@/shared/config/board-layout';
@@ -156,6 +157,7 @@ export function TradeOverlay({
   onAccept, onReject, onCounter, onCancel,
 }: TradeWindowProps) {
   const t = useTranslations('Trade');
+  const dialog = useDialog<HTMLDivElement>({ label: t('header') });
   const viewerRole = resolveViewerRole(viewerId, trade.proposerId, trade.targetId);
 
   const proposerLabel =
@@ -175,7 +177,8 @@ export function TradeOverlay({
 
   return (
     <div
-      className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border"
+      {...dialog}
+      className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border focus:outline-none"
       style={{
         backgroundColor: GAME_BOARD_COLORS.surface,
         borderColor: GAME_BOARD_COLORS.border,

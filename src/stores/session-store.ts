@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { SessionDetail } from '@/features/lobby';
+import { PERSIST_VERSION, migratePersistedState } from '@/shared/lib/persist';
 
 interface SessionState {
   currentSession: SessionDetail | null;
@@ -21,6 +22,8 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'tycoon-session',
+      version: PERSIST_VERSION,
+      migrate: migratePersistedState,
       partialize: (s) => ({ currentSession: s.currentSession }),
       onRehydrateStorage: () => (state) => {
         if (state) {

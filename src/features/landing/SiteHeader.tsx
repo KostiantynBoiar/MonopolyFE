@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { MobileNav } from './MobileNav';
-import { Brand, Container, ThemeToggle } from '@/shared/ui';
+import { Brand, Container, ThemeToggle, SettingsControl } from '@/shared/ui';
 import { UserMenu } from '@/features/auth/components/UserMenu';
 import { LocaleSwitcher } from '@/shared/ui/LocaleSwitcher';
 
@@ -31,6 +31,7 @@ export async function SiteHeader() {
           ))}
           <LocaleSwitcher />
           <ThemeToggle />
+          <SettingsControl />
           <UserMenu />
         </nav>
 

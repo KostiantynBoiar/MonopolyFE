@@ -1,16 +1,23 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { CardFlipOverlay } from '@/features/card';
 import { DeedWindow } from '@/features/deed';
 import { DiceWindow } from '@/features/dice';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
+import type { ActiveCard } from '@/shared/protocol/game-state';
+import { SettingsControl } from '@/shared/ui';
 import { CenterPanel, type CenterPanelProps } from './CenterPanel';
 import { FullOverlay, type FullOverlayProps } from './FullOverlay';
 import { TurnTimer } from './TurnTimer';
 import { SurrenderButton } from './SurrenderButton';
 
 interface GameCenterGridProps extends CenterPanelProps, FullOverlayProps {
+  // Drawn-card overlay — rendered across the whole center (not the chat cell).
+  activeCard: ActiveCard | null;
+  pendingInteractionPlayerId: string | null;
+  onCardProceed: () => void;
   isBuyDecisionForViewer: boolean;
   animatedDiceRollId: number;
   deedPanelSpace: BoardSpace;
@@ -224,7 +231,7 @@ export function GameCenterGrid({
           </button>
 
           <div
-            className="flex min-w-0 flex-col items-center justify-center gap-[2px] rounded-[14px] border px-2 py-1 text-center"
+            className="relative flex min-w-0 flex-col items-center justify-center gap-[2px] rounded-[14px] border px-2 py-1 text-center"
             style={{
               backgroundColor: GAME_BOARD_COLORS.surface,
               borderColor: GAME_BOARD_COLORS.border,
@@ -232,6 +239,7 @@ export function GameCenterGrid({
               boxShadow: '0 1px 2px rgba(51,48,43,0.08)',
             }}
           >
+            <SettingsControl className="absolute right-1 top-1 h-6 w-6" />
             <TurnTimer deadlineMs={turnDeadlineMs} />
             {isViewerTurn && canSurrender ? (
               <SurrenderButton onSurrender={onSurrender} />
@@ -249,8 +257,6 @@ export function GameCenterGrid({
           style={dimStyle}
         >
           <CenterPanel
-            activeCard={activeCard}
-            pendingInteractionPlayerId={pendingInteractionPlayerId}
             viewerPlayerId={viewerPlayerId}
             debt={debt}
             auction={auction}
@@ -268,7 +274,6 @@ export function GameCenterGrid({
             chatMessages={chatMessages}
             viewerToken={viewerToken}
             viewerUserId={viewerUserId}
-            onCardProceed={onCardProceed}
             onPayDebt={onPayDebt}
             onManage={onManage}
             onBankrupt={onBankrupt}
@@ -295,6 +300,24 @@ export function GameCenterGrid({
           />
         </div>
       </div>
+
+      {/* Drawn card — covers the entire center, above the dice/actions/deed grid. */}
+      {activeCard && (
+        <div
+          className="absolute inset-[6px] z-20 flex items-center justify-center rounded-[12px]"
+          style={{
+            backgroundColor: 'rgba(20,16,12,0.55)',
+            backdropFilter: 'blur(2px)',
+            fontSize: 'clamp(15px,2.4vmin,24px)',
+          }}
+        >
+          <CardFlipOverlay
+            card={activeCard}
+            onProceed={onCardProceed}
+            canProceed={pendingInteractionPlayerId !== null && pendingInteractionPlayerId === viewerPlayerId}
+          />
+        </div>
+      )}
 
       <FullOverlay
         trade={trade}
