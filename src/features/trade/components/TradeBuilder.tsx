@@ -5,6 +5,7 @@ import { bandColors } from '@/shared/config/constants';
 import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { useTranslations } from 'next-intl';
+import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 
 export type TradePlayer = { id: string; name: string; balance: number; getOutOfJailCards: number };
 export type TradeCounterparty = TradePlayer & { getOutOfJailCards: number; propertyCount: number };
@@ -51,8 +52,8 @@ function MoneyInput({
       value={value || ''}
       placeholder="0"
       onChange={(event) => onChange(clampMoneyInput(event.target.value, max))}
-      className="h-8 w-24 rounded border border-line-2 bg-surface px-1.5 font-mono text-ink focus:border-blue focus:outline-none"
-      style={{ fontSize: '1em' }}
+      className="h-8 w-24 rounded border px-1.5 font-mono focus:outline-none"
+      style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border, color: GAME_BOARD_COLORS.text, fontSize: '1em' }}
     />
   );
 }
@@ -60,11 +61,11 @@ function MoneyInput({
 function AssetChip({ asset }: { asset: TradeAsset }) {
   return (
     <span
-      className="flex items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5"
-      style={{ fontSize: '1em' }}
+      className="flex items-center gap-1 rounded border px-1.5 py-0.5"
+      style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border, fontSize: '1em' }}
     >
       {asset.color && <span className={cn('h-3 w-3 rounded-sm', bandColors[asset.color])} />}
-      <span className="font-sans text-ink">{asset.name}</span>
+      <span className="font-sans" style={{ color: GAME_BOARD_COLORS.text }}>{asset.name}</span>
     </span>
   );
 }
@@ -84,10 +85,10 @@ function Stepper({
 
   return (
     <div className="flex items-center gap-1.5" style={{ fontSize: '1em' }}>
-      <span className="text-muted">{label}</span>
-      <button type="button" className="rounded border border-line px-1.5 text-ink" onClick={() => onChange(Math.max(0, value - 1))}>−</button>
-      <span className="w-4 text-center font-mono text-ink">{value}</span>
-      <button type="button" className="rounded border border-line px-1.5 text-ink" onClick={() => onChange(Math.min(max, value + 1))}>+</button>
+      <span style={{ color: GAME_BOARD_COLORS.muted }}>{label}</span>
+      <button type="button" className="rounded border px-1.5" style={{ borderColor: GAME_BOARD_COLORS.border, color: GAME_BOARD_COLORS.text }} onClick={() => onChange(Math.max(0, value - 1))}>−</button>
+      <span className="w-4 text-center font-mono" style={{ color: GAME_BOARD_COLORS.text }}>{value}</span>
+      <button type="button" className="rounded border px-1.5" style={{ borderColor: GAME_BOARD_COLORS.border, color: GAME_BOARD_COLORS.text }} onClick={() => onChange(Math.min(max, value + 1))}>+</button>
     </div>
   );
 }
@@ -101,16 +102,16 @@ function PlayerSummary({
 }) {
   return (
     <div
-      className={cn(
-        'rounded border px-2 py-1.5',
-        isSelected ? 'border-blue bg-blue/10' : 'border-line bg-surface',
-      )}
+      className="rounded border px-2 py-1.5"
+      style={isSelected
+        ? { borderColor: 'var(--board-tile-border)', backgroundColor: `${GAME_BOARD_COLORS.panel}`, outline: `2px solid ${BOARD_TILE_COLORS.propertyBlue}`, outlineOffset: '-1px' }
+        : { borderColor: GAME_BOARD_COLORS.border, backgroundColor: GAME_BOARD_COLORS.surface }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-display font-semibold text-ink" style={{ fontSize: '0.78em' }}>{player.name}</span>
-        <span className="font-mono text-muted" style={{ fontSize: '0.72em' }}>M{player.balance}</span>
+        <span className="font-display font-semibold" style={{ fontSize: '0.78em', color: GAME_BOARD_COLORS.text }}>{player.name}</span>
+        <span className="font-mono" style={{ fontSize: '0.72em', color: GAME_BOARD_COLORS.muted }}>M{player.balance}</span>
       </div>
-      <div className="mt-1 flex gap-2 text-muted" style={{ fontSize: '0.68em' }}>
+      <div className="mt-1 flex gap-2" style={{ fontSize: '0.68em', color: GAME_BOARD_COLORS.muted }}>
         <span>{player.propertyCount}P</span>
         <span>{player.getOutOfJailCards}J</span>
       </div>
@@ -151,21 +152,21 @@ function SelectionPanel({
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
-      <span className="font-mono font-semibold uppercase tracking-widest text-muted" style={{ fontSize: '1em' }}>
+      <span className="font-mono font-semibold uppercase tracking-widest" style={{ fontSize: '1em', color: GAME_BOARD_COLORS.muted }}>
         {title}
       </span>
       <div className="flex items-center gap-1" style={{ fontSize: '1em' }}>
-        <span className="text-muted">{moneyLabel}</span>
+        <span style={{ color: GAME_BOARD_COLORS.muted }}>{moneyLabel}</span>
         <MoneyInput value={money} max={moneyMax} onChange={onMoneyChange} />
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="font-sans text-muted" style={{ fontSize: '0.72em' }}>{helperText}</span>
+        <span className="font-sans" style={{ fontSize: '0.72em', color: GAME_BOARD_COLORS.muted }}>{helperText}</span>
         {assets.length > 0 && (
           <button
             type="button"
             onClick={onClearAssets}
-            className="font-mono uppercase text-muted hover:text-ink"
-            style={{ fontSize: '0.62em' }}
+            className="font-mono uppercase"
+            style={{ fontSize: '0.62em', color: GAME_BOARD_COLORS.muted }}
           >
             {clearLabel}
           </button>
@@ -173,7 +174,7 @@ function SelectionPanel({
       </div>
       <div className="flex flex-wrap gap-1">
         {assets.map((asset) => <AssetChip key={asset.position} asset={asset} />)}
-        {assets.length === 0 && <span className="italic text-muted" style={{ fontSize: '1em' }}>{emptyLabel}</span>}
+        {assets.length === 0 && <span className="italic" style={{ fontSize: '1em', color: GAME_BOARD_COLORS.muted }}>{emptyLabel}</span>}
       </div>
       <Stepper label={jailCardsLabel} value={cards} max={cardsMax} onChange={onCardsChange} />
     </div>
@@ -211,16 +212,26 @@ export function TradeBuilder({
     requestAssets.length === 0;
 
   return (
-    <div {...dialog} className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-paper focus:outline-none">
-      <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
-        <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>
+    <div
+      {...dialog}
+      className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border focus:outline-none"
+      style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border }}
+    >
+      {/* Accent strip — yellow = propose */}
+      <div style={{ height: '4px', backgroundColor: BOARD_TILE_COLORS.propertyYellow, flexShrink: 0 }} />
+
+      <div
+        className="flex shrink-0 items-center justify-between px-3 py-2"
+        style={{ backgroundColor: GAME_BOARD_COLORS.panel, borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}
+      >
+        <span className="font-display font-black uppercase tracking-wide" style={{ fontSize: '0.8em', color: GAME_BOARD_COLORS.text }}>
           {t('builder.header')}
         </span>
-        <button type="button" onClick={onClose} className="font-mono text-white/70 hover:text-white" style={{ fontSize: '0.8em' }} aria-label={t('builder.close')}>✕</button>
+        <button type="button" onClick={onClose} className="font-mono opacity-60 hover:opacity-100" style={{ fontSize: '0.8em', color: GAME_BOARD_COLORS.text }} aria-label={t('builder.close')}>✕</button>
       </div>
 
-      <div className="border-b border-line px-3 py-2">
-        <p className="font-sans text-muted" style={{ fontSize: '0.7em' }}>
+      <div className="px-3 py-2" style={{ borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}>
+        <p className="font-sans" style={{ fontSize: '0.7em', color: GAME_BOARD_COLORS.muted }}>
           {t('builder.instructions')}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
@@ -230,12 +241,12 @@ export function TradeBuilder({
         </div>
       </div>
 
-      <div className="border-b border-line px-3 py-2">
+      <div className="px-3 py-2" style={{ borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}>
         <div className="flex items-center justify-between gap-2">
-          <span className="font-sans text-muted" style={{ fontSize: '0.72em' }}>
+          <span className="font-sans" style={{ fontSize: '0.72em', color: GAME_BOARD_COLORS.muted }}>
             {target ? t('builder.selectedTarget', { name: target.name }) : t('builder.awaitingTarget')}
           </span>
-          <span className="font-mono text-muted" style={{ fontSize: '0.68em' }}>
+          <span className="font-mono" style={{ fontSize: '0.68em', color: GAME_BOARD_COLORS.muted }}>
             {target ? `M${target.balance}` : t('builder.chooseFromBoard')}
           </span>
         </div>
@@ -259,7 +270,7 @@ export function TradeBuilder({
           onClearAssets={onClearOfferAssets}
         />
 
-        <div className="w-px shrink-0 bg-line" />
+        <div className="w-px shrink-0" style={{ backgroundColor: GAME_BOARD_COLORS.border }} />
 
         <SelectionPanel
           title={t('builder.youGet')}
@@ -279,12 +290,15 @@ export function TradeBuilder({
         />
       </div>
 
-      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-surface px-3 py-2">
+      <div
+        className="flex shrink-0 items-center justify-end gap-2 px-3 py-2"
+        style={{ borderTop: `1px solid ${GAME_BOARD_COLORS.border}`, backgroundColor: GAME_BOARD_COLORS.panel }}
+      >
         <button
           type="button"
           onClick={onClose}
-          className="rounded border border-line-2 bg-surface font-display font-semibold uppercase tracking-wide text-ink hover:bg-paper"
-          style={{ fontSize: '0.62em', padding: '0.45em 0.8em' }}
+          className="rounded border font-display font-semibold uppercase tracking-wide transition-opacity hover:opacity-70"
+          style={{ fontSize: '0.62em', padding: '0.45em 0.8em', backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border, color: GAME_BOARD_COLORS.text }}
         >
           {t('builder.cancel')}
         </button>
@@ -292,8 +306,8 @@ export function TradeBuilder({
           type="button"
           onClick={onPropose}
           disabled={!target || nothingOffered}
-          className="rounded border border-gold-600 bg-gold font-display font-semibold uppercase tracking-wide text-white hover:bg-gold-600 disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-muted"
-          style={{ fontSize: '0.62em', padding: '0.45em 0.8em' }}
+          className="rounded border font-display font-semibold uppercase tracking-wide transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          style={{ fontSize: '0.62em', padding: '0.45em 0.8em', backgroundColor: BOARD_TILE_COLORS.propertyYellow, borderColor: BOARD_TILE_COLORS.propertyYellow, color: BOARD_TILE_COLORS.altText }}
         >
           {t('builder.propose')}
         </button>

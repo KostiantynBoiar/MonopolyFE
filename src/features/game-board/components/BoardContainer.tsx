@@ -225,6 +225,7 @@ export function BoardContainer({
           <div className="hidden min-h-0 md:block">
             <PlayerPanel
               players={sidebarPlayers}
+              spaces={boardSpaces}
               viewerId={viewerId}
               createdAt={createdAt}
               onSurrender={onSurrender}

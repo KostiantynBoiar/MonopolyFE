@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Player } from '@/features/player-panel';
+import type { PropertyState } from '@/shared/protocol/game-state';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
+import { mortgageValue, buildingCost } from '@/shared/protocol/board-data';
 import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
@@ -35,6 +37,7 @@ const SORTED_BUYABLE_SPACES: Array<{ pos: number; color: string }> = SORTED_BUYA
 
 interface PlayerPanelProps {
   players:     Player[];
+  spaces?:     PropertyState[];
   viewerId?:   string;
   createdAt?:  string;
   onSurrender?: () => void;
@@ -155,7 +158,7 @@ function PropertyGroupGrid({ ownedPositions }: { ownedPositions: number[] }) {
 
 // ─── PlayerPanel ──────────────────────────────────────────────────────────────
 
-export function PlayerPanel({ players, createdAt, onSurrender }: PlayerPanelProps) {
+export function PlayerPanel({ players, spaces, createdAt, onSurrender }: PlayerPanelProps) {
   const t = useTranslations('Player');
   const currentPlayer = players.find((player) => player.isActive);
   const sessionTimer  = useSessionTimer(createdAt);
@@ -236,9 +239,15 @@ export function PlayerPanel({ players, createdAt, onSurrender }: PlayerPanelProp
         {players.map((player) => {
           const ownedProperties = getOwnedProperties(player);
           const delta = deltas.get(player.id);
+          const spaceState = new Map((spaces ?? []).map((s) => [s.position, s]));
           const netWorth = player.balance + ownedProperties.reduce((sum, prop) => {
-            const priceGuess = (prop as { price?: number }).price ?? 0;
-            return sum + priceGuess;
+            const state = spaceState.get(prop.pos);
+            if (state?.isMortgaged) return sum + mortgageValue(prop.pos);
+            const price = (prop as { price?: number }).price ?? 0;
+            const buildings = state
+              ? (state.hotel ? buildingCost(prop.pos) * 5 : buildingCost(prop.pos) * state.houses)
+              : 0;
+            return sum + price + buildings;
           }, 0);
 
           const tokenColor = TOKEN_COLORS[player.token];
