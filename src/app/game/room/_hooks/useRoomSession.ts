@@ -117,10 +117,12 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
     setIsLeaving(true);
     try {
       await leaveSession(sessionId);
+    } catch {
+      // Session may already be finished — navigate anyway.
+    } finally {
       clearSession();
       resetSocket();
       router.replace('/lobby');
-    } finally {
       setIsLeaving(false);
     }
   }, [clearSession, isLeaving, resetSocket, router, sessionId]);
