@@ -19,7 +19,7 @@ export function useOnWsError(error: WsErrorPayload | null): boolean {
     setIsShaking(true);
     const id = window.setTimeout(() => setIsShaking(false), WS_ERROR_SHAKE_DURATION_MS);
     return () => window.clearTimeout(id);
-  }, [error]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [error]);  
 
   return isShaking;
 }

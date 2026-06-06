@@ -59,15 +59,16 @@ function formatMoney(amount: number): string {
 // ─── One side of the trade ────────────────────────────────────────────────────
 
 interface OfferSideProps {
-  name:    string;
-  token:   TokenColor;
-  balance: number;
-  offer:   TradeOffer;
-  label:   string;
-  dimmed?: boolean;
+  name:     string;
+  token:    TokenColor;
+  balance:  number;
+  offer:    TradeOffer;
+  label:    string;
+  compact?: boolean;
+  dimmed?:  boolean;
 }
 
-function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProps) {
+function OfferSide({ name, token, balance, offer, label, compact, dimmed }: OfferSideProps) {
   const tokenHex = TOKEN_COLORS[token];
   const isEmpty = offer.money === 0 && offer.positions.length === 0 && offer.getOutOfJailCards === 0;
   const spaces = offer.positions
@@ -77,7 +78,7 @@ function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProp
   return (
     <div
       className="flex min-w-0 flex-1 flex-col gap-3 p-4"
-      style={{ opacity: dimmed ? 0.5 : 1 }}
+      style={{ opacity: (!compact && dimmed) ? 0.5 : 1 }}
     >
       {/* Player header */}
       <div className="flex items-center gap-2">
@@ -87,13 +88,13 @@ function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProp
         />
         <span
           className="min-w-0 truncate font-display font-bold"
-          style={{ fontSize: '0.9rem', color: GAME_BOARD_COLORS.text }}
+          style={{ fontSize: compact ? '1rem' : '0.9rem', color: GAME_BOARD_COLORS.text }}
         >
           {name}
         </span>
         <span
           className="ml-auto shrink-0 font-mono font-semibold"
-          style={{ fontSize: '0.72rem', color: GAME_BOARD_COLORS.muted }}
+          style={{ fontSize: compact ? '0.85rem' : '0.72rem', color: GAME_BOARD_COLORS.muted }}
         >
           {formatMoney(balance)}
         </span>
@@ -102,7 +103,7 @@ function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProp
       {/* Offer role label */}
       <span
         className="font-mono font-semibold uppercase"
-        style={{ fontSize: '0.62rem', letterSpacing: '0.18em', color: GAME_BOARD_COLORS.muted }}
+        style={{ fontSize: compact ? '0.72rem' : '0.62rem', letterSpacing: '0.18em', color: GAME_BOARD_COLORS.muted }}
       >
         {label}
       </span>
@@ -117,10 +118,10 @@ function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProp
               backgroundColor: GAME_BOARD_COLORS.panel,
             }}
           >
-            <span style={{ fontSize: '0.85em' }}>💰</span>
+            <span>💰</span>
             <span
               className="font-mono font-semibold"
-              style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.text }}
+              style={{ fontSize: compact ? '0.95rem' : '0.8rem', color: GAME_BOARD_COLORS.text }}
             >
               {formatMoney(offer.money)}
             </span>
@@ -133,12 +134,9 @@ function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProp
 
       {/* Deed cards */}
       {spaces.length > 0 && (
-        <div
-          className="flex gap-2 overflow-x-auto pb-1"
-          style={{ fontSize: '0.72em' }}
-        >
+        <div className="flex gap-2 overflow-x-auto pb-1">
           {spaces.map((space) => (
-            <div key={space.pos} className="shrink-0">
+            <div key={space.pos} className="h-[216px] w-[144px] shrink-0">
               <DeedWindow space={space} viewOnly />
             </div>
           ))}
@@ -153,7 +151,7 @@ function OfferSide({ name, token, balance, offer, label, dimmed }: OfferSideProp
 // ─── TradeOverlay ─────────────────────────────────────────────────────────────
 
 export function TradeOverlay({
-  trade, proposer, target, viewerId,
+  trade, proposer, target, viewerId, compact,
   onAccept, onReject, onCounter, onCancel,
 }: TradeWindowProps) {
   const t = useTranslations('Trade');
@@ -211,7 +209,7 @@ export function TradeOverlay({
 
       {/* Exchange area */}
       <div
-        className="flex min-h-0 flex-1 overflow-hidden"
+        className={compact ? 'flex min-h-0 flex-1 flex-col overflow-y-auto' : 'flex min-h-0 flex-1 overflow-hidden'}
         style={{ borderBottom: `1px solid ${GAME_BOARD_COLORS.border}` }}
       >
         <OfferSide
@@ -220,10 +218,14 @@ export function TradeOverlay({
           balance={proposer.balance}
           offer={trade.proposerOffer}
           label={proposerLabel}
+          compact={compact}
           dimmed={viewerRole === TradeParty.TARGET}
         />
 
-        <div style={{ width: '1px', backgroundColor: GAME_BOARD_COLORS.border, flexShrink: 0 }} />
+        <div style={compact
+          ? { height: '1px', backgroundColor: GAME_BOARD_COLORS.border, flexShrink: 0 }
+          : { width: '1px', backgroundColor: GAME_BOARD_COLORS.border, flexShrink: 0 }}
+        />
 
         <OfferSide
           name={target.name}
@@ -231,6 +233,7 @@ export function TradeOverlay({
           balance={target.balance}
           offer={trade.targetRequest}
           label={targetLabel}
+          compact={compact}
           dimmed={viewerRole === TradeParty.PROPOSER}
         />
       </div>

@@ -2,6 +2,7 @@
 
 import { ManagePropertiesOverlay, type ManageProperty } from '@/features/manage';
 import { TradeBuilder, type TradeAsset, type TradeCounterparty, type TradePlayer } from '@/features/trade/components/TradeBuilder';
+import { MobileTradeBuilder } from '@/features/trade/components/MobileTradeBuilder';
 import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
 import type { TradeParticipant } from '@/features/trade/trade.types';
 import type { TradeState } from '@/shared/protocol/game-state';
@@ -25,6 +26,7 @@ export interface TradeBuilderData {
 }
 
 export interface FullOverlayProps {
+  compact?: boolean;
   trade: TradeState | null;
   tradeProposer: TradeParticipant | null;
   tradeTarget: TradeParticipant | null;
@@ -57,6 +59,7 @@ export interface FullOverlayProps {
 }
 
 export function FullOverlay({
+  compact = false,
   trade,
   tradeProposer,
   tradeTarget,
@@ -94,6 +97,7 @@ export function FullOverlay({
         proposer={tradeProposer}
         target={tradeTarget}
         viewerId={viewerPlayerId ?? ''}
+        compact={compact}
         onAccept={onTradeAccept}
         onReject={onTradeReject}
         onCancel={onTradeCancel}
@@ -122,19 +126,18 @@ export function FullOverlay({
   }
 
   if (activeOverlay === ActiveOverlay.TRADE_BUILDER && tradeBuilderData) {
-    return (
-      <TradeBuilder
-        {...tradeBuilderData}
-        onGiveMoneyChange={onTradeGiveMoneyChange}
-        onGetMoneyChange={onTradeGetMoneyChange}
-        onGiveCardsChange={onTradeGiveCardsChange}
-        onGetCardsChange={onTradeGetCardsChange}
-        onClearOfferAssets={onTradeClearOfferAssets}
-        onClearRequestAssets={onTradeClearRequestAssets}
-        onPropose={onTradePropose}
-        onClose={onCloseOverlay}
-      />
-    );
+    const builderProps = {
+      ...tradeBuilderData,
+      onGiveMoneyChange: onTradeGiveMoneyChange,
+      onGetMoneyChange: onTradeGetMoneyChange,
+      onGiveCardsChange: onTradeGiveCardsChange,
+      onGetCardsChange: onTradeGetCardsChange,
+      onClearOfferAssets: onTradeClearOfferAssets,
+      onClearRequestAssets: onTradeClearRequestAssets,
+      onPropose: onTradePropose,
+      onClose: onCloseOverlay,
+    };
+    return compact ? <MobileTradeBuilder {...builderProps} /> : <TradeBuilder {...builderProps} />;
   }
 
   return null;

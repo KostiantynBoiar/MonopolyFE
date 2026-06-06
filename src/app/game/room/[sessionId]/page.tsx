@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
   BoardContainer,
@@ -27,11 +27,16 @@ import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useUiStore } from '@/stores/ui-store';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useGameDispatch } from '../useGameDispatch';
 import { ActiveOverlay, type TradeBuilderData } from '../_components/FullOverlay';
 import { GameCenterGrid } from '../_components/GameCenterGrid';
 import { WaitingCenterGrid } from '../_components/WaitingCenterGrid';
 import { EmptyGameState, FinishedGameState } from '../_components/RoomStates';
+import { MobileGameRoom } from '../_components/mobile/MobileGameRoom';
+import { MobileWaitingRoom } from '../_components/mobile/MobileWaitingRoom';
+import { MobileFinishedState } from '../_components/mobile/MobileFinishedState';
+import { MobileEmptyState } from '../_components/mobile/MobileEmptyState';
 import { useRoomSession } from '../_hooks/useRoomSession';
 import { useTradeDraft } from '../_hooks/useTradeDraft';
 import { getManageProperties } from '../_lib/game-spaces';
@@ -46,6 +51,7 @@ import {
 export default function GameRoomPage() {
   const { ready, user } = useRequireAuth();
   const { dispatch } = useGameDispatch();
+  const isMobile = useIsMobile();
 
   const routeSessionId = useParams<{ sessionId: string }>().sessionId;
 
@@ -232,6 +238,17 @@ export default function GameRoomPage() {
     manageProperties.length > 0 ||
     canManagePendingBuyShortfall;
 
+  // On mobile: when the walk animation finishes for the viewer's own token, clear the
+  // manually-selected tile so the board strip auto-scrolls to the landing position.
+  const prevWalkStateRef = useRef(walkState);
+  useEffect(() => {
+    const prev = prevWalkStateRef.current;
+    prevWalkStateRef.current = walkState;
+    if (isMobile && prev && !walkState && prev.playerId === viewerPlayerId) {
+      setSelectedTile(null);
+    }
+  }, [isMobile, walkState, viewerPlayerId, setSelectedTile]);
+
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const dispatchCommand = useCallback((type: CommandType, payload: Record<string, unknown> = {}) => {
@@ -327,6 +344,120 @@ export default function GameRoomPage() {
     ? game.players.find((player) => player.id === game.winnerId)?.displayName ?? null
     : null;
 
+  // ─── Shared prop objects ──────────────────────────────────────────────────
+
+  const centerProps = {
+    // Layout
+    isBuyDecisionForViewer,
+    animatedDiceRollId,
+    deedPanelSpace,
+    pendingBuySpace,
+    // Button states
+    canRoll,
+    canBuyProperty: permissions.canBuyProperty,
+    canManage,
+    canEndTurn: permissions.canEndTurn,
+    canTrade: permissions.canTrade,
+    hasOtherTraders: Boolean(tradeBuilderData?.others.length),
+    isRolling,
+    isViewerTurn,
+    roundNumber: game.turn.roundNumber,
+    turnDeadlineMs: game.turn.turnDeadlineMs,
+    canSurrender: permissions.canSurrender,
+    // Button handlers
+    onRoll: handleRoll,
+    onEndTurn: () => dispatchCommand(CommandType.EndTurn),
+    onManageOpen: () => setActiveOverlay(ActiveOverlay.MANAGE),
+    onTradeOpen: handleTradeOpen,
+    onBuy: handleBuy,
+    onAuction: handlePassBuy,
+    onSurrender: () => dispatchCommand(CommandType.Surrender),
+    // CenterPanel props
+    activeCard,
+    pendingInteractionPlayerId: pendingAnimationInteraction?.affectedPlayerId ?? null,
+    viewerPlayerId,
+    debt: game.debt,
+    auction: game.auction,
+    auctionPlayers: game.players.map((p) => ({ id: p.id, name: p.displayName })),
+    turnPhase: game.turn.phase,
+    jailStatus: viewerPlayer?.jailStatus ?? null,
+    diceRoll,
+    canPayDebt: permissions.canPayDebt,
+    canBidAuction: permissions.canBidAuction,
+    canRollInJail: permissions.canRollInJail,
+    canPayJailFine: permissions.canPayJailFine,
+    canUseJailCard: permissions.canUseJailCard,
+    log: game.log,
+    chatMessages,
+    viewerToken: viewerPlayer?.token,
+    viewerUserId: user?.id,
+    onCardProceed: handleCardProceed,
+    onPayDebt: () => dispatchCommand(CommandType.PayDebt),
+    onManage: () => setActiveOverlay(ActiveOverlay.MANAGE),
+    onBankrupt: () => dispatchCommand(CommandType.DeclareBankruptcy),
+    onBidAuction: (amount: number) => dispatch({ type: CommandType.BidAuction, amount }),
+    onPayJailFine: () => dispatchCommand(CommandType.PayJailFine),
+    onUseJailCard: () => dispatchCommand(CommandType.UseJailCard),
+    onSendMessage: sendChat,
+    onSendSticker: sendSticker,
+    // FullOverlay props
+    trade: game.trade,
+    tradeProposer: tradeParticipants.proposer,
+    tradeTarget: tradeParticipants.target,
+    activeOverlay,
+    manageProperties,
+    canBuildHouse: permissions.canBuildHouse,
+    canBuildHotel: permissions.canBuildHotel,
+    canMortgage: permissions.canMortgage,
+    canUnmortgage: permissions.canUnmortgage,
+    tradeBuilderData,
+    onTradeAccept: () => dispatch({ type: CommandType.AcceptTrade, tradeId: game.trade!.id }),
+    onTradeReject: () => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id }),
+    onTradeCancel: () => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id }),
+    onBuildHouse: (position: number) => dispatch({ type: CommandType.BuildHouse, position }),
+    onBuildHotel: (position: number) => dispatch({ type: CommandType.BuildHotel, position }),
+    onSellHouse: (position: number) => dispatch({ type: CommandType.SellHouse, position }),
+    onSellHotel: (position: number) => dispatch({ type: CommandType.SellHotel, position }),
+    onMortgage: (position: number) => dispatch({ type: CommandType.Mortgage, position }),
+    onUnmortgage: (position: number) => dispatch({ type: CommandType.Unmortgage, position }),
+    onSellProperty: (position: number) => dispatch({ type: CommandType.SellProperty, position }),
+    onCloseOverlay: handleCloseOverlay,
+    onTradeGiveMoneyChange: trade.onGiveMoneyChange,
+    onTradeGetMoneyChange: trade.onGetMoneyChange,
+    onTradeGiveCardsChange: trade.onGiveCardsChange,
+    onTradeGetCardsChange: trade.onGetCardsChange,
+    onTradeClearOfferAssets: trade.onClearOfferAssets,
+    onTradeClearRequestAssets: trade.onClearRequestAssets,
+    onTradePropose: handleTradePropose,
+  };
+
+  const mobileBoardData = {
+    spaces: game.spaces,
+    players: boardPlayers,
+    walkingPlayers,
+    sidebarPlayers,
+    selectedPosition: highlightedBoardPosition,
+    tileSelectionTones: tradeSelectionTones,
+    onSelectPosition: trade.selectBoardPosition,
+    viewerId: viewerPlayerId ?? undefined,
+    createdAt: game.createdAt,
+  };
+
+  const waitingProps = {
+    inviteCode: currentSession.invite_code,
+    memberCount: currentSession.member_count,
+    maxPlayers: currentSession.max_players,
+    yourRole: currentSession.your_role,
+    messages: chatMessages,
+    viewerUserId: user?.id,
+    onSendMessage: sendChat,
+    onSendSticker: sendSticker,
+    onLeave: handleLeaveRoom,
+    onStart: handleStartGame,
+    isLeaving,
+    isStarting,
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -334,144 +465,65 @@ export default function GameRoomPage() {
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
 
       {isWaitingSession ? (
-        <div className="h-full min-h-0 p-[4px]">
-          <BoardContainer
-            centerContent={(
-              <WaitingCenterGrid
-                inviteCode={currentSession.invite_code}
-                memberCount={currentSession.member_count}
-                maxPlayers={currentSession.max_players}
-                yourRole={currentSession.your_role}
-                messages={chatMessages}
-                viewerUserId={user?.id}
-                onSendMessage={sendChat}
-                onSendSticker={sendSticker}
-                onLeave={handleLeaveRoom}
-                onStart={handleStartGame}
-                isLeaving={isLeaving}
-                isStarting={isStarting}
-              />
-            )}
-            sidebarPlayers={waitingSidebarPlayers}
-          />
-        </div>
+        isMobile ? (
+          <MobileWaitingRoom {...waitingProps} />
+        ) : (
+          <div className="h-full min-h-0 p-[4px]">
+            <BoardContainer
+              centerContent={<WaitingCenterGrid {...waitingProps} />}
+              sidebarPlayers={waitingSidebarPlayers}
+            />
+          </div>
+        )
       ) : isFinishedSession ? (
-        <div className="h-full min-h-0 p-[4px]">
-          <BoardContainer
-            centerContent={(
-              <FinishedGameState
-                winnerName={winnerName}
-                onLeave={handleLeaveRoom}
-                isLeaving={isLeaving}
-              />
-            )}
-            spaces={game.spaces}
-            players={boardPlayers}
-            sidebarPlayers={sidebarPlayers}
-            viewerId={viewerPlayerId ?? undefined}
-            createdAt={game.createdAt}
-            onSurrender={() => dispatchCommand(CommandType.Surrender)}
+        isMobile ? (
+          <MobileFinishedState
+            winnerName={winnerName}
+            onLeave={handleLeaveRoom}
+            isLeaving={isLeaving}
           />
-        </div>
+        ) : (
+          <div className="h-full min-h-0 p-[4px]">
+            <BoardContainer
+              centerContent={(
+                <FinishedGameState
+                  winnerName={winnerName}
+                  onLeave={handleLeaveRoom}
+                  isLeaving={isLeaving}
+                />
+              )}
+              spaces={game.spaces}
+              players={boardPlayers}
+              sidebarPlayers={sidebarPlayers}
+              viewerId={viewerPlayerId ?? undefined}
+              createdAt={game.createdAt}
+              onSurrender={() => dispatchCommand(CommandType.Surrender)}
+            />
+          </div>
+        )
       ) : game.players.length === 0 ? (
-        <div className="h-full min-h-0 p-[4px]">
-          <BoardContainer
-            centerContent={(
-              <EmptyGameState
-                sessionCode={currentSession.invite_code}
-                status={status}
-              />
-            )}
+        isMobile ? (
+          <MobileEmptyState
+            sessionCode={currentSession.invite_code}
+            status={status}
           />
-        </div>
+        ) : (
+          <div className="h-full min-h-0 p-[4px]">
+            <BoardContainer
+              centerContent={(
+                <EmptyGameState
+                  sessionCode={currentSession.invite_code}
+                  status={status}
+                />
+              )}
+            />
+          </div>
+        )
+      ) : isMobile ? (
+        <MobileGameRoom {...centerProps} {...mobileBoardData} />
       ) : (
         <BoardContainer
-          centerContent={(
-            <GameCenterGrid
-              // Layout
-              isBuyDecisionForViewer={isBuyDecisionForViewer}
-              animatedDiceRollId={animatedDiceRollId}
-              deedPanelSpace={deedPanelSpace}
-              pendingBuySpace={pendingBuySpace}
-              // Button states
-              canRoll={canRoll}
-              canBuyProperty={permissions.canBuyProperty}
-              canManage={canManage}
-              canEndTurn={permissions.canEndTurn}
-              canTrade={permissions.canTrade}
-              hasOtherTraders={Boolean(tradeBuilderData?.others.length)}
-              isRolling={isRolling}
-              isViewerTurn={isViewerTurn}
-              roundNumber={game.turn.roundNumber}
-              turnDeadlineMs={game.turn.turnDeadlineMs}
-              canSurrender={permissions.canSurrender}
-              // Button handlers
-              onRoll={handleRoll}
-              onEndTurn={() => dispatchCommand(CommandType.EndTurn)}
-              onManageOpen={() => setActiveOverlay(ActiveOverlay.MANAGE)}
-              onTradeOpen={handleTradeOpen}
-              onBuy={handleBuy}
-              onAuction={handlePassBuy}
-              onSurrender={() => dispatchCommand(CommandType.Surrender)}
-              // CenterPanel props
-              activeCard={activeCard}
-              pendingInteractionPlayerId={pendingAnimationInteraction?.affectedPlayerId ?? null}
-              viewerPlayerId={viewerPlayerId}
-              debt={game.debt}
-              auction={game.auction}
-              auctionPlayers={game.players.map((p) => ({ id: p.id, name: p.displayName }))}
-              turnPhase={game.turn.phase}
-              jailStatus={viewerPlayer?.jailStatus ?? null}
-              diceRoll={diceRoll}
-              canPayDebt={permissions.canPayDebt}
-              canBidAuction={permissions.canBidAuction}
-              canRollInJail={permissions.canRollInJail}
-              canPayJailFine={permissions.canPayJailFine}
-              canUseJailCard={permissions.canUseJailCard}
-              log={game.log}
-              chatMessages={chatMessages}
-              viewerToken={viewerPlayer?.token}
-              viewerUserId={user?.id}
-              onCardProceed={handleCardProceed}
-              onPayDebt={() => dispatchCommand(CommandType.PayDebt)}
-              onManage={() => setActiveOverlay(ActiveOverlay.MANAGE)}
-              onBankrupt={() => dispatchCommand(CommandType.DeclareBankruptcy)}
-              onBidAuction={(amount) => dispatch({ type: CommandType.BidAuction, amount })}
-              onPayJailFine={() => dispatchCommand(CommandType.PayJailFine)}
-              onUseJailCard={() => dispatchCommand(CommandType.UseJailCard)}
-              onSendMessage={sendChat}
-              onSendSticker={sendSticker}
-              // FullOverlay props
-              trade={game.trade}
-              tradeProposer={tradeParticipants.proposer}
-              tradeTarget={tradeParticipants.target}
-              activeOverlay={activeOverlay}
-              manageProperties={manageProperties}
-              canBuildHouse={permissions.canBuildHouse}
-              canBuildHotel={permissions.canBuildHotel}
-              canMortgage={permissions.canMortgage}
-              canUnmortgage={permissions.canUnmortgage}
-              tradeBuilderData={tradeBuilderData}
-              onTradeAccept={() => dispatch({ type: CommandType.AcceptTrade, tradeId: game.trade!.id })}
-              onTradeReject={() => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id })}
-              onTradeCancel={() => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id })}
-              onBuildHouse={(position) => dispatch({ type: CommandType.BuildHouse, position })}
-              onBuildHotel={(position) => dispatch({ type: CommandType.BuildHotel, position })}
-              onSellHouse={(position) => dispatch({ type: CommandType.SellHouse, position })}
-              onSellHotel={(position) => dispatch({ type: CommandType.SellHotel, position })}
-              onMortgage={(position) => dispatch({ type: CommandType.Mortgage, position })}
-              onUnmortgage={(position) => dispatch({ type: CommandType.Unmortgage, position })}
-              onSellProperty={(position) => dispatch({ type: CommandType.SellProperty, position })}
-              onCloseOverlay={handleCloseOverlay}
-              onTradeGiveMoneyChange={trade.onGiveMoneyChange}
-              onTradeGetMoneyChange={trade.onGetMoneyChange}
-              onTradeGiveCardsChange={trade.onGiveCardsChange}
-              onTradeGetCardsChange={trade.onGetCardsChange}
-              onTradeClearOfferAssets={trade.onClearOfferAssets}
-              onTradeClearRequestAssets={trade.onClearRequestAssets}
-              onTradePropose={handleTradePropose}
-            />
-          )}
+          centerContent={<GameCenterGrid {...centerProps} />}
           spaces={game.spaces}
           players={boardPlayers}
           walkingPlayers={walkingPlayers}

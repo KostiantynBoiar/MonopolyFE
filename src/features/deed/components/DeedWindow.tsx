@@ -95,7 +95,7 @@ export function DeedWindow({
   ownership,
 }: DeedWindowProps) {
   const t = useTranslations('Deed');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
 
   const isDecisionMode = Boolean(decisionSpace);
@@ -131,7 +131,7 @@ export function DeedWindow({
       return el.scrollHeight > Math.ceil(lh * 1.4);
     };
     if (!isMultiLine()) return;
-    for (const px of (compact ? [9, 8] : [15, 13, 11, 9])) {
+    for (const px of (compact ? [9, 8, 7, 6] : [15, 13, 11, 9, 8, 7, 6])) {
       el.style.fontSize = `${px}px`;
       if (!isMultiLine()) break;
     }
@@ -144,12 +144,15 @@ export function DeedWindow({
   useLayoutEffect(() => {
     const el = rentRowsRef.current;
     if (!el) return;
-    const candidates = compact ? [13, 12, 11, 10, 9, 8] : [16, 15, 14, 13, 12];
+    const candidates = compact ? [13, 12, 11, 10, 9, 8, 7, 6] : [16, 15, 14, 13, 12, 11, 10, 9];
     const fit = () => {
+      el.style.rowGap = '';
       for (const px of candidates) {
         el.style.fontSize = `${px}px`;
-        if (el.scrollHeight <= el.clientHeight) break;
+        if (el.scrollHeight <= el.clientHeight) return;
       }
+      // Still overflowing at minimum font — collapse gaps as last resort.
+      el.style.rowGap = '0px';
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -184,7 +187,7 @@ export function DeedWindow({
     >
       {/* Space name / color header */}
       <div
-        className="relative overflow-hidden rounded-[12px] border px-3 py-2 text-center"
+        className={`relative overflow-hidden rounded-[12px] border text-center ${compact ? 'px-2 py-1' : 'px-3 py-2'}`}
         style={{
           backgroundColor: headerColor,
           borderColor:     headerColor,
@@ -192,14 +195,14 @@ export function DeedWindow({
           boxShadow:       '0 1px 3px rgba(51,48,43,0.16)',
         }}
       >
-        <p ref={headerTextRef} className={`font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
+        <p ref={headerTextRef} className={`break-words font-display font-semibold uppercase tracking-[0.08em] ${compact ? 'text-[11px]' : 'text-lg'}`}>
           {spaceName}
         </p>
       </div>
 
       {/* Rent / info body */}
       <div
-        className="grid min-h-0 overflow-hidden rounded-[12px] border px-3 py-3 self-stretch"
+        className={`grid min-h-0 overflow-hidden rounded-[12px] border self-stretch ${compact ? 'px-2 py-1' : 'px-3 py-3'}`}
         style={{
           gridTemplateRows: isDeed && deed ? 'auto auto minmax(0,1fr)' : isSpecialCard ? '1fr' : 'auto 1fr',
           backgroundColor:  GAME_BOARD_COLORS.surface,
@@ -231,7 +234,7 @@ export function DeedWindow({
           >
             <div
               ref={rentRowsRef}
-              className="grid min-h-0 h-full gap-[6px] overflow-hidden"
+              className={`grid min-h-0 h-full overflow-hidden ${compact ? 'gap-[2px]' : 'gap-[6px]'}`}
               style={{
                 fontSize: compact ? '13px' : '16px',
                 alignContent: renderBuildingsInsideInfo ? 'start' : 'center',

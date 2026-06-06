@@ -27,7 +27,7 @@ export function AuctionOverlay({
   useEffect(() => {
     const iv = setInterval(() => setDisplayMs((ms) => Math.max(0, ms - 1000)), 1000);
     return () => clearInterval(iv);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   const highestBidder = players.find((p) => p.id === auctionState.highestBidderId);

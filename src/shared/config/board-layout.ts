@@ -1,4 +1,4 @@
-import { CornerVariant, SpaceType, TileEdge } from '@/features/game-board/game-board.enums';
+import { BoardTileFlavor, CornerVariant, SpaceType, TileEdge } from '@/features/game-board/game-board.enums';
 import { PropertyColor } from '@/shared/protocol/game-state.enums';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import { N, NW, W } from '@/shared/config/constants';
@@ -55,6 +55,18 @@ export function getGridPos(pos: number): { col: number; row: number } {
   if (pos <= 20) return { col: 0, row: 20 - pos };
   if (pos <= 30) return { col: pos - 20, row: 0 };
   return { col: 10, row: pos - 30 };
+}
+
+export function getTileFlavor(type: SpaceType): BoardTileFlavor {
+  switch (type) {
+    case SpaceType.CORNER:
+      return BoardTileFlavor.CORNER;
+    case SpaceType.CHANCE:
+    case SpaceType.CHEST:
+      return BoardTileFlavor.SPECIAL;
+    default:
+      return BoardTileFlavor.PROPERTY;
+  }
 }
 
 export function getTileEdge(pos: number): TileEdge {

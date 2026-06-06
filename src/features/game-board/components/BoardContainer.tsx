@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { BOARD, getGridPos, getTileEdge, getTileOuterEdgePct } from '@/shared/config/board-layout';
+import { BOARD, getGridPos, getTileEdge, getTileOuterEdgePct, getTileFlavor } from '@/shared/config/board-layout';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
-import { BoardTileFlavor, SpaceType } from '../game-board.enums';
 import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
 import { BoardTile } from './BoardTile';
@@ -74,20 +73,6 @@ function AnimatedBoardToken({
 
 const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
 const BOARD_ROWS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getTileFlavor(type: SpaceType): BoardTileFlavor {
-  switch (type) {
-    case SpaceType.CORNER:
-      return BoardTileFlavor.CORNER;
-    case SpaceType.CHANCE:
-    case SpaceType.CHEST:
-      return BoardTileFlavor.SPECIAL;
-    default:
-      return BoardTileFlavor.PROPERTY;
-  }
-}
 
 // ─── BoardContainer ───────────────────────────────────────────────────────────
 

@@ -211,7 +211,7 @@ export function TradeBuilder({
     requestAssets.length === 0;
 
   return (
-    <div {...dialog} className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-white focus:outline-none">
+    <div {...dialog} className="absolute inset-[6px] z-10 flex flex-col overflow-hidden rounded-[12px] border border-line bg-paper focus:outline-none">
       <div className="flex shrink-0 items-center justify-between bg-ink px-3 py-2">
         <span className="font-display font-black uppercase tracking-wide text-white" style={{ fontSize: '0.8em' }}>
           {t('builder.header')}
@@ -279,7 +279,7 @@ export function TradeBuilder({
         />
       </div>
 
-      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-gray-200 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line bg-surface px-3 py-2">
         <button
           type="button"
           onClick={onClose}

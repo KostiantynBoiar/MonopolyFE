@@ -27,7 +27,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning className={robotoFlex.variable}>
-      {/* eslint-disable-next-line @next/next/no-head-element */}
+      { }
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

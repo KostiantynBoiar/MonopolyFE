@@ -1,4 +1,4 @@
-import { BoardSpaceType, CardKind, CardEffectType, DebtCreditorType, GameEventType, GameStatus, LogKind, PropertyColor, TradeStatus, TurnPhase, AuctionTargetKind, TokenColor, AdvanceToNearestSpaceType } from "./game-state.enums";
+import type { BoardSpaceType, CardKind, CardEffectType, DebtCreditorType, GameEventType, GameStatus, LogKind, PropertyColor, TradeStatus, TurnPhase, AuctionTargetKind, TokenColor, AdvanceToNearestSpaceType } from "./game-state.enums";
 
 export type IsoDateString = string;
 
