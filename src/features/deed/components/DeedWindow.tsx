@@ -95,7 +95,7 @@ export function DeedWindow({
   ownership,
 }: DeedWindowProps) {
   const t = useTranslations('Deed');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
 
   const isDecisionMode = Boolean(decisionSpace);

@@ -5,7 +5,7 @@ import type { TradeParticipant, TradePlayer, TradeAsset } from '@/features/trade
 import type { DeedInfo } from '@/features/deed';
 import type { AuctionPlayer } from '@/features/auction';
 import type { ManageProperty } from '@/features/manage';
-import { ActionKey } from './chat.enums';
+import type { ActionKey } from './chat.enums';
 
 /**
  * ChatMessage is kept for lobby use (pre-game WS chat from socket-store).

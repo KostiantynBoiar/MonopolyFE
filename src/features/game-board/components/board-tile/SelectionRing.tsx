@@ -1,6 +1,6 @@
 'use client';
 
-import { BoardTileSelectionTone } from '../../game-board.enums';
+import type { BoardTileSelectionTone } from '../../game-board.enums';
 import { BOARD_TILE_COLORS } from '../../game-board.colors';
 import { SELECTION_RING_COLOR } from './constants';
 

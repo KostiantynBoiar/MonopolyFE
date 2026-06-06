@@ -25,13 +25,14 @@ import type {
   DebtState,
   LogEntry,
 } from '@/shared/protocol/game-state';
-import {
-  GameStatus,
-  TurnPhase,
+import type {
   TokenColor,
   LogKind,
   CardKind,
-  TradeStatus,
+  TradeStatus} from '@/shared/protocol/game-state.enums';
+import {
+  GameStatus,
+  TurnPhase,
   DebtCreditorType,
   AuctionTargetKind,
 } from '@/shared/protocol/game-state.enums';
