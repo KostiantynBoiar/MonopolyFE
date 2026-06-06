@@ -186,7 +186,7 @@ export function BoardContainer({
                   className="absolute inset-[8px] rounded-[12px]"
                   style={{ backgroundColor: GAME_BOARD_COLORS.center }}
                 />
-                <div className="relative z-10 h-full w-full" style={{ padding: 'clamp(5px,0.85vmin,10px)' }}>
+                <div className="relative z-[70] h-full w-full" style={{ padding: 'clamp(5px,0.85vmin,10px)' }}>
                   {centerContent ? (
                     <div className="h-full w-full overflow-hidden rounded-[12px]">
                       {centerContent}

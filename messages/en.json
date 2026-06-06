@@ -237,6 +237,7 @@
     "netWorth": "net ~${amount}",
     "noProperties": "No properties",
     "surrender": "Surrender",
+    "surrenderConfirm": "Sure?",
     "avatarAlt": "{name} avatar",
     "ownedProperties": "{name} owned properties",
     "tokenCount": "{count, plural, one {{count} player token} other {{count} player tokens}}"

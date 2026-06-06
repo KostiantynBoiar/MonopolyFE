@@ -136,7 +136,7 @@ export function GameCenterGrid({
 
   const dimStyle = {
     opacity: isBuyDecisionForViewer ? 0.15 : 1,
-    filter: isBuyDecisionForViewer ? 'saturate(0.82)' : 'saturate(1)',
+    filter: isBuyDecisionForViewer ? 'saturate(0.82)' : 'none',
     transition: 'opacity 260ms cubic-bezier(0.22, 1, 0.36, 1), filter 260ms cubic-bezier(0.22, 1, 0.36, 1)',
   };
 

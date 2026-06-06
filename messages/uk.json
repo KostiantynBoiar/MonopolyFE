@@ -219,6 +219,7 @@
     "netWorth": "капітал ~${amount}",
     "noProperties": "Немає нерухомості",
     "surrender": "Здатися",
+    "surrenderConfirm": "Точно?",
     "avatarAlt": "Аватар {name}",
     "ownedProperties": "Нерухомість {name}",
     "tokenCount": "{count, plural, one {{count} фішка гравця} few {{count} фішки гравців} many {{count} фішок гравців} other {{count} фішки гравців}}"

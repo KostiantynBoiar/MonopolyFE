@@ -161,6 +161,13 @@ export function PlayerPanel({ players, createdAt, onSurrender }: PlayerPanelProp
   const sessionTimer  = useSessionTimer(createdAt);
   const jailSpace = BOARD.find((space) => space.corner === CornerVariant.JAIL);
   const jailColor = jailSpace ? getSpaceHeaderColor(jailSpace) : BOARD_TILE_COLORS.propertyOrange;
+  const [surrenderConfirming, setSurrenderConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!surrenderConfirming) return;
+    const timer = setTimeout(() => setSurrenderConfirming(false), 4000);
+    return () => clearTimeout(timer);
+  }, [surrenderConfirming]);
 
   const [deltas, setDeltas] = useState<Map<string, BalanceDeltaEntry>>(new Map());
   const deltaCounterRef = useRef(0);
@@ -298,15 +305,22 @@ export function PlayerPanel({ players, createdAt, onSurrender }: PlayerPanelProp
       {onSurrender && (
         <button
           type="button"
-          onClick={onSurrender}
-          className="mt-auto w-full shrink-0 rounded-[10px] border py-2 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-opacity hover:opacity-70"
+          onClick={() => {
+            if (surrenderConfirming) {
+              onSurrender();
+              setSurrenderConfirming(false);
+            } else {
+              setSurrenderConfirming(true);
+            }
+          }}
+          className="mt-auto w-full shrink-0 rounded-[10px] border py-2 font-display text-[0.7rem] font-bold uppercase tracking-[0.08em] transition-colors"
           style={{
-            backgroundColor: 'transparent',
+            backgroundColor: surrenderConfirming ? BOARD_TILE_COLORS.propertyRed : 'transparent',
             borderColor: BOARD_TILE_COLORS.propertyRed,
-            color: BOARD_TILE_COLORS.propertyRed,
+            color: surrenderConfirming ? '#fff' : BOARD_TILE_COLORS.propertyRed,
           }}
         >
-          {t('surrender')}
+          {surrenderConfirming ? t('surrenderConfirm') : t('surrender')}
         </button>
       )}
     </aside>
