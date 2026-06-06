@@ -20,6 +20,7 @@ export interface TradeWindowProps {
   proposer: TradeParticipant;
   target: TradeParticipant;
   viewerId: string;
+  compact?: boolean;
   onAccept?: () => void;
   onReject?: () => void;
   onCounter?: () => void;

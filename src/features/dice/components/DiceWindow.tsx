@@ -10,6 +10,8 @@ import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, DICE_SPIN_MS } from 
 interface DiceWindowProps {
   diceRoll?: DiceRoll | null;
   rollId?: number;
+  /** Reduces header chip and font sizes to fit in narrow-height containers. */
+  compact?: boolean;
 }
 
 const PIP_LAYOUTS: Record<number, Array<[number, number]>> = {
@@ -74,7 +76,7 @@ function DieFace({
   );
 }
 
-export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
+export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindowProps) {
   const t = useTranslations('Dice');
   const [rolling, setRolling] = useState(false);
   const [justSettled, setJustSettled] = useState(false);
@@ -167,7 +169,7 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
     >
       {/* Soft section label — matches the chat's restrained header chips */}
       <div
-        className="flex items-center justify-center gap-2 rounded-[10px] border py-[7px] font-display text-[11px] font-bold uppercase tracking-[0.22em]"
+        className={`flex items-center justify-center gap-2 rounded-[10px] border font-display text-[11px] font-bold uppercase tracking-[0.22em] ${compact ? 'py-[2px]' : 'py-[7px]'}`}
         style={{
           backgroundColor: GAME_BOARD_COLORS.surface,
           borderColor: GAME_BOARD_COLORS.border,
@@ -183,20 +185,20 @@ export function DiceWindow({ diceRoll, rollId = 0 }: DiceWindowProps) {
         {t('title')}
       </div>
 
-      <div className="grid min-h-0 grid-cols-2 place-items-center gap-3 px-2 py-2">
+      <div className={`grid min-h-0 grid-cols-2 place-items-center gap-2 ${compact ? 'px-1 py-1' : 'px-2 py-2'}`}>
         <DieFace value={displayDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} justSettled={justSettled} side="left" />
         <DieFace value={displayDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
       </div>
 
-      <div className="flex flex-col items-center gap-1.5 pb-[2px]">
+      <div className={`flex flex-col items-center ${compact ? 'gap-0.5' : 'gap-1.5 pb-[2px]'}`}>
         <span
-          className="font-display text-[18px] font-black tracking-[0.02em]"
+          className={`font-display font-black tracking-[0.02em] ${compact ? 'text-[14px]' : 'text-[18px]'}`}
           style={{ color: GAME_BOARD_COLORS.tileText }}
         >
           {t('total', { total })}
         </span>
         <span
-          className="rounded-full border px-3 py-[3px] text-[11px] font-bold uppercase tracking-[0.14em] transition-colors duration-200"
+          className={`rounded-full border font-bold uppercase tracking-[0.14em] transition-colors duration-200 ${compact ? 'px-2 py-[2px] text-[10px]' : 'px-3 py-[3px] text-[11px]'}`}
           style={isDoubles ? {
             backgroundColor: 'var(--dice-doubles)',
             borderColor: 'var(--dice-doubles)',

@@ -164,12 +164,12 @@ function StickerCell({
     <button
       type="button"
       onClick={() => onSelect(url)}
-      className="flex h-[60px] w-[60px] items-center justify-center rounded-[10px] border transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
+      className="flex w-full aspect-square items-center justify-center rounded-[10px] border transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
       style={PANEL_BORDER_STYLE}
     >
       {isTgs && !mounted
-        ? <StickerFallback size={45} />
-        : <StickerPreview url={url} alt={file} size={45} loop={false} autoplay={false} />}
+        ? <StickerFallback size={44} />
+        : <StickerPreview url={url} alt={file} size={44} loop={false} autoplay={false} />}
     </button>
   );
 }
@@ -424,15 +424,14 @@ function StickerPicker({
 
   return (
     <div
-      className="absolute inset-x-0 bottom-[56px] z-10 overflow-hidden rounded-[14px] border"
+      className="absolute inset-x-0 bottom-[54px] top-0 z-30 flex flex-col rounded-[14px] border"
       style={{
-        maxHeight: 'calc(100% - 108px)',
         boxShadow: '0 8px 24px rgba(51,48,43,0.18)',
         ...PANEL_BORDER_STYLE,
       }}
     >
       {packs.length > 1 && (
-        <div className="flex gap-[4px] border-b p-2" style={{ borderColor: C.border }}>
+        <div className="flex shrink-0 gap-[4px] border-b p-2" style={{ borderColor: C.border }}>
           {packs.map((pack, index) => (
             <button
               key={pack.id}
@@ -447,16 +446,18 @@ function StickerPicker({
         </div>
       )}
 
-      <div className="grid grid-cols-5 gap-[2px] overflow-y-auto p-1.5" style={{ maxHeight: '240px' }}>
-        {activePack?.stickers.map((file, index) => (
-          <StickerCell
-            key={`${activePack.id}-${file}`}
-            packId={activePack.id}
-            file={file}
-            index={index}
-            onSelect={onSelectSticker}
-          />
-        ))}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="grid grid-cols-5 gap-[2px] p-1.5">
+          {activePack?.stickers.map((file, index) => (
+            <StickerCell
+              key={`${activePack.id}-${file}`}
+              packId={activePack.id}
+              file={file}
+              index={index}
+              onSelect={onSelectSticker}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
