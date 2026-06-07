@@ -24,7 +24,6 @@ import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DUR
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 import { DICE_SPIN_MS, DICE_LINGER_MS } from '@/shared/config/constants';
-import { env } from '@/shared/config/env';
 
 // ─── Animation event listeners ────────────────────────────────────────────────
 
@@ -47,8 +46,9 @@ const BOARD_SIZE = 40;
 const GO_TO_JAIL_POSITION = 30;
 const JAIL_POSITION = 10;
 const MAX_FORWARD_STEPS = 20;
-// Safety auto-release for a wait gate if Continue never arrives.
-const GATE_TIMEOUT_MS = 60_000;
+// Client-side timeout: if the player does not click Proceed within this window,
+// auto-resolve the gate locally and commit the final snapshot.
+const GATE_TIMEOUT_MS = 7_000;
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -264,7 +264,11 @@ async function applyTimeline(next: GameSnapshot, myGeneration: number): Promise<
 
       case 'wait_for_player':
         emit(instr);
-        await openGate(instr.interactionId, lastMover);
+        // If the card was already acknowledged this session (same id), the overlay is
+        // suppressed by commit() — no gate to wait on, skip it immediately.
+        if (!timelineCard || timelineCard.id !== acknowledgedCardId) {
+          await openGate(instr.interactionId, lastMover);
+        }
         ui.setActiveAnimationCard(null);
         break;
 
@@ -424,18 +428,20 @@ function commit(snapshot: GameSnapshot): void {
   useGameStore.getState().setSnapshot(cleaned);
 }
 
-/** Dev aid: dump every committed snapshot so balance/position changes are traceable per update. */
 function logGameState(snapshot: GameSnapshot): void {
-  if (!env.debugGameRoom) return;
   const g = snapshot.game;
-  console.debug(
+  console.log( // eslint-disable-line no-console
     '[gamestate]',
     {
-      status: g.status,
-      turn: { phase: g.turn.phase, currentPlayerId: g.turn.currentPlayerId, diceRoll: g.turn.diceRoll },
+      turn: g.turn.turnNumber,
+      round: g.turn.roundNumber,
+      phase: g.turn.phase,
+      currentPlayerId: g.turn.currentPlayerId,
+      diceRoll: g.turn.diceRoll,
       activeCard: g.activeCard,
       players: g.players.map((p) => ({ id: p.id, name: p.displayName, balance: p.balance, position: p.position })),
+      recentLog: g.log.slice(-5).map((e) => e.text),
     },
-    g, // full snapshot, expandable in the console
+    g,
   );
 }

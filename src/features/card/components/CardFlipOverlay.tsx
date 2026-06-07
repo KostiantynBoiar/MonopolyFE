@@ -109,6 +109,7 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
   const dialog = useDialog<HTMLDivElement>({ label });
   const [flipState, setFlipState] = useState<CardFlipState>(CardFlipState.IDLE);
   const [showProceed, setShowProceed] = useState(false);
+  const [proceeded, setProceeded] = useState(false);
 
   useEffect(() => {
     const flipTimer = setTimeout(() => setFlipState(CardFlipState.FLIPPING), CARD_FLIP_TRIGGER_DELAY_MS);
@@ -168,13 +169,13 @@ export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlip
       {/* Proceed button */}
       <button
         type="button"
-        onClick={onProceed}
-        disabled={!canProceed}
+        onClick={() => { setProceeded(true); onProceed(); }}
+        disabled={!canProceed || proceeded}
         className={cn(
           'rounded-[10px] border px-6 py-2.5 font-display font-bold uppercase tracking-wide',
           'transition-all duration-300',
           showProceed ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-2 opacity-0',
-          !canProceed ? 'cursor-not-allowed opacity-60' : '',
+          (!canProceed || proceeded) ? 'cursor-not-allowed opacity-60' : '',
         )}
         style={{
           fontSize: '0.72rem',
