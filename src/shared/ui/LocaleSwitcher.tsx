@@ -2,11 +2,13 @@
 
 import { useLocale } from 'next-intl';
 import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { setLocale } from '@/app/actions';
 import type { Locale } from '@/i18n/request';
 
 export function LocaleSwitcher() {
   const locale = useLocale() as Locale;
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const next: Locale = locale === 'uk' ? 'en' : 'uk';
@@ -14,7 +16,7 @@ export function LocaleSwitcher() {
   function toggle() {
     startTransition(async () => {
       await setLocale(next);
-      window.location.reload();
+      router.refresh();
     });
   }
 

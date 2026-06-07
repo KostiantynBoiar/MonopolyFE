@@ -79,7 +79,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const mqlCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const storedMode = (localStorage.getItem('theme') as Mode | null) ?? 'light';
+    const storedMode: Mode = (localStorage.getItem('theme') as Mode | null) ?? 'system';
     const storedBoard = (localStorage.getItem('board-theme') as BoardTheme | null) ?? 'classic';
     const storedDice = (localStorage.getItem('dice-theme') as DiceTheme | null) ?? 'sync';
 
