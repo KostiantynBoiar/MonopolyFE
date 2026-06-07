@@ -9,10 +9,13 @@ import {
   CARD_PROCEED_APPEAR_DELAY_MS,
 } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
+import { useBoardTileName } from '@/features/game-board';
 import { useDialog } from '@/shared/hooks/useDialog';
 import { CardFlipState, CardKind } from '../card.enums';
 import { localizeCardEffect } from '../card.text';
 import type { CardFlipOverlayProps } from '../card.types';
+
+type Card = CardFlipOverlayProps['card'];
 
 // ─── Card theme — colors match board tile palette ─────────────────────────────
 const CARD_THEME = {
@@ -26,10 +29,14 @@ const CARD_THEME = {
   },
 } as const;
 
+function getCardTheme(kind: Card['kind']) {
+  return CARD_THEME[kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
+}
+
 // ─── Card faces ───────────────────────────────────────────────────────────────
 
-function CardFront({ card, label, text }: { card: CardFlipOverlayProps['card']; label: string; text: string }) {
-  const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
+function CardFront({ card, label, text }: { card: Card; label: string; text: string }) {
+  const theme = getCardTheme(card.kind);
 
   return (
     <div
@@ -68,8 +75,8 @@ function CardFront({ card, label, text }: { card: CardFlipOverlayProps['card']; 
   );
 }
 
-function CardBack({ card, label }: { card: CardFlipOverlayProps['card']; label: string }) {
-  const theme = CARD_THEME[card.kind as CardKind] ?? CARD_THEME[CardKind.CHANCE];
+function CardBack({ card, label }: { card: Card; label: string }) {
+  const theme = getCardTheme(card.kind);
 
   return (
     <div
@@ -96,8 +103,9 @@ function CardBack({ card, label }: { card: CardFlipOverlayProps['card']; label: 
 
 export function CardFlipOverlay({ card, onProceed, canProceed = true }: CardFlipOverlayProps) {
   const t = useTranslations('Card');
+  const resolveTileName = useBoardTileName();
   const label = t(card.kind as CardKind);
-  const text = localizeCardEffect(t, card);
+  const text = localizeCardEffect(t, card, resolveTileName);
   const dialog = useDialog<HTMLDivElement>({ label });
   const [flipState, setFlipState] = useState<CardFlipState>(CardFlipState.IDLE);
   const [showProceed, setShowProceed] = useState(false);

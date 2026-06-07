@@ -118,7 +118,6 @@ export interface BoardPlayer {
 export interface BoardSpace {
   pos: number;
   type: SpaceType;
-  name: string;
   price?: number;
   color?: PropertyColor;
   corner?: CornerVariant;

@@ -9,3 +9,5 @@ export { TokenShapeSvg } from './components/TokenShapeSvg';
 export { GAME_BOARD_COLORS, BOARD_TILE_COLORS, PROPERTY_COLOR_MAP } from './game-board.colors';
 export { useActionButtons } from './hooks';
 export type { OverlayId } from './hooks';
+export { useBoardTileName, getBoardTileNameKey } from './board-tile-name';
+export type { TileNameResolver } from './board-tile-name';

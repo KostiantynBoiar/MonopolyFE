@@ -18,7 +18,6 @@ export function getManageProperties(game: GameState, viewerPlayerId: string | nu
     const color = boardSpace?.color;
     return {
       position: space.position,
-      name: boardSpace?.name ?? `Space ${space.position}`,
       color,
       houses: space.houses,
       hotel: space.hotel,

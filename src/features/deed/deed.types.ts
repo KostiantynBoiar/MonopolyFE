@@ -8,7 +8,6 @@ export interface RentRow {
 
 export interface DeedInfo {
   position: number;
-  name: string;
   spaceType: DeedSpaceType;
   price: number;
   color?: PropertyColor;

@@ -5,7 +5,7 @@ import { DebtOverlay } from '@/features/bankruptcy';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { JailOverlay } from '@/features/jail';
-import { BOARD } from '@/shared/config/board-layout';
+import { useBoardTileName } from '@/features/game-board';
 import type { AuctionState, DebtState, DiceRoll, JailStatus, LogEntry } from '@/shared/protocol/game-state';
 import { AuctionTargetKind, TurnPhase } from '@/shared/protocol/game-state.enums';
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
@@ -39,10 +39,6 @@ export interface CenterPanelProps {
   onSendSticker: (url: string) => void;
 }
 
-function getBoardSpaceName(position: number) {
-  return BOARD[position]?.name ?? `Space ${position}`;
-}
-
 export function CenterPanel({
   viewerPlayerId,
   debt,
@@ -71,6 +67,8 @@ export function CenterPanel({
   onSendMessage,
   onSendSticker,
 }: CenterPanelProps) {
+  const resolveTileName = useBoardTileName();
+
   if (debt && debt.debtorId === viewerPlayerId) {
     return (
       <DebtOverlay
@@ -86,7 +84,7 @@ export function CenterPanel({
   if (auction) {
     const propertyName =
       auction.target.kind === AuctionTargetKind.PROPERTY
-        ? getBoardSpaceName(auction.target.position)
+        ? resolveTileName(auction.target.position)
         : auction.target.kind;
 
     return (

@@ -6,10 +6,11 @@ import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { useTranslations } from 'next-intl';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
+import { useBoardTileName } from '@/features/game-board';
 
 export type TradePlayer = { id: string; name: string; balance: number; getOutOfJailCards: number };
 export type TradeCounterparty = TradePlayer & { getOutOfJailCards: number; propertyCount: number };
-export type TradeAsset = { position: number; name: string; color?: PropertyColor };
+export type TradeAsset = { position: number; color?: PropertyColor };
 
 export type TradeBuilderProps = {
   me: TradePlayer;
@@ -59,13 +60,14 @@ function MoneyInput({
 }
 
 function AssetChip({ asset }: { asset: TradeAsset }) {
+  const resolveTileName = useBoardTileName();
   return (
     <span
       className="flex items-center gap-1 rounded border px-1.5 py-0.5"
       style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border, fontSize: '1em' }}
     >
       {asset.color && <span className={cn('h-3 w-3 rounded-sm', bandColors[asset.color])} />}
-      <span className="font-sans" style={{ color: GAME_BOARD_COLORS.text }}>{asset.name}</span>
+      <span className="font-sans" style={{ color: GAME_BOARD_COLORS.text }}>{resolveTileName(asset.position)}</span>
     </span>
   );
 }

@@ -30,7 +30,6 @@ export function toTradeCounterparty(game: GameState, player: PlayerState): Trade
   };
 }
 
-export function toTradeAsset(game: GameState, position: number): TradeAsset {
-  const boardSpace = BOARD[position];
-  return { position, name: boardSpace?.name ?? `Space ${position}`, color: boardSpace?.color };
+export function toTradeAsset(position: number): TradeAsset {
+  return { position, color: BOARD[position]?.color };
 }

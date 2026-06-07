@@ -5,11 +5,11 @@ import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { BOARD } from '@/shared/config/board-layout';
+import { useBoardTileName } from '@/features/game-board';
 import { DeedWindow } from '@/features/deed';
 
 export interface ManageProperty {
   position:    number;
-  name:        string;
   color?:      PropertyColor;
   houses:      0 | 1 | 2 | 3 | 4;
   hotel:       boolean;
@@ -79,6 +79,7 @@ export function ManagePropertiesOverlay({
   onMortgage, onUnmortgage, onSellProperty, onClose,
 }: ManagePropertiesOverlayProps) {
   const t = useTranslations('Manage');
+  const resolveTileName = useBoardTileName();
   const dialog = useDialog<HTMLDivElement>({ onClose, label: t('title') });
 
   return (
@@ -159,7 +160,7 @@ export function ManagePropertiesOverlay({
                         className="text-center font-display font-bold"
                         style={{ fontSize: '0.8rem', color: GAME_BOARD_COLORS.text }}
                       >
-                        {p.name}
+                        {resolveTileName(p.position)}
                       </span>
                     </div>
                   )}

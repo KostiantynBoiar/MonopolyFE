@@ -1,8 +1,8 @@
-import { BOARD } from '@/shared/config/board-layout';
-import { AdvanceToNearestSpaceType, CardEffectType } from '@/shared/protocol/game-state.enums';
+import { AdvanceToNearestSpaceType, CardEffectType } from './card.enums';
 import type { ActiveCard } from '@/shared/protocol/game-state';
 
 type CardTranslator = (key: string, values?: Record<string, string | number>) => string;
+type TileNameResolver = (position: number) => string;
 
 /**
  * Builds a localized description of a card from its structured `effect`.
@@ -11,12 +11,12 @@ type CardTranslator = (key: string, values?: Record<string, string | number>) =>
  * `effect` — so we render localized copy from that and only fall back to `text` for an effect
  * shape we don't recognise (forward-compatible with new backend effects).
  */
-export function localizeCardEffect(t: CardTranslator, card: ActiveCard): string {
+export function localizeCardEffect(t: CardTranslator, card: ActiveCard, resolveTileName: TileNameResolver): string {
   const effect = card.effect;
 
   switch (effect.type) {
     case CardEffectType.ADVANCE_TO:
-      return t('effect.advanceTo', { place: BOARD[effect.position]?.name ?? `#${effect.position}` });
+      return t('effect.advanceTo', { place: resolveTileName(effect.position) });
 
     case CardEffectType.ADVANCE_TO_NEAREST:
       return t(

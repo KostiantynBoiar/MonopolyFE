@@ -5,6 +5,7 @@ import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
 import { useDialog } from '@/shared/hooks/useDialog';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
+import { useBoardTileName } from '@/features/game-board';
 import { useTranslations } from 'next-intl';
 import type { TradeBuilderProps, TradeAsset, TradeCounterparty } from './TradeBuilder';
 
@@ -34,12 +35,13 @@ function TargetChip({
 }
 
 function AssetRow({ asset }: { asset: TradeAsset }) {
+  const resolveTileName = useBoardTileName();
   return (
     <div className="flex items-center gap-2.5 rounded-[8px] border border-line bg-surface px-3 py-2">
       {asset.color && (
         <span className={cn('h-3.5 w-3.5 shrink-0 rounded-sm', bandColors[asset.color])} />
       )}
-      <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{asset.name}</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{resolveTileName(asset.position)}</span>
     </div>
   );
 }

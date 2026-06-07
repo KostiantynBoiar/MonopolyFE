@@ -13,7 +13,6 @@ export function getDeedInfo(position: number): DeedInfo | null {
     if (!rent) return null;
     return {
       position,
-      name: space.name,
       spaceType: DeedSpaceType.PROPERTY,
       price: space.price!,
       color: space.color,
@@ -33,7 +32,6 @@ export function getDeedInfo(position: number): DeedInfo | null {
   if (space.type === SpaceType.RAILROAD) {
     return {
       position,
-      name: space.name,
       spaceType: DeedSpaceType.RAILROAD,
       price: space.price!,
       rentRows: [
@@ -49,7 +47,6 @@ export function getDeedInfo(position: number): DeedInfo | null {
   if (space.type === SpaceType.UTILITY) {
     return {
       position,
-      name: space.name,
       spaceType: DeedSpaceType.UTILITY,
       price: space.price!,
       rentRows: [
