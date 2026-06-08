@@ -28,6 +28,7 @@ function player(id: string, name: string): EventPlayer {
 export function gatherEventMeta(event: GameEvent): EventMeta {
   switch (event.type) {
     case GameEventType.TurnStarted:
+    case GameEventType.TurnEnded:
       return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
 
     case GameEventType.RoundStarted:
@@ -36,27 +37,33 @@ export function gatherEventMeta(event: GameEvent): EventMeta {
     case GameEventType.DiceRolled:
       return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
 
+    case GameEventType.RolledDoubles:
+      return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
+
     case GameEventType.PlayerMoved:
       return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
 
     case GameEventType.PassedGo:
-      return { players: [player(event.playerId, event.playerName)], amounts: [event.amount], propertyName: null };
+      return { players: [player(event.playerId, event.playerName)], amounts: [event.received], propertyName: null };
 
     case GameEventType.PropertyBought:
-      return { players: [player(event.playerId, event.playerName)], amounts: [event.price], propertyName: event.propertyName };
+      return { players: [player(event.playerId, event.playerName)], amounts: [event.spent], propertyName: null };
 
     case GameEventType.PropertySold:
       return { players: [player(event.playerId, event.playerName)], amounts: [event.refund], propertyName: event.propertyName };
 
+    case GameEventType.BuyDeclined:
+      return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
+
     case GameEventType.RentPaid:
       return {
-        players: [player(event.payerId, event.payerName), player(event.ownerId, event.ownerName)],
-        amounts: [event.amount],
-        propertyName: event.propertyName,
+        players: [player(event.playerId, event.playerName), player(event.opponentId, '')],
+        amounts: [event.spent],
+        propertyName: null,
       };
 
     case GameEventType.TaxPaid:
-      return { players: [player(event.playerId, event.playerName)], amounts: [event.amount], propertyName: null };
+      return { players: [player(event.playerId, event.playerName)], amounts: [event.spent], propertyName: null };
 
     case GameEventType.CardDrawn:
       return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
@@ -68,6 +75,12 @@ export function gatherEventMeta(event: GameEvent): EventMeta {
       return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
 
     case GameEventType.LeftJail:
+      return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
+
+    case GameEventType.PlayerSurrendered:
+      return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
+
+    case GameEventType.TurnTimedOut:
       return { players: [player(event.playerId, event.playerName)], amounts: [], propertyName: null };
 
     case GameEventType.HouseBuilt:

@@ -34,6 +34,44 @@
       "payEachPlayer": "Pay each player M{amount}.",
       "getOutOfJailFree": "Get Out of Jail Free — keep this card.",
       "repairs": "Pay M{perHouse} per house and M{perHotel} per hotel."
+    },
+    "cards": {
+      "chance": {
+        "chance_01": "Advance to GO (Collect $200)",
+        "chance_02": "Advance to Illinois Ave. If you pass GO, collect $200",
+        "chance_03": "Advance to St. Charles Place. If you pass GO, collect $200",
+        "chance_04": "Advance token to nearest Utility. If unowned, you may buy it.",
+        "chance_05": "Advance token to nearest Railroad. Pay owner twice the rental.",
+        "chance_06": "Advance token to nearest Railroad. Pay owner twice the rental.",
+        "chance_07": "Bank pays you dividend of $50",
+        "chance_08": "Get Out of Jail Free",
+        "chance_09": "Go Back 3 Spaces",
+        "chance_10": "Go to Jail. Do not pass GO, do not collect $200",
+        "chance_11": "Make general repairs — $25 per house, $100 per hotel",
+        "chance_12": "Speeding fine $15",
+        "chance_13": "Take a trip to Reading Railroad. If you pass GO, collect $200",
+        "chance_14": "Advance token to Boardwalk",
+        "chance_15": "You have been elected Chairman of the Board. Pay each player $50",
+        "chance_16": "Your building loan matures. Collect $150"
+      },
+      "community_chest": {
+        "chest_01": "Advance to GO (Collect $200)",
+        "chest_02": "Bank error in your favor. Collect $200",
+        "chest_03": "Doctor's fees. Pay $50",
+        "chest_04": "From sale of stock you get $50",
+        "chest_05": "Get Out of Jail Free",
+        "chest_06": "Go to Jail. Do not pass GO, do not collect $200",
+        "chest_07": "Holiday Fund matures. Collect $100",
+        "chest_08": "Income tax refund. Collect $20",
+        "chest_09": "It is your birthday. Collect $10 from every player",
+        "chest_10": "Life insurance matures. Collect $100",
+        "chest_11": "Pay hospital fees of $100",
+        "chest_12": "Pay school fees of $150",
+        "chest_13": "Receive $25 consultancy fee",
+        "chest_14": "Street repairs — $40 per house, $115 per hotel",
+        "chest_15": "You have won second prize in a beauty contest. Collect $10",
+        "chest_16": "You inherit $100"
+      }
     }
   },
 
@@ -438,6 +476,25 @@
       "p38": "Luxury Tax",
       "p39": "Independence Square"
     }
+  },
+
+  "EventLog": {
+    "playerMovedRolled": "{player} rolled {rolled} and moved to {tile}",
+    "playerMoved": "{player} moved to {tile}",
+    "passedGo": "{player} passed GO and collected M{amount}",
+    "rentPaid": "{player} paid M{amount} rent on {tile}",
+    "propertyBought": "{player} bought {tile} for M{amount}",
+    "buyDeclined": "{player} declined to buy {tile}",
+    "rolledDoubles": "{player} rolled doubles ({streak} in a row)",
+    "sentToJailDoubles": "{player} was sent to jail (three doubles in a row)",
+    "sentToJailSpace": "{player} was sent to jail",
+    "sentToJailCard": "{player} was sent to jail by a card",
+    "taxPaid": "{player} paid M{amount} — {tile}",
+    "turnEnded": "It is now {player}'s turn",
+    "cardDrawn": "{player} drew a card: {card}",
+    "playerSurrendered": "{player} surrendered",
+    "playerSurrenderedAfk": "{player} ran out of time and surrendered",
+    "turnTimedOut": "{player} ran out of time (strike {strikes})"
   },
 
   "Settings": {

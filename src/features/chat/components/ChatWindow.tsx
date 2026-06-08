@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
+import { useBoardTileName } from '@/features/game-board';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
+import { renderGameEvent } from '@/shared/protocol/log';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { ChatWindowTab } from '../chat.enums';
 import type { ChatMessage, ChatWindowProps, StickerPack } from '../chat.types';
@@ -256,34 +258,50 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
-function EventEntries({ entries }: { entries: ChatWindowProps['log'] }) {
+function EventEntries({
+  entries,
+  tLog,
+  resolveTileName,
+  resolveCardText,
+}: {
+  entries: ChatWindowProps['log'];
+  tLog: (key: string, values?: Record<string, string | number>) => string;
+  resolveTileName: (position: number) => string;
+  resolveCardText: (cardId: string, cardKind: string) => string;
+}) {
   return (
     <div className="flex flex-col gap-[1px] py-1">
-      {entries.map((entry) => (
-        <div
-          key={entry.id}
-          className="group flex min-w-0 items-baseline gap-2 rounded-[7px] px-2 py-1 text-[13.5px] leading-snug transition-colors"
-          style={{ color: C.text }}
-        >
-          <span
-            className="mt-[6px] h-1.5 w-1.5 shrink-0 self-start rounded-full"
-            style={{ backgroundColor: C.special }}
-            aria-hidden="true"
-          />
-          <span
-            className="shrink-0 font-mono text-[10.5px] tabular-nums"
-            style={{ color: C.muted }}
+      {entries.map((entry) => {
+        const text = entry.event
+          ? (renderGameEvent(entry.event, tLog, resolveTileName, resolveCardText) ?? entry.text)
+          : entry.text;
+
+        return (
+          <div
+            key={entry.id}
+            className="group flex min-w-0 items-baseline gap-2 rounded-[7px] px-2 py-1 text-[13.5px] leading-snug transition-colors"
+            style={{ color: C.text }}
           >
-            {formatTime(new Date(entry.ts).getTime())}
-          </span>
-          <p
-            className="min-w-0 flex-1 whitespace-pre-wrap"
-            style={{ color: C.text, overflowWrap: 'anywhere' }}
-          >
-            {entry.text}
-          </p>
-        </div>
-      ))}
+            <span
+              className="mt-[6px] h-1.5 w-1.5 shrink-0 self-start rounded-full"
+              style={{ backgroundColor: C.special }}
+              aria-hidden="true"
+            />
+            <span
+              className="shrink-0 font-mono text-[10.5px] tabular-nums"
+              style={{ color: C.muted }}
+            >
+              {formatTime(new Date(entry.ts).getTime())}
+            </span>
+            <p
+              className="min-w-0 flex-1 whitespace-pre-wrap"
+              style={{ color: C.text, overflowWrap: 'anywhere' }}
+            >
+              {text}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -560,7 +578,18 @@ export function ChatWindow({
   onSendMessage,
   onSendSticker,
 }: ChatWindowProps) {
-  const t = useTranslations('Chat');
+  const t     = useTranslations('Chat');
+  const tLog  = useTranslations('EventLog') as unknown as (key: string, values?: Record<string, string | number>) => string;
+  const tCard = useTranslations('Card') as unknown as (key: string) => string;
+
+  const resolveTileName = useBoardTileName();
+  const resolveCardText = (cardId: string, cardKind: string): string => {
+    try {
+      return tCard(`cards.${cardKind}.${cardId}`);
+    } catch {
+      return cardId;
+    }
+  };
 
   const [activeTab,    setActiveTab]    = useState<ChatWindowTab>(ChatWindowTab.CHAT);
   const [draft,        setDraft]        = useState('');
@@ -645,7 +674,12 @@ export function ChatWindow({
           {activeTab === ChatWindowTab.EVENTS ? (
             eventEntries.length === 0
               ? <EmptyState label={t('noEventsYet')} />
-              : <EventEntries entries={eventEntries} />
+              : <EventEntries
+                  entries={eventEntries}
+                  tLog={tLog}
+                  resolveTileName={resolveTileName}
+                  resolveCardText={resolveCardText}
+                />
           ) : (
             displayMessages.length === 0
               ? <EmptyState label={t('noMessagesYet')} />
