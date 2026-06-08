@@ -440,7 +440,7 @@ function logGameState(snapshot: GameSnapshot): void {
       diceRoll: g.turn.diceRoll,
       activeCard: g.activeCard,
       players: g.players.map((p) => ({ id: p.id, name: p.displayName, balance: p.balance, position: p.position })),
-      recentLog: g.log.slice(-5).map((e) => e.text),
+      recentLog: g.log.slice(-5).map((e) => e.text ?? `[${e.event?.type ?? e.kind}]`),
     },
     g,
   );

@@ -154,13 +154,45 @@ interface BeBankruptcy {
 interface BeLogEntry {
   id: string;
   kind: string;
-  text: string;
   ts: string;
+  // chat / sticker only
+  text?: string | null;
+  sticker_url?: string | null;
+  // event-kind flat fields (Pydantic strips nulls, so absent == null)
+  type?: string | null;
   player_id?: string | null;
   player_name?: string | null;
   player_token?: string | null;
-  sticker_url?: string | null;
-  event?: Record<string, unknown>;
+  opponent_id?: string | null;
+  tile_id?: number | null;
+  rolled?: number | null;
+  spent?: number | null;
+  received?: number | null;
+  card_id?: string | null;
+  card_kind?: string | null;
+  reason?: string | null;
+  streak?: number | null;
+  strikes?: number | null;
+  // extended event fields for types not yet in the wire-schema docs
+  property_name?: string | null;
+  position?: number | null;
+  cost?: number | null;
+  refund?: number | null;
+  amount?: number | null;
+  accepted?: boolean | null;
+  proposer_id?: string | null;
+  proposer_name?: string | null;
+  target_id?: string | null;
+  target_name?: string | null;
+  debtor_id?: string | null;
+  debtor_name?: string | null;
+  winner_id?: string | null;
+  winner_name?: string | null;
+  winner_amount?: number | null;
+  round_number?: number | null;
+  is_doubles?: boolean | null;
+  trade_id?: string | null;
+  creditor_id?: string | null;
 }
 
 interface BeRollDiceAnimation {
@@ -368,30 +400,42 @@ function mapBankruptcyToDebt(b: BeBankruptcy | null | undefined): DebtState | nu
  *
  * Returns undefined if there is no event or the type field is missing.
  */
-function mapEvent(raw: Record<string, unknown> | undefined): GameEvent | undefined {
-  if (!raw?.type) return undefined;
+function mapEvent(e: BeLogEntry): GameEvent | undefined {
+  if (!e.type) return undefined;
   return {
-    ...raw,
-    // snake_case → camelCase for every event field the frontend reads
-    playerId:      raw.player_id,
-    playerName:    raw.player_name,
-    tileId:        raw.tile_id,
-    opponentId:    raw.opponent_id,
-    cardId:        raw.card_id,
-    cardKind:      raw.card_kind,
-    propertyName:  raw.property_name,
-    proposerId:    raw.proposer_id,
-    proposerName:  raw.proposer_name,
-    targetId:      raw.target_id,
-    targetName:    raw.target_name,
-    debtorId:      raw.debtor_id,
-    debtorName:    raw.debtor_name,
-    winnerId:      raw.winner_id,
-    winnerName:    raw.winner_name,
-    roundNumber:   raw.round_number,
-    isDoubles:     raw.is_doubles,
-    tradeId:       raw.trade_id,
-    creditorId:    raw.creditor_id,
+    type:          e.type,
+    playerId:      e.player_id      ?? undefined,
+    playerName:    e.player_name    ?? undefined,
+    playerToken:   e.player_token   ?? undefined,
+    tileId:        e.tile_id        ?? undefined,
+    opponentId:    e.opponent_id    ?? undefined,
+    rolled:        e.rolled         ?? undefined,
+    spent:         e.spent          ?? undefined,
+    received:      e.received       ?? undefined,
+    cardId:        e.card_id        ?? undefined,
+    cardKind:      e.card_kind      ?? undefined,
+    reason:        e.reason         ?? undefined,
+    streak:        e.streak         ?? undefined,
+    strikes:       e.strikes        ?? undefined,
+    propertyName:  e.property_name  ?? undefined,
+    position:      e.position       ?? undefined,
+    cost:          e.cost           ?? undefined,
+    refund:        e.refund         ?? undefined,
+    amount:        e.amount         ?? undefined,
+    accepted:      e.accepted       ?? undefined,
+    proposerId:    e.proposer_id    ?? undefined,
+    proposerName:  e.proposer_name  ?? undefined,
+    targetId:      e.target_id      ?? undefined,
+    targetName:    e.target_name    ?? undefined,
+    debtorId:      e.debtor_id      ?? undefined,
+    debtorName:    e.debtor_name    ?? undefined,
+    winnerId:      e.winner_id      ?? undefined,
+    winnerName:    e.winner_name    ?? undefined,
+    winnerAmount:  e.winner_amount  ?? undefined,
+    roundNumber:   e.round_number   ?? undefined,
+    isDoubles:     e.is_doubles     ?? undefined,
+    tradeId:       e.trade_id       ?? undefined,
+    creditorId:    e.creditor_id    ?? undefined,
   } as unknown as GameEvent;
 }
 
@@ -403,12 +447,11 @@ function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
     console.debug(
       '[GameLog] raw entries (first 3):',
       sample.map((e) => ({
-        kind: e.kind,
-        text: e.text,
-        hasEvent: !!e.event,
-        eventType: e.event?.type,
+        kind:       e.kind,
+        type:       e.type,
         playerName: e.player_name,
         playerToken: e.player_token,
+        text:       e.text,
       })),
     );
   }
@@ -416,13 +459,13 @@ function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
   return entries.map((e) => ({
     id:          e.id,
     kind:        e.kind as LogKind,
-    playerId:    e.player_id ?? undefined,
-    playerName:  e.player_name ?? undefined,
+    playerId:    e.player_id    ?? undefined,
+    playerName:  e.player_name  ?? undefined,
     playerToken: (e.player_token ?? undefined) as TokenColor | undefined,
-    text:        e.text,
-    stickerUrl:  e.sticker_url ?? undefined,
+    text:        e.text         ?? undefined,
+    stickerUrl:  e.sticker_url  ?? undefined,
     ts:          e.ts,
-    event:       mapEvent(e.event),
+    event:       mapEvent(e),
   }));
 }
 

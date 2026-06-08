@@ -340,7 +340,7 @@ function MessageEntries({
         const firstOfRun = !prev || !sameSender(prev, entry);
         const lastOfRun = !next || !sameSender(next, entry);
 
-        const stickerUrl = getStickerUrl(entry.text);
+        const stickerUrl = getStickerUrl(entry.text ?? '');
         const author = own ? youLabel : entry.author ?? playerLabel;
         const tokenColor = entry.token ? TOKEN_COLORS[entry.token] : C.muted;
 

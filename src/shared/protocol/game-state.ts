@@ -265,7 +265,8 @@ export interface LogEntry {
   playerId?:    string;
   playerName?:  string;
   playerToken?: TokenColor;
-  text:         string;
+  /** Present only for chat/sticker entries. Event entries carry no pre-rendered text. */
+  text?:        string;
   stickerUrl?:  string;
   ts:           IsoDateString;
   /** Machine-readable payload for EVENT-kind entries. Absent for chat/sticker. */
