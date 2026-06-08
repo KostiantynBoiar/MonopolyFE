@@ -21,6 +21,7 @@ export interface SessionSummary {
   invite_code: string;
   status: SessionStatus;
   visibility: SessionVisibility;
+  ranked: boolean;
   member_count: number;
   max_players: number;
   host: LobbyHost;
@@ -34,6 +35,7 @@ export interface SessionDetail extends SessionSummary {
 
 export interface CreateSessionInput {
   visibility: SessionVisibility;
+  ranked: boolean;
 }
 
 export interface JoinByCodeInput {

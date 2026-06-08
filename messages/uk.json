@@ -219,7 +219,12 @@
     "gameLog": "Журнал гри",
     "messagePlaceholder": "Повідомлення…",
     "surrender": "Здатися",
-    "surrenderConfirm": "Точно?"
+    "surrenderConfirm": "Точно?",
+    "gameFinished": "Гра завершена",
+    "wonTheGame": "{name} переміг у грі.",
+    "gameHasEnded": "Ця гра завершена.",
+    "backToLobby": "До лобі",
+    "leaving": "Виходимо…"
   },
 
   "Chat": {
@@ -308,6 +313,8 @@
     "invalidCode": "Неправильний код",
     "inviteCodePlaceholder": "TYC-XXXX",
     "backToGame": "Повернутися до гри",
+    "ranked": "Рейтинговий",
+    "unranked": "Нерейтинговий",
     "alreadyInGame": "У вас вже є активна гра. Поверніться до неї або вийдіть, перш ніж приєднуватися до іншої.",
     "createGame": "Нова гра",
     "creating": "Створюємо…",
@@ -322,6 +329,11 @@
       "visibilityLabel": "Видимість",
       "publicDescription": "Будь-хто в лобі може побачити і приєднатись.",
       "privateDescription": "Лише гравці з кодом запрошення можуть приєднатись.",
+      "modeLabel": "Режим",
+      "ranked": "Рейтинговий",
+      "unranked": "Нерейтинговий",
+      "rankedDescription": "Результати впливатимуть на ваш рейтинг.",
+      "unrankedDescription": "Результати не впливатимуть на ваш рейтинг.",
       "createBtn": "Створити гру",
       "creatingBtn": "Створюємо…"
     }

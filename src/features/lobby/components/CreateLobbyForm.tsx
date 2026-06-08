@@ -9,6 +9,7 @@ import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { SessionVisibility } from '../lobby.enums';
 import { createSession } from '../api';
+import { useRankedPreference } from '../hooks/useRankedPreference';
 
 interface CreateLobbyFormProps {
   onBack?: () => void;
@@ -24,6 +25,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
   const resetSocket = useSocketStore((s) => s.reset);
 
   const [visibility, setVisibility] = useState<SessionVisibility>(SessionVisibility.PUBLIC);
+  const [ranked, setRanked] = useRankedPreference();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
     setError(null);
 
     try {
-      const { session } = await createSession({ visibility });
+      const { session } = await createSession({ visibility, ranked });
       resetSocket();
       setSession(session);
       router.push(`/game/room/${session.id}`);
@@ -86,6 +88,32 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
           {visibility === SessionVisibility.PUBLIC
             ? t('publicDescription')
             : t('privateDescription')}
+        </p>
+      </div>
+
+      <div>
+        <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-muted">
+          {t('modeLabel')}
+        </p>
+        <div className="flex gap-2">
+          {([false, true] as const).map((value) => (
+            <button
+              key={String(value)}
+              type="button"
+              onClick={() => setRanked(value)}
+              className={cn(
+                'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
+                ranked === value
+                  ? 'border-ink bg-ink text-white'
+                  : 'border-line-2 bg-surface text-ink hover:bg-paper',
+              )}
+            >
+              {value ? t('ranked') : t('unranked')}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          {ranked ? t('rankedDescription') : t('unrankedDescription')}
         </p>
       </div>
 

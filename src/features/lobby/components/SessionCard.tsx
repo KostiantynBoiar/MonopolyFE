@@ -55,10 +55,19 @@ export function SessionCard({ session, onJoin, isJoining, disabled }: SessionCar
             provisional={!session.host.calibration_complete}
           />
         </p>
-        <p className="mt-0.5 font-mono text-xs text-muted">
+        <p className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-muted">
           {session.invite_code}
-          <span className="mx-1.5 text-line">-</span>
+          <span className="text-line">-</span>
           {timeAgo(session.created_at)}
+          <span className="text-line">·</span>
+          <span className={cn(
+            'rounded-full border px-1.5 py-px text-[10px] font-semibold',
+            session.ranked
+              ? 'border-gold/50 text-gold'
+              : 'border-line text-muted',
+          )}>
+            {session.ranked ? t('ranked') : t('unranked')}
+          </span>
         </p>
       </div>
 

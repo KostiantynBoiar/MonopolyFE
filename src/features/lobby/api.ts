@@ -33,7 +33,7 @@ export async function getSession(sessionId: string): Promise<SessionResponse> {
 export async function createSession(input: CreateSessionInput): Promise<SessionResponse> {
   return authFetch<SessionResponse>(BASE, {
     method: 'POST',
-    body: JSON.stringify({ visibility: input.visibility }),
+    body: JSON.stringify({ visibility: input.visibility, ranked: input.ranked }),
   });
 }
 

@@ -237,7 +237,12 @@
     "gameLog": "Game Log",
     "messagePlaceholder": "Message…",
     "surrender": "Surrender",
-    "surrenderConfirm": "Sure?"
+    "surrenderConfirm": "Sure?",
+    "gameFinished": "Game finished",
+    "wonTheGame": "{name} won the game.",
+    "gameHasEnded": "This game has ended.",
+    "backToLobby": "Back to lobby",
+    "leaving": "Leaving…"
   },
 
   "Chat": {
@@ -326,6 +331,8 @@
     "invalidCode": "Invalid code",
     "inviteCodePlaceholder": "TYC-XXXX",
     "backToGame": "Back to game",
+    "ranked": "Ranked",
+    "unranked": "Unranked",
     "alreadyInGame": "You already have an active game. Return to it or leave before joining another.",
     "createGame": "New Game",
     "creating": "Creating…",
@@ -340,6 +347,11 @@
       "visibilityLabel": "Visibility",
       "publicDescription": "Anyone browsing the lobby can see and join.",
       "privateDescription": "Only players with the invite code can join.",
+      "modeLabel": "Mode",
+      "ranked": "Ranked",
+      "unranked": "Unranked",
+      "rankedDescription": "Results will affect your rating.",
+      "unrankedDescription": "Results won't affect your rating.",
       "createBtn": "Create Game",
       "creatingBtn": "Creating…"
     }

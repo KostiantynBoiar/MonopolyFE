@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Spinner } from '@/shared/ui/Spinner';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 
@@ -27,15 +28,16 @@ export function FinishedGameState({
   onLeave: () => void;
   isLeaving: boolean;
 }) {
+  const t = useTranslations('Game');
   return (
     <div
       className="flex h-full min-h-0 flex-col items-center justify-center gap-4 rounded-[18px] border px-5 text-center"
       style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border }}
     >
       <div>
-        <p className="font-display text-lg font-semibold" style={{ color: GAME_BOARD_COLORS.text }}>Game finished</p>
+        <p className="font-display text-lg font-semibold" style={{ color: GAME_BOARD_COLORS.text }}>{t('gameFinished')}</p>
         <p className="mt-1 text-sm" style={{ color: GAME_BOARD_COLORS.muted }}>
-          {winnerName ? `${winnerName} won the game.` : 'This game has ended.'}
+          {winnerName ? t('wonTheGame', { name: winnerName }) : t('gameHasEnded')}
         </p>
       </div>
       <button
@@ -49,7 +51,7 @@ export function FinishedGameState({
           color:           BOARD_TILE_COLORS.altText,
         }}
       >
-        {isLeaving ? 'Leaving…' : 'Back to lobby'}
+        {isLeaving ? t('leaving') : t('backToLobby')}
       </button>
     </div>
   );

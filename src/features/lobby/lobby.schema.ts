@@ -9,6 +9,7 @@ export const inviteCodeSchema = z
 
 export const createSessionSchema = z.object({
   visibility: z.nativeEnum(SessionVisibility),
+  ranked: z.boolean(),
 });
 
 export const joinByCodeSchema = z.object({

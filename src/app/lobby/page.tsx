@@ -13,6 +13,7 @@ import { Alert, Button, FilterPill } from '@/shared/ui';
 import { SessionStatus } from '@/features/lobby/lobby.enums';
 
 type StatusFilter = 'all' | SessionStatus.WAITING | SessionStatus.IN_PROGRESS;
+type RankedFilter = 'all' | 'ranked' | 'unranked';
 type LobbyPanel = 'join' | 'create';
 
 export default function LobbyPage() {
@@ -32,6 +33,7 @@ export default function LobbyPage() {
   const hasActiveSession = Boolean(activeSession);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [hideFullRooms, setHideFullRooms] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<LobbyPanel>(panelParam === 'create' ? 'create' : 'join');
@@ -171,6 +173,23 @@ export default function LobbyPage() {
             ))}
           </div>
 
+          {/* Ranked filter pills */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {([
+              { value: 'all',       label: t('all') },
+              { value: 'ranked',    label: t('ranked') },
+              { value: 'unranked',  label: t('unranked') },
+            ] as { value: RankedFilter; label: string }[]).map(({ value, label }) => (
+              <FilterPill
+                key={value}
+                active={rankedFilter === value}
+                onClick={() => setRankedFilter(value)}
+              >
+                {label}
+              </FilterPill>
+            ))}
+          </div>
+
           {/* Hide full toggle */}
           <FilterPill active={hideFullRooms} onClick={() => setHideFullRooms((v) => !v)}>
             {t('hideFull')}
@@ -207,6 +226,8 @@ export default function LobbyPage() {
         {!loading && !error && sessions.length > 0 && (() => {
           const filtered = sessions.filter((s) => {
             if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+            if (rankedFilter === 'ranked' && !s.ranked) return false;
+            if (rankedFilter === 'unranked' && s.ranked) return false;
             if (hideFullRooms && s.member_count >= s.max_players) return false;
             return true;
           });
