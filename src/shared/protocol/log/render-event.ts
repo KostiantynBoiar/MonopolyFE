@@ -5,18 +5,10 @@ export type LogTranslator    = (key: string, values?: Record<string, string | nu
 export type TileNameResolver = (position: number) => string;
 export type CardTextResolver = (cardId: string, cardKind: string) => string;
 
-/** Access a raw backend field on an event (mapEvent spreads the entire wire payload). */
-function field<T>(event: GameEvent, key: string): T {
-  return (event as unknown as Record<string, unknown>)[key] as T;
-}
-
 /**
  * Render a machine-readable GameEvent to a localized string using the EventLog
  * translation namespace. Returns null for event types without a template so the
  * caller can fall back to the server-provided `entry.text`.
- *
- * Field access uses the raw backend payload keys (preserved via spread in mapEvent)
- * rather than the FE camelCase aliases, since some backend fields have no alias.
  */
 export function renderGameEvent(
   event: GameEvent,
@@ -24,84 +16,67 @@ export function renderGameEvent(
   resolveTileName: TileNameResolver,
   resolveCardText: CardTextResolver,
 ): string | null {
-  const player = field<string>(event, 'playerName');
-
   switch (event.type) {
     case GameEventType.PlayerMoved: {
-      const tileId = field<number>(event, 'tile_id');
-      const rolled = field<number | undefined>(event, 'rolled');
-      const tile   = resolveTileName(tileId);
-      return rolled != null
-        ? t('playerMovedRolled', { player, rolled, tile })
-        : t('playerMoved', { player, tile });
+      const tile = resolveTileName(event.tileId);
+      return event.rolled != null
+        ? t('playerMovedRolled', { player: event.playerName, rolled: event.rolled, tile })
+        : t('playerMoved',       { player: event.playerName, tile });
     }
 
-    case GameEventType.PassedGo: {
-      const amount = field<number>(event, 'received');
-      return t('passedGo', { player, amount });
-    }
+    case GameEventType.PassedGo:
+      return t('passedGo', { player: event.playerName, amount: event.received });
 
-    case GameEventType.RentPaid: {
-      const tileId = field<number>(event, 'tile_id');
-      const amount = field<number>(event, 'spent');
-      const tile   = resolveTileName(tileId);
-      return t('rentPaid', { player, amount, tile });
-    }
+    case GameEventType.RentPaid:
+      return t('rentPaid', {
+        player: event.playerName,
+        amount: event.spent,
+        tile:   resolveTileName(event.tileId),
+      });
 
-    case GameEventType.PropertyBought: {
-      const tileId = field<number>(event, 'tile_id');
-      const amount = field<number>(event, 'spent');
-      const tile   = resolveTileName(tileId);
-      return t('propertyBought', { player, amount, tile });
-    }
+    case GameEventType.PropertyBought:
+      return t('propertyBought', {
+        player: event.playerName,
+        amount: event.spent,
+        tile:   resolveTileName(event.tileId),
+      });
 
-    case GameEventType.BuyDeclined: {
-      const tileId = field<number>(event, 'tile_id');
-      const tile   = resolveTileName(tileId);
-      return t('buyDeclined', { player, tile });
-    }
+    case GameEventType.BuyDeclined:
+      return t('buyDeclined', { player: event.playerName, tile: resolveTileName(event.tileId) });
 
-    case GameEventType.RolledDoubles: {
-      const streak = field<number>(event, 'streak');
-      return t('rolledDoubles', { player, streak });
-    }
+    case GameEventType.RolledDoubles:
+      return t('rolledDoubles', { player: event.playerName, streak: event.streak });
 
     case GameEventType.SentToJail: {
-      const reason = field<string>(event, 'reason');
+      const { playerName: player, reason } = event;
       if (reason === 'doubles')        return t('sentToJailDoubles', { player });
-      if (reason === 'card')           return t('sentToJailCard', { player });
+      if (reason === 'card')           return t('sentToJailCard',    { player });
       return t('sentToJailSpace', { player });
     }
 
-    case GameEventType.TaxPaid: {
-      const tileId = field<number>(event, 'tile_id');
-      const amount = field<number>(event, 'spent');
-      const tile   = resolveTileName(tileId);
-      return t('taxPaid', { player, amount, tile });
-    }
+    case GameEventType.TaxPaid:
+      return t('taxPaid', {
+        player: event.playerName,
+        amount: event.spent,
+        tile:   resolveTileName(event.tileId),
+      });
 
-    case GameEventType.TurnEnded: {
-      return t('turnEnded', { player });
-    }
+    case GameEventType.TurnEnded:
+      return t('turnEnded', { player: event.playerName });
 
-    case GameEventType.CardDrawn: {
-      const cardId   = field<string>(event, 'card_id');
-      const cardKind = field<string>(event, 'card_kind');
-      const card     = resolveCardText(cardId, cardKind);
-      return t('cardDrawn', { player, card });
-    }
+    case GameEventType.CardDrawn:
+      return t('cardDrawn', {
+        player: event.playerName,
+        card:   resolveCardText(event.cardId, event.cardKind),
+      });
 
-    case GameEventType.PlayerSurrendered: {
-      const reason = field<string>(event, 'reason');
-      return reason === 'afk'
-        ? t('playerSurrenderedAfk', { player })
-        : t('playerSurrendered', { player });
-    }
+    case GameEventType.PlayerSurrendered:
+      return event.reason === 'afk'
+        ? t('playerSurrenderedAfk', { player: event.playerName })
+        : t('playerSurrendered',    { player: event.playerName });
 
-    case GameEventType.TurnTimedOut: {
-      const strikes = field<number>(event, 'strikes');
-      return t('turnTimedOut', { player, strikes });
-    }
+    case GameEventType.TurnTimedOut:
+      return t('turnTimedOut', { player: event.playerName, strikes: event.strikes });
 
     default:
       return null;
