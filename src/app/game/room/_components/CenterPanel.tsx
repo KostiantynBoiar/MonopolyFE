@@ -35,6 +35,7 @@ export interface CenterPanelProps {
   onPayJailFine: () => void;
   onUseJailCard: () => void;
   onRoll: () => void;
+  onSurrender?: () => void;
   onSendMessage: (text: string) => void;
   onSendSticker: (url: string) => void;
 }
@@ -64,6 +65,7 @@ export function CenterPanel({
   onPayJailFine,
   onUseJailCard,
   onRoll,
+  onSurrender,
   onSendMessage,
   onSendSticker,
 }: CenterPanelProps) {
@@ -111,6 +113,7 @@ export function CenterPanel({
         onPayFine={onPayJailFine}
         onUseCard={onUseJailCard}
         onRoll={onRoll}
+        onSurrender={onSurrender}
       />
     );
   }

@@ -214,6 +214,7 @@ export function MobileGameRoom({
             onPayJailFine={onPayJailFine}
             onUseJailCard={onUseJailCard}
             onRoll={onRoll}
+            onSurrender={isViewerTurn && canSurrender ? onSurrender : undefined}
             onSendMessage={onSendMessage}
             onSendSticker={onSendSticker}
           />

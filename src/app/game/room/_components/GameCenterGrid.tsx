@@ -250,6 +250,7 @@ export function GameCenterGrid({
             onPayJailFine={onPayJailFine}
             onUseJailCard={onUseJailCard}
             onRoll={onRoll}
+            onSurrender={isViewerTurn && canSurrender ? onSurrender : undefined}
             onSendMessage={onSendMessage}
             onSendSticker={onSendSticker}
           />

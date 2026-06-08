@@ -6,6 +6,8 @@ import { useDialog } from '@/shared/hooks/useDialog';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 
+const SURRENDER_CONFIRM_MS = 4000;
+
 // ─── Sub-component ────────────────────────────────────────────────────────────
 
 function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
@@ -38,15 +40,16 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface JailOverlayProps {
-  attempts:   number;
-  canPayFine: boolean;
-  canUseCard: boolean;
-  canRoll:    boolean;
-  diceRoll?:  DiceRoll | null;
-  isRolling?: boolean;
-  onPayFine:  () => void;
-  onUseCard:  () => void;
-  onRoll:     () => void;
+  attempts:    number;
+  canPayFine:  boolean;
+  canUseCard:  boolean;
+  canRoll:     boolean;
+  diceRoll?:   DiceRoll | null;
+  isRolling?:  boolean;
+  onPayFine:   () => void;
+  onUseCard:   () => void;
+  onRoll:      () => void;
+  onSurrender?: () => void;
 }
 
 // ─── JailOverlay ─────────────────────────────────────────────────────────────
@@ -54,11 +57,19 @@ export interface JailOverlayProps {
 export function JailOverlay({
   attempts, canPayFine, canUseCard, canRoll,
   diceRoll = null, isRolling = false,
-  onPayFine, onUseCard, onRoll,
+  onPayFine, onUseCard, onRoll, onSurrender,
 }: JailOverlayProps) {
   const t = useTranslations('Jail');
+  const tGame = useTranslations('Game');
   const dialog = useDialog<HTMLDivElement>({ label: t('inJail') });
   const triesLeft = Math.max(0, attempts);
+  const [surrenderConfirming, setSurrenderConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!surrenderConfirming) return;
+    const timer = setTimeout(() => setSurrenderConfirming(false), SURRENDER_CONFIRM_MS);
+    return () => clearTimeout(timer);
+  }, [surrenderConfirming]);
   const showDice = isRolling || diceRoll !== null;
   const accentColor = triesLeft > 0 ? BOARD_TILE_COLORS.propertyOrange : BOARD_TILE_COLORS.propertyRed;
 
@@ -179,6 +190,29 @@ export function JailOverlay({
         >
           {t('useCard')}
         </button>
+        {onSurrender && (
+          <button
+            type="button"
+            onClick={() => {
+              if (surrenderConfirming) {
+                onSurrender();
+                setSurrenderConfirming(false);
+              } else {
+                setSurrenderConfirming(true);
+              }
+            }}
+            className="w-full rounded-[10px] border py-2.5 font-display font-bold uppercase tracking-wide transition-colors"
+            style={{
+              fontSize: '0.75rem',
+              letterSpacing: '0.08em',
+              backgroundColor: surrenderConfirming ? BOARD_TILE_COLORS.propertyRed : GAME_BOARD_COLORS.panel,
+              borderColor: surrenderConfirming ? BOARD_TILE_COLORS.propertyRed : GAME_BOARD_COLORS.border,
+              color: surrenderConfirming ? BOARD_TILE_COLORS.altText : GAME_BOARD_COLORS.muted,
+            }}
+          >
+            {surrenderConfirming ? tGame('surrenderConfirm') : tGame('surrender')}
+          </button>
+        )}
       </div>
     </div>
   );
