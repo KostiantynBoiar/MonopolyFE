@@ -71,7 +71,7 @@ const config: Config = {
       },
       animation: {
         ping: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
-        'balance-delta': 'balance-delta 4.4s cubic-bezier(0.22, 1, 0.36, 1) forwards',
+        'balance-delta': 'balance-delta 5s cubic-bezier(0.22, 1, 0.36, 1) forwards',
       },
     },
   },
