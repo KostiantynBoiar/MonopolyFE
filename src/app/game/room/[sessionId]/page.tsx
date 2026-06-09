@@ -513,6 +513,7 @@ export default function GameRoomPage() {
               spaces={game.spaces}
               players={boardPlayers}
               sidebarPlayers={sidebarPlayers}
+              log={game.log}
               viewerId={viewerPlayerId ?? undefined}
               createdAt={game.createdAt}
               onSurrender={() => dispatchCommand(CommandType.Surrender)}
@@ -546,6 +547,7 @@ export default function GameRoomPage() {
           players={boardPlayers}
           walkingPlayers={walkingPlayers}
           sidebarPlayers={sidebarPlayers}
+          log={game.log}
           selectedPosition={highlightedBoardPosition}
           tileSelectionTones={tradeSelectionTones}
           onSelectPosition={trade.selectBoardPosition}

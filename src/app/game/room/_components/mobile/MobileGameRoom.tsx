@@ -279,6 +279,7 @@ export function MobileGameRoom({
         open={playersOpen}
         onClose={() => setPlayersOpen(false)}
         players={sidebarPlayers}
+        log={log}
         viewerId={viewerId}
         createdAt={createdAt}
         onSurrender={onSurrender}

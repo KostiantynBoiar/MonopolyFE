@@ -3,12 +3,14 @@
 import { useEffect } from 'react';
 import { PlayerPanel } from '@/features/game-board/components/PlayerPanel';
 import type { Player } from '@/features/player-panel';
+import type { LogEntry } from '@/shared/protocol/game-state';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 
 interface MobilePlayersSheetProps {
   open: boolean;
   onClose: () => void;
   players: Player[];
+  log?: LogEntry[];
   viewerId?: string;
   createdAt?: string;
   onSurrender?: () => void;
@@ -18,6 +20,7 @@ export function MobilePlayersSheet({
   open,
   onClose,
   players,
+  log,
   viewerId,
   createdAt,
   onSurrender,
@@ -62,6 +65,7 @@ export function MobilePlayersSheet({
         <div className="min-h-0 flex-1 overflow-hidden">
           <PlayerPanel
             players={players}
+            log={log}
             viewerId={viewerId}
             createdAt={createdAt}
             onSurrender={onSurrender}

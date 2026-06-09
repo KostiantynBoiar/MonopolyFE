@@ -83,6 +83,7 @@ export function BoardContainer({
   players,
   walkingPlayers,
   sidebarPlayers,
+  log,
   selectedPosition,
   tileSelectionTones,
   onSelectPosition,
@@ -230,6 +231,7 @@ export function BoardContainer({
             <PlayerPanel
               players={sidebarPlayers}
               spaces={boardSpaces}
+              log={log}
               viewerId={viewerId}
               createdAt={createdAt}
               onSurrender={onSurrender}

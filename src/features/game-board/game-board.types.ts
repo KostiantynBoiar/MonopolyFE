@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel';
 import type { WalkingAnimationVariant } from '@/shared/protocol/animation';
-import type { PropertyState } from '@/shared/protocol/game-state';
+import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import type { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor, BoardTileSelectionTone } from './game-board.enums';
 import type { TokenShape } from './token-shapes';
@@ -21,6 +21,7 @@ export interface BoardContainerProps {
   players?: BoardPlayer[];
   walkingPlayers?: WalkingPlayer[];
   sidebarPlayers?: Player[];
+  log?: LogEntry[];
   selectedPosition?: number | null;
   tileSelectionTones?: Partial<Record<number, BoardTileSelectionTone>>;
   onSelectPosition?: (position: number) => void;

@@ -34,7 +34,7 @@ export function useBoardSfx(gameState: GameState) {
     });
   }, []);
 
-  useBalanceChange(gameState.players, () => playSfx(SFX_MAP.balanceChanged));
+  useBalanceChange(gameState.players, () => playSfx(SFX_MAP.balanceChanged), gameState.log);
   useCurrentTurn(gameState.turn.currentPlayerId, gameState.viewerId, () => playSfx(SFX_MAP.myTurnStarted));
 
   const prevAuctionRef    = useRef(false);

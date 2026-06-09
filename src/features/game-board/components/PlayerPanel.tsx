@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Player } from '@/features/player-panel';
-import type { PropertyState } from '@/shared/protocol/game-state';
+import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { BOARD } from '@/shared/config/board-layout';
@@ -38,6 +38,7 @@ const SORTED_BUYABLE_SPACES: Array<{ pos: number; color: string }> = SORTED_BUYA
 interface PlayerPanelProps {
   players:     Player[];
   spaces?:     PropertyState[];
+  log?:        LogEntry[];
   viewerId?:   string;
   createdAt?:  string;
   onSurrender?: () => void;
@@ -158,7 +159,7 @@ function PropertyGroupGrid({ ownedPositions }: { ownedPositions: number[] }) {
 
 // ─── PlayerPanel ──────────────────────────────────────────────────────────────
 
-export function PlayerPanel({ players, spaces, createdAt, onSurrender }: PlayerPanelProps) {
+export function PlayerPanel({ players, spaces, log, createdAt, onSurrender }: PlayerPanelProps) {
   const t = useTranslations('Player');
   const currentPlayer = players.find((player) => player.isActive);
   const sessionTimer  = useSessionTimer(createdAt);
@@ -183,7 +184,7 @@ export function PlayerPanel({ players, spaces, createdAt, onSurrender }: PlayerP
       }
       return next;
     });
-  });
+  }, log);
 
   function clearDelta(playerId: string) {
     setDeltas((prev) => {
