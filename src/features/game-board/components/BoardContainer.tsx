@@ -87,6 +87,7 @@ export function BoardContainer({
   tileSelectionTones,
   onSelectPosition,
   focusPosition,
+  focusPositions,
   viewerId,
   createdAt,
   onSurrender,
@@ -101,6 +102,9 @@ export function BoardContainer({
   const playersByPosition = new Map<number, typeof boardPlayers>();
 
   const walkingIds = new Set((walkingPlayers ?? []).map((player) => player.id));
+  const focusedPositions = focusPositions ?? (
+    focusPosition != null ? new Set([focusPosition]) : null
+  );
 
   for (const player of boardPlayers) {
     if (walkingIds.has(player.id)) {
@@ -163,7 +167,7 @@ export function BoardContainer({
                       walkingPlayerIds={walkingIds}
                       isSelected={selectedPosition === space.pos}
                       selectionTone={tileSelectionTones?.[space.pos] ?? null}
-                      isDimmed={focusPosition != null && space.pos !== focusPosition}
+                      isDimmed={focusedPositions != null && !focusedPositions.has(space.pos)}
                       onSelect={onSelectPosition ? () => onSelectPosition(space.pos) : undefined}
                     />
                   </div>

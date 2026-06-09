@@ -40,7 +40,7 @@ import { MobileEmptyState } from '../_components/mobile/MobileEmptyState';
 import { useRoomSession } from '../_hooks/useRoomSession';
 import { useTradeDraft } from '../_hooks/useTradeDraft';
 import { getManageProperties } from '../_lib/game-spaces';
-import { buildTradeSelectionTones } from '../_lib/trade-draft';
+import { buildTradeFocusPositions, buildTradeSelectionTones } from '../_lib/trade-draft';
 import {
   toTradeAsset,
   toTradeCounterparty,
@@ -221,6 +221,23 @@ export default function GameRoomPage() {
     }
     return undefined;
   }, [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions, game.trade]);
+  const tradeFocusPositions = useMemo(() => {
+    if (activeOverlay === ActiveOverlay.TRADE_BUILDER) {
+      return buildTradeFocusPositions(tradeDraft.givePositions, tradeDraft.getPositions);
+    }
+
+    if (game.trade && game.trade.status === TradeStatus.PENDING) {
+      return buildTradeFocusPositions(
+        new Set(game.trade.proposerOffer.positions),
+        new Set(game.trade.targetRequest.positions),
+      );
+    }
+
+    return null;
+  }, [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions, game.trade]);
+  const boardFocusPositions = isBuyDecisionForViewer && pendingBuyPosition != null
+    ? new Set([pendingBuyPosition])
+    : tradeFocusPositions;
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling && !isTimelineRunning;
   const canManagePendingBuyShortfall = Boolean(
     pendingBuySpace &&
@@ -438,6 +455,7 @@ export default function GameRoomPage() {
     sidebarPlayers,
     selectedPosition: highlightedBoardPosition,
     tileSelectionTones: tradeSelectionTones,
+    focusPositions: tradeFocusPositions,
     onSelectPosition: trade.selectBoardPosition,
     viewerId: viewerPlayerId ?? undefined,
     createdAt: game.createdAt,
@@ -531,7 +549,7 @@ export default function GameRoomPage() {
           selectedPosition={highlightedBoardPosition}
           tileSelectionTones={tradeSelectionTones}
           onSelectPosition={trade.selectBoardPosition}
-          focusPosition={isBuyDecisionForViewer ? pendingBuyPosition : null}
+          focusPositions={boardFocusPositions}
           viewerId={viewerPlayerId ?? undefined}
           createdAt={game.createdAt}
           onSurrender={() => dispatchCommand(CommandType.Surrender)}

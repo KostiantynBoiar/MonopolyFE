@@ -66,6 +66,7 @@ interface MobileBoardStripProps {
   walkingPlayers?: WalkingPlayer[];
   selectedPosition: number | null;
   tileSelectionTones?: Partial<Record<number, BoardTileSelectionTone>>;
+  focusPositions?: Set<number> | null;
   onSelectPosition: (pos: number) => void;
 }
 
@@ -75,6 +76,7 @@ export function MobileBoardStrip({
   walkingPlayers = [],
   selectedPosition,
   tileSelectionTones,
+  focusPositions,
   onSelectPosition,
 }: MobileBoardStripProps) {
   const tileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -156,6 +158,7 @@ export function MobileBoardStrip({
               players={playersByPosition.get(space.pos) ?? []}
               isSelected={selectedPosition === space.pos}
               selectionTone={tileSelectionTones?.[space.pos] ?? null}
+              isDimmed={focusPositions != null && !focusPositions.has(space.pos)}
               onSelect={() => onSelectPosition(space.pos)}
             />
           </div>

@@ -23,6 +23,7 @@ interface MobileBoardData {
   sidebarPlayers: Player[];
   selectedPosition: number | null;
   tileSelectionTones?: Partial<Record<number, BoardTileSelectionTone>>;
+  focusPositions?: Set<number> | null;
   onSelectPosition: (pos: number) => void;
   viewerId?: string;
   createdAt?: string;
@@ -38,6 +39,7 @@ export function MobileGameRoom({
   sidebarPlayers,
   selectedPosition,
   tileSelectionTones,
+  focusPositions,
   onSelectPosition,
   viewerId,
   createdAt,
@@ -148,6 +150,7 @@ export function MobileGameRoom({
         walkingPlayers={walkingPlayers}
         selectedPosition={selectedPosition}
         tileSelectionTones={tileSelectionTones}
+        focusPositions={focusPositions}
         onSelectPosition={onSelectPosition}
       />
 

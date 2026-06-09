@@ -75,6 +75,14 @@ export function buildTradeSelectionTones(
   return tones;
 }
 
+export function buildTradeFocusPositions(
+  givePositions: Set<number>,
+  getPositions: Set<number>,
+): Set<number> | null {
+  const positions = new Set([...givePositions, ...getPositions]);
+  return positions.size > 0 ? positions : null;
+}
+
 function setsAreEqual(left: Set<number>, right: Set<number>): boolean {
   if (left.size !== right.size) return false;
 
