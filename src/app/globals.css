@@ -236,6 +236,14 @@
     @apply bg-paper font-sans text-ink antialiased;
   }
 
+  html[data-display-scale="150"] {
+    zoom: 1.5;
+  }
+
+  html[data-display-scale="200"] {
+    zoom: 2;
+  }
+
   .font-display {
     font-variation-settings: "opsz" 144, "GRAD" 50, "slnt" 0;
   }
