@@ -61,6 +61,7 @@ export default function LobbyPage() {
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>(RankedFilterValue.ALL);
   const [hideFullRooms, setHideFullRooms] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [isEnteringRoom, setIsEnteringRoom] = useState(false);
   const activePanel: LobbyPanel = panelParam === LobbyPanel.CREATE ? LobbyPanel.CREATE : LobbyPanel.JOIN;
   const statusFilterOptions: { value: StatusFilter; label: string }[] = [
     { value: CommonFilterValue.ALL, label: t('all') },
@@ -80,8 +81,9 @@ export default function LobbyPage() {
   } = useLobby();
 
   async function handleJoin(sessionId: string) {
-    if (hasActiveSession) return;
+    if (hasActiveSession || isEnteringRoom) return;
     setJoinError(null);
+    setIsEnteringRoom(true);
     try {
       const session = await join(sessionId);
       resetSocket();
@@ -89,15 +91,22 @@ export default function LobbyPage() {
       router.push(`/game/room/${session.id}`);
     } catch (err) {
       setJoinError((err as Error).message);
+      setIsEnteringRoom(false);
     }
   }
 
   async function handleJoinByCode(code: string) {
-    if (hasActiveSession) return;
-    const session = await joinWithCode(code);
-    resetSocket();
-    setSession(session);
-    router.push(`/game/room/${session.id}`);
+    if (hasActiveSession || isEnteringRoom) return;
+    setIsEnteringRoom(true);
+    try {
+      const session = await joinWithCode(code);
+      resetSocket();
+      setSession(session);
+      router.push(`/game/room/${session.id}`);
+    } catch (err) {
+      setIsEnteringRoom(false);
+      throw err;
+    }
   }
 
   function switchPanel(panel: LobbyPanel) {
@@ -106,6 +115,9 @@ export default function LobbyPage() {
   }
 
   if (!ready) return <FullScreenSpinner />;
+
+  const blocksRoomEntry = hasActiveSession && !isEnteringRoom;
+  const canUseLobbyActions = !hasActiveSession && !isEnteringRoom;
 
   return (
     <div className="mx-auto max-w-2xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6 lg:py-12">
@@ -142,12 +154,12 @@ export default function LobbyPage() {
           <p className="mt-0.5 text-xs text-muted sm:mt-1 sm:text-sm lg:text-base">{t('joinOrCreate')}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
-          {activeSession && (
+          {activeSession && !isEnteringRoom && (
             <Button as="a" href={`/game/room/${activeSession.id}`} variant="blue" size="md">
               {t('backToGame')}
             </Button>
           )}
-          {!hasActiveSession &&
+          {canUseLobbyActions &&
             (activePanel === LobbyPanel.JOIN ? (
               <Button onClick={() => switchPanel(LobbyPanel.CREATE)} variant="gold" size="md">
                 {t('newGame')}
@@ -161,7 +173,7 @@ export default function LobbyPage() {
       </div>
 
       {/* Already-in-game notice — joining/creating is blocked until you return or leave */}
-      {hasActiveSession && (
+      {blocksRoomEntry && (
         <Alert className="mb-4 sm:mb-5">{t('alreadyInGame')}</Alert>
       )}
 
@@ -172,10 +184,14 @@ export default function LobbyPage() {
             <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted sm:mb-2 sm:text-xs lg:text-sm">
               {t('joinWithInviteCode')}
             </p>
-            <JoinByCodeForm onSubmit={handleJoinByCode} disabled={hasActiveSession} />
+            <JoinByCodeForm onSubmit={handleJoinByCode} disabled={!canUseLobbyActions} />
           </>
         ) : (
-          <CreateLobbyForm onBack={() => switchPanel(LobbyPanel.JOIN)} disabled={hasActiveSession} />
+          <CreateLobbyForm
+            onBack={() => switchPanel(LobbyPanel.JOIN)}
+            onCreatePendingChange={setIsEnteringRoom}
+            disabled={!canUseLobbyActions}
+          />
         )}
       </div>
 
@@ -239,7 +255,7 @@ export default function LobbyPage() {
         {!loading && !error && sessions.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-10 text-center sm:gap-3 sm:py-14 lg:py-20">
             <p className="text-xs text-muted sm:text-sm lg:text-base">{t('noOpenRooms')}</p>
-            {!hasActiveSession && (
+            {canUseLobbyActions && (
               <Button onClick={() => switchPanel(LobbyPanel.CREATE)} variant="blue" size="sm">
                 {t('createOne')}
               </Button>
@@ -268,7 +284,7 @@ export default function LobbyPage() {
                 session={s}
                 onJoin={handleJoin}
                 isJoining={joiningId === s.id}
-                disabled={hasActiveSession}
+                disabled={!canUseLobbyActions}
               />
             ))}
 
