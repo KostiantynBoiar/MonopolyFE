@@ -3,7 +3,7 @@
  * All field names are snake_case matching the wire format from sessions-and-realtime.md.
  * Protocol version must be 1; server rejects other values with 4400.
  */
-import type { SessionDetail } from '@/features/lobby';
+import type { SessionDetail } from '@/shared/protocol/session';
 
 export const WS_PROTOCOL_VERSION = 1 as const;
 

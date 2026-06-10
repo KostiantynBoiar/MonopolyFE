@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { SessionDetail } from '@/features/lobby';
+import type { SessionDetail } from '@/shared/protocol/session';
 import { PERSIST_VERSION, migratePersistedState } from '@/shared/lib/persist';
 
 interface SessionState {

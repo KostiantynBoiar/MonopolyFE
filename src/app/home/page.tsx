@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { FeatureRow, Hero } from '@/features/landing';
+import { FeatureRow } from '@/features/landing/FeatureRow';
+import { Hero } from '@/features/landing/Hero';
 import { getOnlinePlayerCount } from '@/shared/lib/stats';
 
 export const metadata: Metadata = {

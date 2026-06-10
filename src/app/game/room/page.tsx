@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { joinByCode } from '@/features/lobby/api';
+import { joinByCode } from '@/shared/api/sessions';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
-import { FullScreenSpinner, MessageScreen } from '@/shared/ui';
+import { MessageScreen } from '@/shared/ui/MessageScreen';
+import { FullScreenSpinner } from '@/shared/ui/Spinner';
 import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 

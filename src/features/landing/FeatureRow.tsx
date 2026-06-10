@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { landingFeatures } from './features.data';
-import { Container, Icon } from '@/shared/ui';
+import { Container } from '@/shared/ui/Container';
+import { Icon } from '@/shared/ui/Icon';
 
 export async function FeatureRow() {
   const t = await getTranslations('Landing');

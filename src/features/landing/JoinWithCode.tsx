@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Input } from '@/shared/ui';
+import { Button } from '@/shared/ui/Button';
+import { Input } from '@/shared/ui/Input';
 
 const CODE_PATTERN = /^TYC-[A-Z0-9]{4}$/;
 

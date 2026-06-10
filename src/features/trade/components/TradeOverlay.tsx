@@ -9,7 +9,7 @@ import { TradeParty } from '../trade.enums';
 import type { TradeWindowProps } from '../trade.types';
 import type { TradeOffer } from '@/shared/protocol/game-state';
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
-import { DeedWindow } from '@/features/deed';
+import { DeedWindow } from '@/features/deed/components/DeedWindow';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

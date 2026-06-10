@@ -1,4 +1,4 @@
-import { SiteHeader } from '@/features/landing';
+import { SiteHeader } from '@/features/landing/SiteHeader';
 
 export default function LobbyLayout({ children }: { children: React.ReactNode }) {
   return (

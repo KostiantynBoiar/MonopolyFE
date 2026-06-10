@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { inviteCodeSchema } from '../lobby.schema';
+import { inviteCodeSchema } from '@/shared/protocol/session';
 
 export interface JoinByCodeFormProps {
   onSubmit: (code: string) => Promise<void>;

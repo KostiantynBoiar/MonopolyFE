@@ -2,26 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import {
-  BoardContainer,
-  deriveBoardPlayers,
-  deriveSidebarPlayers,
-  resolveTokenShape,
-} from '@/features/game-board';
-import { SessionStatus } from '@/features/lobby';
-import { BOARD } from '@/shared/config/board-layout';
-import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
+import { BoardContainer } from '@/features/game-board/components/BoardContainer';
+import { deriveBoardPlayers, deriveSidebarPlayers } from '@/features/game-board/game-board.adapters';
+import { SessionStatus } from '@/shared/protocol/session';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
-import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import { getViewerPlayer } from '@/shared/protocol/selectors';
-import { GameStatus, TradeStatus } from '@/shared/protocol/game-state.enums';
+import { GameStatus } from '@/shared/protocol/game-state.enums';
 import type { TradeOffer } from '@/shared/protocol/game-state';
 import { CommandType } from '@/shared/protocol/commands';
-import { useGameSocket } from '@/shared/socket';
+import { useGameSocket } from '@/shared/socket/useGameSocket';
 import { resolveAnimationGate } from '@/shared/socket/timeline-executor';
-import { FullScreenSpinner, MessageScreen, WsErrorBanner } from '@/shared/ui';
+import { MessageScreen } from '@/shared/ui/MessageScreen';
+import { FullScreenSpinner } from '@/shared/ui/Spinner';
+import { WsErrorBanner } from '@/shared/ui/WsErrorBanner';
 import { useGameStore } from '@/stores/game-store';
 import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
@@ -29,7 +24,7 @@ import { useChatStore } from '@/stores/chat-store';
 import { useUiStore } from '@/stores/ui-store';
 import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { useGameDispatch } from '../useGameDispatch';
-import { ActiveOverlay, type TradeBuilderData } from '../_components/FullOverlay';
+import { ActiveOverlay } from '../_components/FullOverlay';
 import { GameCenterGrid } from '../_components/GameCenterGrid';
 import { WaitingCenterGrid } from '../_components/WaitingCenterGrid';
 import { EmptyGameState, FinishedGameState } from '../_components/RoomStates';
@@ -40,13 +35,17 @@ import { MobileEmptyState } from '../_components/mobile/MobileEmptyState';
 import { useRoomSession } from '../_hooks/useRoomSession';
 import { useTradeDraft } from '../_hooks/useTradeDraft';
 import { getManageProperties } from '../_lib/game-spaces';
-import { buildTradeFocusPositions, buildTradeSelectionTones } from '../_lib/trade-draft';
 import {
-  toTradeAsset,
-  toTradeCounterparty,
-  toTradeParticipant,
-  toTradePlayer,
-} from '../_lib/trade-mappers';
+  buildBoardFocusPositions,
+  buildBoardSelectionTones,
+  buildChatMessages,
+  buildTradeBuilderData,
+  buildTradeParticipants,
+  buildWaitingSidebarPlayers,
+  buildWalkingPlayers,
+  resolveDeedSelection,
+  resolveWinnerName,
+} from '../_lib/room-view-model';
 
 export default function GameRoomPage() {
   const { ready, user } = useRequireAuth();
@@ -116,65 +115,26 @@ export default function GameRoomPage() {
   const sidebarPlayers = useMemo(() => deriveSidebarPlayers(game), [game]);
 
   const waitingSidebarPlayers = useMemo(
-    () => currentSession?.members.map((m, i) => ({
-      id: m.user_id,
-      name: m.display_name,
-      balance: 0,
-      position: 0,
-      token: TOKEN_ORDER[i % TOKEN_ORDER.length],
-      ownedPositions: [] as number[],
-      isActive: false,
-      isBankrupt: false,
-      inJail: false,
-      rating: m.rating,
-    })) ?? [],
-    [currentSession?.members],
+    () => buildWaitingSidebarPlayers(currentSession),
+    [currentSession],
   );
 
-  const walkingPlayers = useMemo(() => {
-    if (!walkState) return [];
-    const player = game.players.find((p) => p.id === walkState.playerId);
-    return [{
-      id: walkState.playerId,
-      currentPos: walkState.currentPos,
-      tokenColor: player ? TOKEN_COLORS[player.token] : '#10182E',
-      tokenShape: resolveTokenShape(game.gameId, player?.turnOrder ?? 0),
-      variant: walkState.variant ?? WalkingAnimationVariant.NORMAL,
-    }];
-  }, [game.players, game.gameId, walkState]);
+  const walkingPlayers = useMemo(
+    () => buildWalkingPlayers(game, walkState),
+    [game, walkState],
+  );
 
   const manageProperties = useMemo(
     () => getManageProperties(game, viewerPlayerId),
     [game, viewerPlayerId],
   );
 
-  const tradeParticipants = useMemo(() => {
-    const proposer = game.trade ? game.players.find((p) => p.id === game.trade?.proposerId) : null;
-    const target   = game.trade ? game.players.find((p) => p.id === game.trade?.targetId)   : null;
-    return {
-      proposer: proposer ? toTradeParticipant(game, proposer) : null,
-      target:   target   ? toTradeParticipant(game, target)   : null,
-    };
-  }, [game]);
+  const tradeParticipants = useMemo(() => buildTradeParticipants(game), [game]);
 
-  const tradeBuilderData = useMemo((): TradeBuilderData | null => {
-    if (!viewerPlayer) return null;
-    const others = game.players
-      .filter((p) => p.id !== viewerPlayer.id && !p.isBankrupt)
-      .map((player) => toTradeCounterparty(game, player));
-    const target = others.find((player) => player.id === tradeDraft.targetId) ?? null;
-    return {
-      me: toTradePlayer(viewerPlayer),
-      others,
-      target,
-      offerAssets: [...tradeDraft.givePositions].map(toTradeAsset),
-      requestAssets: [...tradeDraft.getPositions].map(toTradeAsset),
-      giveMoney: tradeDraft.giveMoney,
-      getMoney: tradeDraft.getMoney,
-      giveCards: tradeDraft.giveCards,
-      getCards: tradeDraft.getCards,
-    };
-  }, [game, tradeDraft, viewerPlayer]);
+  const tradeBuilderData = useMemo(
+    () => buildTradeBuilderData(game, viewerPlayer, tradeDraft),
+    [game, tradeDraft, viewerPlayer],
+  );
 
   const tokenByUserId = useMemo(
     () => new Map(game.players.map((p) => [p.userId, p.token])),
@@ -184,57 +144,28 @@ export default function GameRoomPage() {
   // Chat history comes from the client-persisted store (survives refresh/reconnect).
   // Ownership is decided in ChatWindow via fromUserId; token only drives the sender dot.
   const chatMessages = useMemo(
-    () => (chatBySession[sessionId] ?? []).map((m) => ({
-      id: m.id,
-      kind: 'chat' as const,
-      fromUserId: m.from_user_id,
-      author: m.display_name,
-      token: tokenByUserId.get(m.from_user_id),
-      text: m.kind === 'sticker' ? `[sticker:${m.sticker_url}]` : m.text,
-      ts: Date.parse(m.ts),
-    })),
+    () => buildChatMessages(chatBySession[sessionId] ?? [], tokenByUserId),
     [chatBySession, sessionId, tokenByUserId],
   );
 
   const diceRoll = animatedDiceRoll ?? game.turn.diceRoll;
   const activeCard = activeAnimationCard ?? game.activeCard;
   const pendingBuyPosition = game.turn.pendingBuyPosition;
-  const pendingBuySpace = pendingBuyPosition != null ? (BOARD[pendingBuyPosition] ?? null) : null;
   const isViewerTurn = Boolean(viewerPlayerId && game.turn.currentPlayerId === viewerPlayerId);
-  const isBuyDecisionForViewer = Boolean(pendingBuySpace && isViewerTurn);
-  const selectedBoardPosition = selectedTile != null && BOARD[selectedTile] ? selectedTile : null;
-  const deedBrowsePosition = selectedBoardPosition ?? pendingBuyPosition ?? viewerPlayer?.position ?? 0;
-  const deedBrowseSpace = BOARD[deedBrowsePosition] ?? BOARD[0];
-  const highlightedBoardPosition = isBuyDecisionForViewer ? pendingBuyPosition : deedBrowsePosition;
-  const deedPanelSpace = isBuyDecisionForViewer && pendingBuySpace ? pendingBuySpace : deedBrowseSpace;
-  const tradeSelectionTones = useMemo(() => {
-    if (activeOverlay === ActiveOverlay.TRADE_BUILDER) {
-      return buildTradeSelectionTones(tradeDraft.givePositions, tradeDraft.getPositions);
-    }
-    // While a proposed trade is on the table, highlight the properties it moves on the board:
-    // green for what the proposer offers, cyan for what they request from the target.
-    if (game.trade && game.trade.status === TradeStatus.PENDING) {
-      return buildTradeSelectionTones(
-        new Set(game.trade.proposerOffer.positions),
-        new Set(game.trade.targetRequest.positions),
-      );
-    }
-    return undefined;
-  }, [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions, game.trade]);
-  const tradeFocusPositions = useMemo(() => {
-    if (activeOverlay === ActiveOverlay.TRADE_BUILDER) {
-      return buildTradeFocusPositions(tradeDraft.givePositions, tradeDraft.getPositions);
-    }
-
-    if (game.trade && game.trade.status === TradeStatus.PENDING) {
-      return buildTradeFocusPositions(
-        new Set(game.trade.proposerOffer.positions),
-        new Set(game.trade.targetRequest.positions),
-      );
-    }
-
-    return null;
-  }, [activeOverlay, tradeDraft.givePositions, tradeDraft.getPositions, game.trade]);
+  const {
+    pendingBuySpace,
+    isBuyDecisionForViewer,
+    highlightedBoardPosition,
+    deedPanelSpace,
+  } = resolveDeedSelection(pendingBuyPosition, selectedTile, viewerPlayer?.position, isViewerTurn);
+  const tradeSelectionTones = useMemo(
+    () => buildBoardSelectionTones(activeOverlay, tradeDraft, game),
+    [activeOverlay, tradeDraft, game],
+  );
+  const tradeFocusPositions = useMemo(
+    () => buildBoardFocusPositions(activeOverlay, tradeDraft, game),
+    [activeOverlay, tradeDraft, game],
+  );
   const boardFocusPositions = isBuyDecisionForViewer && pendingBuyPosition != null
     ? new Set([pendingBuyPosition])
     : tradeFocusPositions;
@@ -357,9 +288,7 @@ export default function GameRoomPage() {
   const isFinishedSession =
     currentSession?.status === SessionStatus.FINISHED ||
     game.status === GameStatus.FINISHED;
-  const winnerName = game.winnerId
-    ? game.players.find((player) => player.id === game.winnerId)?.displayName ?? null
-    : null;
+  const winnerName = resolveWinnerName(game);
 
   // ─── Shared prop objects ──────────────────────────────────────────────────
 

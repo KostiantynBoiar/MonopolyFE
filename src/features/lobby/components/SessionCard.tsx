@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
-import type { SessionSummary } from '../lobby.types';
+import type { SessionSummary } from '@/shared/protocol/session';
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);

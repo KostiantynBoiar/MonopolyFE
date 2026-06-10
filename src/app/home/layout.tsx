@@ -1,4 +1,5 @@
-import { SiteFooter, SiteHeader } from '@/features/landing';
+import { SiteFooter } from '@/features/landing/SiteFooter';
+import { SiteHeader } from '@/features/landing/SiteHeader';
 
 export default function HomeLayout({ children }: { children: React.ReactNode }) {
   return (

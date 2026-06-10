@@ -1,4 +1,4 @@
-import type { IconName } from '@/shared/ui';
+import type { IconName } from '@/shared/ui/Icon';
 
 export type LandingFeature = {
   icon: IconName;

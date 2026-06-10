@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { WsErrorPayload } from '@/shared/socket';
+import type { WsErrorPayload } from '@/shared/protocol/messages.schema';
 
 const WS_ERROR_SHAKE_DURATION_MS = 450;
 

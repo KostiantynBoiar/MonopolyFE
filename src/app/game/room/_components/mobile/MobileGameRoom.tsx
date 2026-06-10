@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { CardFlipOverlay } from '@/features/card';
+import { CardFlipOverlay } from '@/features/card/components/CardFlipOverlay';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board/game-board.types';
-import type { Player } from '@/features/player-panel';
+import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import type { BoardTileSelectionTone } from '@/features/game-board/game-board.enums';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';

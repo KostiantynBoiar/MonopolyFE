@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { POLL_INTERVAL_MS } from '@/shared/config/constants';
-import { joinByCode as joinByCodeApi, joinSession, listSessions } from '../api';
-import type { SessionSummary } from '../lobby.types';
+import { joinByCode as joinByCodeApi, joinSession, listSessions } from '@/shared/api/sessions';
+import type { SessionSummary } from '@/shared/protocol/session';
 
 export function useLobby() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);

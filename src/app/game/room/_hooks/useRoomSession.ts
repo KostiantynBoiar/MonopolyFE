@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, leaveSession, startGame } from '@/features/lobby/api';
-import { SessionStatus, type SessionDetail } from '@/features/lobby';
+import { getSession, leaveSession, startGame } from '@/shared/api/sessions';
+import { SessionStatus, type SessionDetail } from '@/shared/protocol/session';
 import { GameStatus } from '@/shared/protocol/game-state.enums';
 import { withTimeout } from '@/shared/lib/withTimeout';
 import { useGameStore } from '@/stores/game-store';

@@ -3,7 +3,9 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { Brand, Button, Container } from '@/shared/ui';
+import { Brand } from '@/shared/ui/Brand';
+import { Button } from '@/shared/ui/Button';
+import { Container } from '@/shared/ui/Container';
 import { useAuthStore } from '@/stores/auth-store';
 
 function formatDate(iso: string, locale: string) {

@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import type { Player } from '@/features/player-panel';
+import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';

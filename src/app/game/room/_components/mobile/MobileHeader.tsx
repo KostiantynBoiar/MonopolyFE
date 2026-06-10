@@ -1,10 +1,10 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { Player } from '@/features/player-panel';
+import type { Player } from '@/features/player-panel/player-panel.schema';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
-import { SettingsControl } from '@/shared/ui';
+import { SettingsControl } from '@/shared/ui/SettingsControl';
 
 interface MobileHeaderProps {
   players: Player[];

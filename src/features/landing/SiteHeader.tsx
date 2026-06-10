@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { MobileNav } from './MobileNav';
-import { Brand, Container, ThemeToggle, SettingsControl } from '@/shared/ui';
+import { Brand } from '@/shared/ui/Brand';
+import { Container } from '@/shared/ui/Container';
+import { SettingsControl } from '@/shared/ui/SettingsControl';
+import { ThemeToggle } from '@/shared/ui/ThemeToggle';
 import { UserMenu } from '@/features/auth/components/UserMenu';
 import { LocaleSwitcher } from '@/shared/ui/LocaleSwitcher';
 

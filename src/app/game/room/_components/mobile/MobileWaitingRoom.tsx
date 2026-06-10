@@ -3,7 +3,7 @@
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { WaitingCenterGrid } from '../WaitingCenterGrid';
 import type { ChatMessage } from '@/features/chat/chat.types';
-import type { MemberRole } from '@/features/lobby';
+import type { MemberRole } from '@/shared/protocol/session';
 
 interface MobileWaitingRoomProps {
   inviteCode: string;

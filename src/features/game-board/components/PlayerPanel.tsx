@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import type { Player } from '@/features/player-panel';
+import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
 import { TOKEN_COLORS } from '@/shared/config/constants';

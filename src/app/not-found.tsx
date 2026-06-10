@@ -1,5 +1,7 @@
 import { getTranslations } from 'next-intl/server';
-import { Brand, Button, Container } from '@/shared/ui';
+import { Brand } from '@/shared/ui/Brand';
+import { Button } from '@/shared/ui/Button';
+import { Container } from '@/shared/ui/Container';
 
 export default async function NotFoundPage() {
   const t = await getTranslations('NotFound');

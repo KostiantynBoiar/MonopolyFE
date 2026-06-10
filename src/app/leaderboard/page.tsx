@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Badge, Button, Container, RatingBadge } from '@/shared/ui';
+import { Badge } from '@/shared/ui/Badge';
+import { Button } from '@/shared/ui/Button';
+import { Container } from '@/shared/ui/Container';
+import { RatingBadge } from '@/shared/ui/RatingBadge';
 import { fetchLeaderboard, type LeaderboardEntry } from '@/features/leaderboard/api';
 
 const RANK_STYLES: Record<number, string> = {

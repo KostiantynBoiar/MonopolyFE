@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import type { WsErrorPayload } from '@/shared/socket';
+import type { WsErrorPayload } from '@/shared/protocol/messages.schema';
 
 const WS_ERROR_BANNER_DISMISS_DELAY_MS = 3_000;
 
