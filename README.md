@@ -1,109 +1,134 @@
-# Monopoly Frontend — Tycoon
+# Monopoly Frontend
 
-Next.js 15 frontend for the Tycoon multiplayer Monopoly game.
+Frontend application for a multiplayer Monopoly-style game. The app includes
+authentication, lobby and room management, a real-time game room, chat,
+stickers, trades, auctions, property management, and localized UI.
 
-## Tech stack
+## Tech Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 15 (App Router) |
+| Area | Tooling |
+| --- | --- |
+| Framework | Next.js 16 App Router |
+| UI runtime | React 19 |
 | Language | TypeScript 5 |
 | Styling | Tailwind CSS 3 |
 | State | Zustand 5 |
 | Validation | Zod 3 |
-| Animation | Lottie Web (TGS stickers) |
+| Localization | next-intl |
+| Animation | lottie-web |
 
-## Getting started
+## Getting Started
+
+Install dependencies:
 
 ```bash
 npm install
-npm run dev       # http://localhost:3000
 ```
+
+Run the development server:
 
 ```bash
-npm run build     # production build
-npm run lint      # ESLint
-npx tsc --noEmit  # type check
+npm run dev
 ```
 
-## Project structure
+The app is served at `http://localhost:3000` by default.
 
-```
-src/
-├── app/                        # Next.js App Router pages
-│   ├── (auth)/                 # Login / register
-│   ├── game/room/              # Main game board page
-│   ├── lobby/                  # Room browser + creation
-│   └── me/                     # Profile
-│
-├── features/                   # Domain modules
-│   ├── auth/                   # Auth forms, Telegram widget
-│   ├── card/                   # Chance / Community Chest card flip overlay
-│   ├── chat/                   # Game log, BoardCenterPanel, sticker picker
-│   ├── dice/                   # Dice rolling
-│   ├── game-board/             # Board tiles, BoardContainer, MonopolyBoard
-│   ├── player-panel/           # PlayerSidebar, PlayerCard
-│   ├── trade/                  # TradeWindow
-│   └── lobby/                  # Lobby components
-│
-├── shared/
-│   ├── config/
-│   │   ├── board-layout.ts     # BOARD[], getGridPos(), getTileEdge()
-│   │   ├── constants.ts        # Tile sizes, animation durations, space lists
-│   │   └── env.ts              # Runtime env vars
-│   ├── lib/                    # cn(), formatters, stats
-│   ├── mocks/                  # MOCK_GAME_STATE for local dev
-│   ├── protocol/               # GameState types, socket message schemas
-│   ├── socket/                 # WebSocket client + hooks
-│   └── ui/                     # Button, Input, Modal, Avatar, Spinner…
-│
-├── stores/                     # Zustand stores
-└── types/                      # Global ID aliases
-```
+## Available Scripts
 
-Each feature follows the same convention:
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the local Next.js development server |
+| `npm run build` | Create a production build |
+| `npm run start` | Start the production server after a build |
+| `npm run lint` | Run ESLint with zero warnings allowed |
+| `npm run typecheck` | Run TypeScript without emitting files |
 
-```
-features/<name>/
-├── <name>.enums.ts     # Enums (prefer over string unions)
-├── <name>.types.ts     # TypeScript types and interfaces
-├── <name>.schema.ts    # Zod schemas for runtime validation
-├── components/         # React components
-├── hooks/              # Feature-specific hooks
-└── index.ts            # Barrel export (public API)
-```
+## Configuration
 
-## Coding conventions
-
-- **Constants** live in `shared/config/constants.ts` — no magic numbers in components.
-- **Enums** over string literals — defined in `<module>.enums.ts`.
-- **Types** in `<module>.types.ts`; Zod schemas in `<module>.schema.ts`.
-- **Board data** canonical location: `shared/config/board-layout.ts`. The `game-board/board-data.ts` file is a re-export shim.
-- `cn()` from `shared/lib/cn` for all className composition (clsx + tailwind-merge).
-
-## Key UI features
-
-### Board center panel (`features/chat`)
-
-The board's center grid hosts `BoardCenterPanel`, which has three display modes:
-
-| Mode | Trigger | What shows |
-|---|---|---|
-| Normal | Default | Game log (left 73%) + action buttons / dice (right 27%) |
-| Card draw | `activeCard != null` | Card flip animation overlaid; log fades behind it |
-| Trade | `tradeState` is `pending` or `countered` | `TradeWindow` replaces the entire panel |
-
-### Card flip overlay (`features/card`)
-
-CSS 3D flip (`perspective` + `rotateY`) auto-triggers `CARD_FLIP_TRIGGER_DELAY_MS` after mount. The **Proceed** button fades in once the flip completes. The game log dims to `opacity-[0.12]` while the overlay is active.
-
-### Trade window (`features/trade`)
-
-Two-column layout separated by a `⇄` divider. Labels are framed from the viewer's perspective ("You give" / "Bob gives back"). Properties render as color-coded chips. The action bar shows role-appropriate controls: Accept + Reject for the target, Withdraw for the proposer.
-
-## Environment variables
+Runtime configuration is read in `src/shared/config/env.ts`.
 
 | Variable | Default | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Backend API base URL |
-| `NEXT_PUBLIC_TELEGRAM_BOT_NAME` | — | Telegram Login Widget bot name |
+| --- | --- | --- |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8002` | Backend HTTP API base URL |
+| `NEXT_PUBLIC_TELEGRAM_BOT_NAME` | Empty string | Telegram Login Widget bot name |
+| `NEXT_PUBLIC_LOG_LEVEL` | Environment-based default | Client logger verbosity |
+| `NEXT_PUBLIC_DEBUG_GAME_ROOM` | `0` | Set to `1` to log committed game snapshots in development |
+
+The WebSocket base URL is derived from `NEXT_PUBLIC_API_URL` by replacing
+`http` with `ws` and `https` with `wss`.
+
+## Project Structure
+
+```text
+src/
+├── app/                 # Next.js routes, layouts, loading, and error states
+├── features/            # Domain-oriented feature modules
+├── i18n/                # next-intl request configuration
+├── shared/              # Cross-feature config, UI, hooks, transport, and protocol code
+└── stores/              # Zustand stores and command bus
+
+messages/                # Locale message files
+public/                  # Static assets, sounds, and sticker packs
+```
+
+Important route groups:
+
+| Path | Purpose |
+| --- | --- |
+| `src/app/(auth)` | Login and registration pages |
+| `src/app/home` | Authenticated home screen |
+| `src/app/lobby` | Session browser, room details, and room creation |
+| `src/app/game/room` | Main game room experience |
+| `src/app/leaderboard` | Leaderboard page |
+| `src/app/me` | Profile page |
+| `src/app/debug` | Development and debugging route |
+
+Feature modules live under `src/features/<name>`. Use the existing files in a
+feature as the local pattern before adding new code. Common conventions are:
+
+```text
+features/<name>/
+├── <name>.enums.ts
+├── <name>.types.ts
+├── <name>.schema.ts
+├── components/
+├── hooks/
+└── index.ts
+```
+
+Not every feature needs every file. Add only the files that match the feature's
+responsibility.
+
+## Shared Code
+
+| Directory | Purpose |
+| --- | --- |
+| `src/shared/config` | Board layout, constants, and environment configuration |
+| `src/shared/protocol` | Backend-facing game state, selectors, logs, permissions, and schemas |
+| `src/shared/socket` | WebSocket client integration |
+| `src/shared/transport` | Backend state adaptation and command serialization |
+| `src/shared/ui` | Reusable UI primitives |
+| `src/shared/lib` | Small shared utilities |
+| `src/shared/hooks` | Cross-feature React hooks |
+| `src/shared/mocks` | Local mock data and fixtures |
+
+## Coding Conventions
+
+- Keep feature code inside the owning `src/features/<name>` module when possible.
+- Put cross-feature contracts and backend-facing models in `src/shared/protocol`.
+- Put app-wide configuration and constants in `src/shared/config`.
+- Prefer enums over string literals for repeated domain values.
+- Keep functions focused on one responsibility.
+- Prefer explicit handlers over large conditional branches for domain actions.
+- Use `cn()` from `src/shared/lib/cn` for class name composition.
+- Keep locale text in `messages/en.json` and `messages/uk.json`.
+
+## Verification
+
+Before opening a pull request or committing behavior changes, run:
+
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
