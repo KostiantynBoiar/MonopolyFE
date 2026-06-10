@@ -22,7 +22,7 @@ const ANIM = {
 const TILE_W = 'clamp(60px, 17vw, 80px)';
 const TILE_GAP = '4px';
 
-function AnimatedMobileToken({ id, currentPos, tokenColor, tokenShape, variant = WalkingAnimationVariant.NORMAL }: WalkingPlayer) {
+function AnimatedMobileToken({ id: _id, currentPos, tokenColor, tokenShape, variant = WalkingAnimationVariant.NORMAL }: WalkingPlayer) {
   const prevPosRef            = useRef(currentPos);
   const [animate, setAnimate] = useState(true);
 

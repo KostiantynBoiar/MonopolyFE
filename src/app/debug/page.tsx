@@ -168,7 +168,8 @@ interface ScriptState {
 }
 
 function useScript(steps: ScriptStep[], active: boolean): ScriptState {
-  const [state, setState] = useState<ScriptState>({ pos: steps[0].pos, variant: steps[0].variant });
+  const initialState = { pos: steps[0].pos, variant: steps[0].variant };
+  const [state, setState] = useState<ScriptState>(initialState);
   const timerRef          = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef         = useRef(active);
   const stepIdxRef        = useRef(0);
@@ -179,7 +180,6 @@ function useScript(steps: ScriptStep[], active: boolean): ScriptState {
     if (!active) {
       if (timerRef.current) clearTimeout(timerRef.current);
       stepIdxRef.current = 0;
-      setState({ pos: steps[0].pos, variant: steps[0].variant });
       return;
     }
 
@@ -197,7 +197,7 @@ function useScript(steps: ScriptStep[], active: boolean): ScriptState {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  return state;
+  return active ? state : initialState;
 }
 
 // ─── Jail scenario: red token walks to pos 30, then drags to pos 10 ──────────

@@ -19,8 +19,10 @@ import { WalkingAnimationVariant, type AnimationInstruction, type MoveAnimation 
 import type { ActiveCard } from '@/shared/protocol/game-state';
 import { CardEffectType } from '@/shared/protocol/game-state.enums';
 import { getWalkSteps } from '@/shared/config/board-layout';
+import { env } from '@/shared/config/env';
 import { getDeedInfo } from '@/features/deed';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
+import { logger } from '@/shared/lib/logger';
 import { useGameStore } from '@/stores/game-store';
 import { useUiStore } from '@/stores/ui-store';
 import { DICE_SPIN_MS, DICE_LINGER_MS } from '@/shared/config/constants';
@@ -429,8 +431,10 @@ function commit(snapshot: GameSnapshot): void {
 }
 
 function logGameState(snapshot: GameSnapshot): void {
+  if (!env.debugGameRoom) return;
+
   const g = snapshot.game;
-  console.log( // eslint-disable-line no-console
+  logger.debug(
     '[gamestate]',
     {
       turn: g.turn.turnNumber,
@@ -441,7 +445,7 @@ function logGameState(snapshot: GameSnapshot): void {
       activeCard: g.activeCard,
       players: g.players.map((p) => ({ id: p.id, name: p.displayName, balance: p.balance, position: p.position })),
       recentLog: g.log.slice(-5).map((e) => e.text ?? `[${e.event?.type ?? e.kind}]`),
+      gameState: g,
     },
-    g,
   );
 }

@@ -47,7 +47,10 @@ export function useTradeDraft({
   const [tradeDraft, setTradeDraft] = useState<TradeDraftState>(createTradeDraftState);
 
   useEffect(() => {
-    setTradeDraft((currentDraft) => normalizeTradeDraft(currentDraft, game, viewerPlayer));
+    const id = window.setTimeout(() => {
+      setTradeDraft((currentDraft) => normalizeTradeDraft(currentDraft, game, viewerPlayer));
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [game, viewerPlayer]);
 
   const resetDraft = useCallback(() => setTradeDraft(createTradeDraftState()), []);

@@ -20,7 +20,8 @@ export function useRequireAuth() {
 
   // Mark client-side hydration complete after first paint
   useEffect(() => {
-    setHydrated(true);
+    const id = window.setTimeout(() => setHydrated(true), 0);
+    return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {

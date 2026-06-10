@@ -9,9 +9,9 @@ import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game
 
 const URGENT_MS = 15_000;
 
-function remainingMs(deadlineMs: number | null): number {
+function remainingMs(deadlineMs: number | null, now = Date.now()): number {
   if (deadlineMs == null) return 0;
-  return Math.max(0, deadlineMs - Date.now());
+  return Math.max(0, deadlineMs - now);
 }
 
 function format(ms: number): string {
@@ -22,16 +22,16 @@ function format(ms: number): string {
 }
 
 export function TurnTimer({ deadlineMs }: { deadlineMs: number | null }) {
-  const [ms, setMs] = useState(() => remainingMs(deadlineMs));
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    setMs(remainingMs(deadlineMs));
-    const iv = setInterval(() => setMs(remainingMs(deadlineMs)), 500);
+    const iv = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(iv);
-  }, [deadlineMs]);
+  }, []);
 
   if (deadlineMs == null) return null;
 
+  const ms = remainingMs(deadlineMs, now);
   const urgent = ms <= URGENT_MS;
   return (
     <span

@@ -42,11 +42,6 @@ export function useBoardSfx(gameState: GameState) {
   const prevTradeIdRef    = useRef<string | null>(null);
   const prevLogLenRef     = useRef(0);
 
-  // Keep a ref so the effect closure always reads current state without
-  // making the whole gameState object a dep (would fire on every frame).
-  const gameStateRef = useRef(gameState);
-  gameStateRef.current = gameState;
-
   const hasAuction  = gameState.auction !== null;
   const highestBid  = gameState.auction?.highestBid ?? -1;
   const tradeId     = gameState.trade?.id ?? null;
@@ -55,8 +50,6 @@ export function useBoardSfx(gameState: GameState) {
   const viewerId    = gameState.viewerId;
 
   useEffect(() => {
-    const gs = gameStateRef.current;
-
     // ── Auction start ─────────────────────────────────────────────────────────
     if (hasAuction && !prevAuctionRef.current) {
       playSfx(SFX_MAP.auctionStarted);
@@ -82,7 +75,7 @@ export function useBoardSfx(gameState: GameState) {
 
     // ── New log entries ───────────────────────────────────────────────────────
     if (logLen > prevLogLenRef.current) {
-      const newEntries = gs.log.slice(prevLogLenRef.current);
+      const newEntries = gameState.log.slice(prevLogLenRef.current);
 
       if (newEntries.some((e) => e.kind === LogKind.EVENT && e.event?.type === GameEventType.PassedGo)) {
         playSfx(SFX_MAP.passedGo);
@@ -97,5 +90,5 @@ export function useBoardSfx(gameState: GameState) {
       }
     }
     prevLogLenRef.current = logLen;
-  }, [hasAuction, highestBid, tradeId, tradeStatus, logLen, viewerId]);
+  }, [gameState.log, hasAuction, highestBid, tradeId, tradeStatus, logLen, viewerId]);
 }

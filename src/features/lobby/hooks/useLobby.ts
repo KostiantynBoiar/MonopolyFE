@@ -29,9 +29,12 @@ export function useLobby() {
   }, []);
 
   useEffect(() => {
-    fetch();
+    const initialLoadId = setTimeout(() => {
+      void fetch();
+    }, 0);
     pollRef.current = setInterval(() => fetch(true), POLL_INTERVAL_MS);
     return () => {
+      clearTimeout(initialLoadId);
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [fetch]);

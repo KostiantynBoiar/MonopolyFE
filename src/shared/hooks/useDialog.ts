@@ -49,7 +49,10 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>(
   // Keep the latest onClose without re-running the focus effect (which would steal focus
   // back to the top of the dialog on every parent render).
   const onCloseRef = useRef(options.onClose);
-  onCloseRef.current = options.onClose;
+
+  useEffect(() => {
+    onCloseRef.current = options.onClose;
+  }, [options.onClose]);
 
   useEffect(() => {
     const node = ref.current;

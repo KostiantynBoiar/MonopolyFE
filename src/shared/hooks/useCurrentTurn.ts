@@ -13,7 +13,10 @@ export function useCurrentTurn(
 ): void {
   const prevPlayerIdRef = useRef<string | null>(null);
   const onYourTurnRef = useRef(onYourTurn);
-  onYourTurnRef.current = onYourTurn;
+
+  useEffect(() => {
+    onYourTurnRef.current = onYourTurn;
+  }, [onYourTurn]);
 
   useEffect(() => {
     const prev = prevPlayerIdRef.current;

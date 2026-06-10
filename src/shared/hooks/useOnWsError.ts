@@ -9,17 +9,17 @@ export function useOnWsError(error: WsErrorPayload | null): boolean {
   const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
-    if (!error) {
-      setIsShaking(false);
-      return;
-    }
+    if (!error) return;
 
     // Depend on the object reference, not a derived string, so repeated errors
     // with identical content (same code/message) still retrigger the animation.
-    setIsShaking(true);
+    const startId = window.setTimeout(() => setIsShaking(true), 0);
     const id = window.setTimeout(() => setIsShaking(false), WS_ERROR_SHAKE_DURATION_MS);
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(startId);
+      window.clearTimeout(id);
+    };
   }, [error]);  
 
-  return isShaking;
+  return error ? isShaking : false;
 }

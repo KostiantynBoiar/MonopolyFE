@@ -59,29 +59,41 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
 
   useEffect(() => {
     if (!ready) return;
-    if (!sessionId) { setIsLoading(false); return; }
 
     let active = true;
-    setIsLoading(true);
-    setLoadError(null);
-    setLoadedSessionId(null);
 
-    withTimeout(getSession(sessionId), SESSION_RESTORE_TIMEOUT_MS, 'Could not load the room session.')
-      .then(({ session }) => {
-        if (!active) return;
-        setSession(session);
-        setLoadedSessionId(sessionId);
-      })
-      .catch((error) => {
-        if (!active) return;
-        clearSession();
-        resetSocket();
-        resetGame();
-        setLoadError((error as Error).message);
-      })
-      .finally(() => {
-        if (active) setIsLoading(false);
-      });
+    const loadSession = async () => {
+      await Promise.resolve();
+      if (!active) return;
+
+      if (!sessionId) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setLoadError(null);
+      setLoadedSessionId(null);
+
+      withTimeout(getSession(sessionId), SESSION_RESTORE_TIMEOUT_MS, 'Could not load the room session.')
+        .then(({ session }) => {
+          if (!active) return;
+          setSession(session);
+          setLoadedSessionId(sessionId);
+        })
+        .catch((error) => {
+          if (!active) return;
+          clearSession();
+          resetSocket();
+          resetGame();
+          setLoadError((error as Error).message);
+        })
+        .finally(() => {
+          if (active) setIsLoading(false);
+        });
+    };
+
+    void loadSession();
 
     return () => { active = false; };
   }, [clearSession, ready, resetGame, resetSocket, sessionId, setSession]);

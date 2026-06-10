@@ -41,35 +41,43 @@ export function useActiveSession(ready: boolean): ActiveSession {
   useEffect(() => {
     if (!ready || !hasHydrated) return;
 
-    if (!persistedId) {
-      setActive(null);
-      setChecking(false);
-      return;
-    }
-
     let alive = true;
-    setChecking(true);
 
-    getSession(persistedId)
-      .then(({ session: fresh }) => {
-        if (!alive) return;
-        if (isRejoinable(fresh, viewerBankruptInSession)) {
-          setSession(fresh);
-          setActive(fresh);
-        } else {
+    const validateSession = async () => {
+      await Promise.resolve();
+      if (!alive) return;
+
+      if (!persistedId) {
+        setActive(null);
+        setChecking(false);
+        return;
+      }
+
+      setChecking(true);
+
+      getSession(persistedId)
+        .then(({ session: fresh }) => {
+          if (!alive) return;
+          if (isRejoinable(fresh, viewerBankruptInSession)) {
+            setSession(fresh);
+            setActive(fresh);
+          } else {
+            clearSession();
+            setActive(null);
+          }
+        })
+        .catch(() => {
+          // Session no longer exists / not accessible → drop the stale pointer.
+          if (!alive) return;
           clearSession();
           setActive(null);
-        }
-      })
-      .catch(() => {
-        // Session no longer exists / not accessible → drop the stale pointer.
-        if (!alive) return;
-        clearSession();
-        setActive(null);
-      })
-      .finally(() => {
-        if (alive) setChecking(false);
-      });
+        })
+        .finally(() => {
+          if (alive) setChecking(false);
+        });
+    };
+
+    void validateSession();
 
     return () => {
       alive = false;

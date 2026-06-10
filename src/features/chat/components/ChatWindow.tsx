@@ -624,7 +624,9 @@ export function ChatWindow({
   }, [displayMessages.length, activeTab]);
 
   useEffect(() => {
-    if (activeTab === ChatWindowTab.CHAT) setUnreadCount(0);
+    if (activeTab !== ChatWindowTab.CHAT) return;
+    const id = window.setTimeout(() => setUnreadCount(0), 0);
+    return () => window.clearTimeout(id);
   }, [activeTab]);
 
   useEffect(() => {

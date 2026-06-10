@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 export type Mode = 'light' | 'dark' | 'system';
 export type BoardTheme = 'classic' | 'midnight' | 'sepia' | 'noir';
@@ -39,6 +39,7 @@ export function useTheme() {
 }
 
 function systemPrefersDark() {
+  if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 }
 
@@ -67,76 +68,61 @@ function applyDiceTheme(diceTheme: DiceTheme) {
   }
 }
 
+function getInitialMode(): Mode {
+  if (typeof window === 'undefined') return 'light';
+  return (localStorage.getItem('theme') as Mode | null) ?? 'system';
+}
+
+function getInitialBoardTheme(): BoardTheme {
+  if (typeof window === 'undefined') return 'classic';
+  return (localStorage.getItem('board-theme') as BoardTheme | null) ?? 'classic';
+}
+
+function getInitialDiceTheme(): DiceTheme {
+  if (typeof window === 'undefined') return 'sync';
+  return (localStorage.getItem('dice-theme') as DiceTheme | null) ?? 'sync';
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [mode, setModeState] = useState<Mode>('light');
-  const [boardTheme, setBoardThemeState] = useState<BoardTheme>('classic');
-  const [diceTheme, setDiceThemeState] = useState<DiceTheme>('sync');
+  const [mode, setModeState] = useState<Mode>(getInitialMode);
+  const [boardTheme, setBoardThemeState] = useState<BoardTheme>(getInitialBoardTheme);
+  const [diceTheme, setDiceThemeState] = useState<DiceTheme>(getInitialDiceTheme);
 
   // Track resolved mode for context consumers (e.g. ThemeToggle icon).
-  const [resolved, setResolved] = useState<ResolvedMode>('light');
-
-  // System preference listener ref — cleaned up if mode changes away from 'system'.
-  const mqlCleanupRef = useRef<(() => void) | null>(null);
+  const [resolved, setResolved] = useState<ResolvedMode>(() => resolveMode(getInitialMode()));
 
   useEffect(() => {
-    const storedMode: Mode = (localStorage.getItem('theme') as Mode | null) ?? 'system';
-    const storedBoard = (localStorage.getItem('board-theme') as BoardTheme | null) ?? 'classic';
-    const storedDice = (localStorage.getItem('dice-theme') as DiceTheme | null) ?? 'sync';
+    applyMode(mode);
+    applyBoardTheme(boardTheme);
+    applyDiceTheme(diceTheme);
 
-    setModeState(storedMode);
-    setBoardThemeState(storedBoard);
-    setDiceThemeState(storedDice);
-    setResolved(resolveMode(storedMode));
-    applyMode(storedMode);
-    applyBoardTheme(storedBoard);
-    applyDiceTheme(storedDice);
+    if (mode !== 'system') return;
 
-    if (storedMode === 'system') {
-      const mql = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = () => {
-        const r = resolveMode('system');
-        setResolved(r);
-        applyMode('system');
-      };
-      mql.addEventListener('change', handler);
-      mqlCleanupRef.current = () => mql.removeEventListener('change', handler);
-    }
-
-    return () => mqlCleanupRef.current?.();
-  }, []);
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      const r = resolveMode('system');
+      setResolved(r);
+      applyMode('system');
+    };
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [boardTheme, diceTheme, mode]);
 
   function setMode(m: Mode) {
-    mqlCleanupRef.current?.();
-    mqlCleanupRef.current = null;
-
     setModeState(m);
     localStorage.setItem('theme', m);
     const r = resolveMode(m);
     setResolved(r);
-    applyMode(m);
-
-    if (m === 'system') {
-      const mql = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = () => {
-        const next = resolveMode('system');
-        setResolved(next);
-        applyMode('system');
-      };
-      mql.addEventListener('change', handler);
-      mqlCleanupRef.current = () => mql.removeEventListener('change', handler);
-    }
   }
 
   function setBoardTheme(b: BoardTheme) {
     setBoardThemeState(b);
     localStorage.setItem('board-theme', b);
-    applyBoardTheme(b);
   }
 
   function setDiceTheme(d: DiceTheme) {
     setDiceThemeState(d);
     localStorage.setItem('dice-theme', d);
-    applyDiceTheme(d);
   }
 
   function toggle() {

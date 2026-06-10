@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import lottie, { type AnimationItem } from 'lottie-web';
+import { logger } from '@/shared/lib/logger';
 
 // Module-level cache — decompressed Lottie JSON is shared across all TgsPlayer
 // instances pointing at the same URL, so 30 picker cells only fetch+decompress once.
@@ -76,12 +77,12 @@ export function TgsPlayer({
             animationData,
           });
         } catch (err) {
-          console.error('[TgsPlayer]', err);
+          logger.error('[TgsPlayer] failed to render sticker animation', { error: err, src });
           setFailed(true);
         }
       })
       .catch((err) => {
-        console.error('[TgsPlayer]', err);
+        logger.error('[TgsPlayer] failed to load sticker animation', { error: err, src });
         if (!cancelled) setFailed(true);
       });
 

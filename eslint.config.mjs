@@ -34,6 +34,13 @@ const config = [
       'react-hooks/set-state-in-effect': 'warn',
     },
   },
+
+  {
+    files: ['src/shared/lib/logger.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ];
 
 export default config;

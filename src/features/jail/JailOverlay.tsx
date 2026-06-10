@@ -12,11 +12,14 @@ const SURRENDER_CONFIRM_MS = 4000;
 
 function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
   const [displayed, setDisplayed] = useState(value);
+
   useEffect(() => {
-    if (!rolling) { setDisplayed(value); return; }
+    if (!rolling) return;
     const iv = setInterval(() => setDisplayed(Math.ceil(Math.random() * 6)), 80);
     return () => clearInterval(iv);
   }, [rolling, value]);
+
+  const visibleValue = rolling ? displayed : value;
 
   return (
     <div
@@ -31,7 +34,7 @@ function DiceFace({ value, rolling }: { value: number; rolling: boolean }) {
         className="font-display font-black leading-none"
         style={{ fontSize: '1.1rem', color: GAME_BOARD_COLORS.text }}
       >
-        {displayed}
+        {visibleValue}
       </span>
     </div>
   );

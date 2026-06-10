@@ -68,7 +68,10 @@ export function useBalanceChange(
   const prevRef = useRef<Map<string, number>>(new Map());
   const seenLogIdsRef = useRef<Set<string> | null>(null);
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     const hasPreviousBalances = prevRef.current.size > 0;

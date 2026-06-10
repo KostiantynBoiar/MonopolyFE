@@ -39,6 +39,7 @@ import {
 import type { GameSnapshot, PlayerPermissions } from '@/shared/protocol/permissions';
 import { EMPTY_PERMISSIONS } from '@/shared/protocol/permissions';
 import type { AnimationInstruction } from '@/shared/protocol/animation';
+import { logger } from '@/shared/lib/logger';
 
 // ─── Backend wire shapes (snake_case) ─────────────────────────────────────────
 // Minimal structural typing of the payload we receive in a `game.state` frame.
@@ -444,15 +445,17 @@ function mapLog(entries: BeLogEntry[] | undefined): LogEntry[] {
 
   if (process.env.NODE_ENV === 'development') {
     const sample = entries.slice(0, 3);
-    console.debug(
+    logger.debug(
       '[GameLog] raw entries (first 3):',
-      sample.map((e) => ({
-        kind:       e.kind,
-        type:       e.type,
-        playerName: e.player_name,
-        playerToken: e.player_token,
-        text:       e.text,
-      })),
+      {
+        entries: sample.map((e) => ({
+          kind:       e.kind,
+          type:       e.type,
+          playerName: e.player_name,
+          playerToken: e.player_token,
+          text:       e.text,
+        })),
+      },
     );
   }
 

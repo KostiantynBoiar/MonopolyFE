@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
@@ -36,7 +36,7 @@ export default function LobbyPage() {
   const [rankedFilter, setRankedFilter] = useState<RankedFilter>('all');
   const [hideFullRooms, setHideFullRooms] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-  const [activePanel, setActivePanel] = useState<LobbyPanel>(panelParam === 'create' ? 'create' : 'join');
+  const activePanel: LobbyPanel = panelParam === 'create' ? 'create' : 'join';
 
   const {
     sessions, loading, error, joiningId,
@@ -67,13 +67,8 @@ export default function LobbyPage() {
 
   function switchPanel(panel: LobbyPanel) {
     setJoinError(null);
-    setActivePanel(panel);
     router.replace(panel === 'create' ? '/lobby?panel=create' : '/lobby');
   }
-
-  useEffect(() => {
-    setActivePanel(panelParam === 'create' ? 'create' : 'join');
-  }, [panelParam]);
 
   if (!ready) return <FullScreenSpinner />;
 

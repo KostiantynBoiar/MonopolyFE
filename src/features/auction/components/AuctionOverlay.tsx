@@ -20,7 +20,8 @@ export function AuctionOverlay({
   const [displayMs, setDisplayMs] = useState(auctionState.timeRemainingMs);
 
   useEffect(() => {
-    setDisplayMs(auctionState.timeRemainingMs);
+    const id = window.setTimeout(() => setDisplayMs(auctionState.timeRemainingMs), 0);
+    return () => window.clearTimeout(id);
   }, [auctionState.timeRemainingMs]);
 
   // Single stable interval — functional setState sees current value without needing dep.

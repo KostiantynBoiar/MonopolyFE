@@ -1,18 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const STORAGE_KEY = 'tycoon:lobby:ranked';
 
-export function useRankedPreference() {
-  const [ranked, setRankedState] = useState(false);
+function getInitialRankedPreference(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_KEY) === 'true';
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored !== null) {
-      setRankedState(stored === 'true');
-    }
-  }, []);
+export function useRankedPreference() {
+  const [ranked, setRankedState] = useState(getInitialRankedPreference);
 
   const setRanked = useCallback((value: boolean) => {
     setRankedState(value);

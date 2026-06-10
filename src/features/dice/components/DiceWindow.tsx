@@ -89,8 +89,11 @@ export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindow
     die2,
     isDoubles: die1 === die2,
   });
-  const total = settledRoll.die1 + settledRoll.die2;
-  const isDoubles = settledRoll.isDoubles;
+  const visibleDie1 = rollId === 0 ? die1 : displayDie1;
+  const visibleDie2 = rollId === 0 ? die2 : displayDie2;
+  const visibleRoll = rollId === 0 ? { die1, die2, isDoubles: die1 === die2 } : settledRoll;
+  const total = visibleRoll.die1 + visibleRoll.die2;
+  const isDoubles = visibleRoll.isDoubles;
 
   // Tracks which rollId has already been animated so die1/die2 prop changes
   // (e.g. game state commit after End Turn) don't re-trigger the animation.
@@ -98,10 +101,6 @@ export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindow
 
   useEffect(() => {
     if (rollId === 0) {
-      // Late-joiner / initial sync — show current values without animation.
-      setDisplayDie1(die1);
-      setDisplayDie2(die2);
-      setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
       return;
     }
 
@@ -124,34 +123,36 @@ export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindow
       return id;
     };
 
-    setRolling(true);
-    setJustSettled(false);
-
-    // Phase 1: fast chaotic pip cycling during tumble.
-    const fastId = cycle(() => {
-      setDisplayDie1(randomFace());
-      setDisplayDie2(randomFace());
-    }, FAST_INTERVAL_MS);
-
-    // Phase 2: slow down as die decelerates.
     later(() => {
-      window.clearInterval(fastId);
-      const slowId = cycle(() => {
+      setRolling(true);
+      setJustSettled(false);
+
+      // Phase 1: fast chaotic pip cycling during tumble.
+      const fastId = cycle(() => {
         setDisplayDie1(randomFace());
         setDisplayDie2(randomFace());
-      }, SLOW_INTERVAL_MS);
+      }, FAST_INTERVAL_MS);
 
-      // Reveal final values and settle.
+      // Phase 2: slow down as die decelerates.
       later(() => {
-        window.clearInterval(slowId);
-        setDisplayDie1(die1);
-        setDisplayDie2(die2);
-        setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
-        setRolling(false);
-        setJustSettled(true);
-        later(() => setJustSettled(false), 340);
-      }, DICE_SPIN_MS - FAST_PHASE_MS);
-    }, FAST_PHASE_MS);
+        window.clearInterval(fastId);
+        const slowId = cycle(() => {
+          setDisplayDie1(randomFace());
+          setDisplayDie2(randomFace());
+        }, SLOW_INTERVAL_MS);
+
+        // Reveal final values and settle.
+        later(() => {
+          window.clearInterval(slowId);
+          setDisplayDie1(die1);
+          setDisplayDie2(die2);
+          setSettledRoll({ die1, die2, isDoubles: die1 === die2 });
+          setRolling(false);
+          setJustSettled(true);
+          later(() => setJustSettled(false), 340);
+        }, DICE_SPIN_MS - FAST_PHASE_MS);
+      }, FAST_PHASE_MS);
+    }, 0);
 
     return () => dispose.forEach((fn) => fn());
   }, [die1, die2, rollId]);
@@ -186,8 +187,8 @@ export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindow
       </div>
 
       <div className={`grid min-h-0 grid-cols-2 place-items-center gap-2 ${compact ? 'px-1 py-1' : 'px-2 py-2'}`}>
-        <DieFace value={displayDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} justSettled={justSettled} side="left" />
-        <DieFace value={displayDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
+        <DieFace value={visibleDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} justSettled={justSettled} side="left" />
+        <DieFace value={visibleDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
       </div>
 
       <div className={`flex flex-col items-center ${compact ? 'gap-0.5' : 'gap-1.5 pb-[2px]'}`}>
