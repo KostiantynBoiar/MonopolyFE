@@ -139,7 +139,7 @@ MonopolyFE/
 │   ├── mocks/
 │   │   └── fake-game-socket.ts
 │   └── fixtures/
-├── next.config.ts
+├── next.config.mjs
 ├── postcss.config.mjs                 # Tailwind + autoprefixer
 ├── tailwind.config.ts                 # theme tokens, darkMode: 'class' | 'media'
 ├── vitest.config.ts
@@ -188,7 +188,7 @@ Import order: node → external → `@/shared` → `@/features` → relative. Fe
 
 ## Migration checklist (CRA → Next.js)
 
-- [ ] Replace `react-scripts` with `next`, `react`, `react-dom` versions compatible with Next 15+
+- [ ] Replace `react-scripts` with `next`, `react`, `react-dom` versions compatible with Next 16+
 - [ ] Add dependencies: `zod`, `zustand`, `@tanstack/react-query`, `clsx`, `tailwind-merge`
 - [ ] Add devDependencies: `tailwindcss`, `postcss`, `autoprefixer`, `vitest`, `@vitejs/plugin-react`, `playwright`, `@playwright/test`
 - [ ] Remove or archive CRA entrypoints: `src/index.tsx`, `src/App.tsx`, `src/App.css`, `src/index.css`
