@@ -76,7 +76,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
               className={cn(
                 'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
                 visibility === value
-                  ? 'border-ink bg-ink text-white'
+                  ? 'border-ink bg-ink text-paper hover:bg-navy-700 hover:text-white'
                   : 'border-line-2 bg-surface text-ink hover:bg-paper',
               )}
             >
@@ -104,7 +104,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
               className={cn(
                 'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
                 ranked === value
-                  ? 'border-ink bg-ink text-white'
+                  ? 'border-ink bg-ink text-paper hover:bg-navy-700 hover:text-white'
                   : 'border-line-2 bg-surface text-ink hover:bg-paper',
               )}
             >
