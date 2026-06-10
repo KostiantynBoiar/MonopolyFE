@@ -112,6 +112,14 @@ responsibility.
 | `src/shared/hooks` | Cross-feature React hooks |
 | `src/shared/mocks` | Local mock data and fixtures |
 
+## Documentation
+
+| Document | Topic |
+| --- | --- |
+| `docs/LOCALIZATION.md` | Locale setup, message conventions, board tile names, card text, and event text |
+| `docs/GAME_STATE.md` | Frontend game snapshot shape, backend adapter boundary, permissions, and store ownership |
+| `docs/ANIMATION_TIMELINE.md` | Backend-authored animation timeline flow, queue semantics, gates, and reset behavior |
+
 ## Coding Conventions
 
 - Keep feature code inside the owning `src/features/<name>` module when possible.

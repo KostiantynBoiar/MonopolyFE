@@ -13,11 +13,12 @@ import { useRankedPreference } from '../hooks/useRankedPreference';
 
 interface CreateLobbyFormProps {
   onBack?: () => void;
+  onCreatePendingChange?: (pending: boolean) => void;
   /** Blocks creating while the player already has an active game to return to. */
   disabled?: boolean;
 }
 
-export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
+export function CreateLobbyForm({ onBack, onCreatePendingChange, disabled }: CreateLobbyFormProps) {
   const t = useTranslations('Lobby.newLobby');
   const tLobby = useTranslations('Lobby');
   const router = useRouter();
@@ -33,6 +34,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
     event.preventDefault();
     if (disabled) return;
     setLoading(true);
+    onCreatePendingChange?.(true);
     setError(null);
 
     try {
@@ -43,6 +45,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
     } catch (err) {
       setError((err as Error).message);
       setLoading(false);
+      onCreatePendingChange?.(false);
     }
   }
 
@@ -76,7 +79,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
               className={cn(
                 'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
                 visibility === value
-                  ? 'border-ink bg-ink text-white'
+                  ? 'border-ink bg-ink text-paper hover:bg-navy-700 hover:text-white'
                   : 'border-line-2 bg-surface text-ink hover:bg-paper',
               )}
             >
@@ -104,7 +107,7 @@ export function CreateLobbyForm({ onBack, disabled }: CreateLobbyFormProps) {
               className={cn(
                 'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
                 ranked === value
-                  ? 'border-ink bg-ink text-white'
+                  ? 'border-ink bg-ink text-paper hover:bg-navy-700 hover:text-white'
                   : 'border-line-2 bg-surface text-ink hover:bg-paper',
               )}
             >

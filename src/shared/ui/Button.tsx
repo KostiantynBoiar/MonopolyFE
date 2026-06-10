@@ -8,7 +8,7 @@ type ButtonSize = 'md' | 'sm';
 const variantClasses: Record<ButtonVariant, string> = {
   gold: 'bg-gold text-white border border-gold-600 hover:bg-gold-600 shadow-sm',
   blue: 'bg-blue text-white border border-blue-600 hover:bg-blue-600 shadow-sm',
-  dark: 'bg-ink text-white border border-navy-700 hover:bg-navy-700 shadow-sm',
+  dark: 'bg-ink text-paper border border-navy-700 hover:bg-navy-700 hover:text-white shadow-sm',
   ghost: 'bg-surface text-ink border border-line-2 hover:bg-paper shadow-sm',
 };
 
