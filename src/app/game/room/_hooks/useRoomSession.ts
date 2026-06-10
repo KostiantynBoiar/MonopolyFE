@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession, leaveSession, startGame } from '@/features/lobby/api';
 import { SessionStatus, type SessionDetail } from '@/features/lobby';
@@ -49,6 +49,7 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
   const [loadedSessionId, setLoadedSessionId] = useState<string | null>(null);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const intentionalLeaveRef = useRef(false);
 
   const canConnectSocket = Boolean(ready && loadedSessionId === sessionId);
 
@@ -102,6 +103,8 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
 
   useEffect(() => {
     if (!wasKicked) return;
+    if (intentionalLeaveRef.current) return;
+
     clearSession();
     resetSocket();
     router.replace('/lobby?kicked=1');
@@ -127,6 +130,7 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
   const handleLeaveRoom = useCallback(async () => {
     if (isLeaving) return;
     setIsLeaving(true);
+    intentionalLeaveRef.current = true;
     try {
       await leaveSession(sessionId);
     } catch {
@@ -135,6 +139,7 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
       clearSession();
       resetSocket();
       router.replace('/lobby');
+      intentionalLeaveRef.current = false;
       setIsLeaving(false);
     }
   }, [clearSession, isLeaving, resetSocket, router, sessionId]);
