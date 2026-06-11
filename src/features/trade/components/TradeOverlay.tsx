@@ -4,7 +4,8 @@ import { useTranslations } from 'next-intl';
 import { useDialog } from '@/shared/hooks/useDialog';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
-import { BOARD } from '@/shared/config/board-layout';
+import { getBoardConfig } from '@/shared/config/board-layout';
+import { useGameStore } from '@/stores/game-store';
 import { TradeParty } from '../trade.enums';
 import type { TradeWindowProps } from '../trade.types';
 import type { TradeOffer } from '@/shared/protocol/game-state';
@@ -70,9 +71,11 @@ interface OfferSideProps {
 
 function OfferSide({ name, token, balance, offer, label, compact, dimmed }: OfferSideProps) {
   const tokenHex = TOKEN_COLORS[token];
+  const gameMode = useGameStore((s) => s.snapshot.game.gameMode);
+  const boardConfig = getBoardConfig(gameMode);
   const isEmpty = offer.money === 0 && offer.positions.length === 0 && offer.getOutOfJailCards === 0;
   const spaces = offer.positions
-    .map((pos) => BOARD[pos])
+    .map((pos) => boardConfig.spacesByPosition[pos])
     .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   return (

@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
+import { useGameStore } from '@/stores/game-store';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import { CornerVariant, SpaceType } from '@/features/game-board/game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor, getSpaceHeaderTextColor } from '@/features/game-board/game-board.colors';
@@ -95,15 +96,16 @@ export function DeedWindow({
   ownership,
 }: DeedWindowProps) {
   const t = useTranslations('Deed');
-   
+
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
+  const gameMode = useGameStore((s) => s.snapshot.game.gameMode);
 
   const isDecisionMode = Boolean(decisionSpace);
   // In decision mode show the landed-on space; otherwise show the browsed space.
   const activeSpace = decisionSpace ?? space;
-  const spaceName = tBoard(`tiles.p${activeSpace.pos}`);
+  const spaceName = tBoard(`tiles.${gameMode}.p${activeSpace.pos}`);
 
-  const deed           = getDeedInfo(activeSpace.pos);
+  const deed           = getDeedInfo(activeSpace.pos, gameMode);
   const isDeed         = deed !== null;
   const headlineRent   = deed?.rentRows[0]?.amount ?? (activeSpace.price != null ? `M${activeSpace.price}` : null);
   const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner, t) : null;

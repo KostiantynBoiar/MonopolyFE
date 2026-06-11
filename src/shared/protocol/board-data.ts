@@ -93,7 +93,7 @@ export const DUEL_COLOR_POSITIONS: Readonly<Record<PropertyColor, readonly numbe
   [PropertyColor.RED]:    [17, 19],
   [PropertyColor.YELLOW]: [20],
   [PropertyColor.GREEN]:  [22],
-  [PropertyColor.BLUE]:   [23],
+  [PropertyColor.BLUE]:   [23, 24],
 };
 
 export const DUEL_POSITION_COLOR: Readonly<Partial<Record<number, PropertyColor>>> = Object.fromEntries(
@@ -127,6 +127,7 @@ export const DUEL_RENT: Readonly<Record<number, readonly [number, number, number
   20: [22,  44,  110, 330,  800,  975,  1150],
   22: [26,  52,  130, 390,  900,  1100, 1275],
   23: [50,  100, 200, 600,  1400, 1700, 2000],
+  24: [70,  140, 300, 900,  2000, 2200, 2500],
 };
 
 export const DUEL_PRICE: Readonly<Record<number, number>> = {
@@ -135,7 +136,7 @@ export const DUEL_PRICE: Readonly<Record<number, number>> = {
   9:  140, 10: 150, 11: 140,
   14: 180, 15: 200,
   17: 220,           19: 240,
-  20: 260, 22: 300, 23: 400,
+  20: 260, 22: 300, 23: 400, 24: 450,
 };
 
 // ─── BoardData bundle ──────────────────────────────────────────────────────────
@@ -185,20 +186,3 @@ export function buildingCost(position: number, gameMode: GameMode = GameMode.NOR
   const color = positionColor[position];
   return color ? (houseCost[color] ?? 0) : 0;
 }
-
-// ─── Legacy named exports (deprecated — use getBoardData) ─────────────────────
-
-/** @deprecated Use getBoardData(gameMode).railroadPositions */
-export const RAILROAD_POSITIONS = NORMAL_RAILROAD_POSITIONS;
-/** @deprecated Use getBoardData(gameMode).utilityPositions */
-export const UTILITY_POSITIONS = NORMAL_UTILITY_POSITIONS;
-/** @deprecated Use getBoardData(gameMode).colorPositions */
-export const COLOR_POSITIONS = NORMAL_COLOR_POSITIONS;
-/** @deprecated Use getBoardData(gameMode).positionColor */
-export const POSITION_COLOR = NORMAL_POSITION_COLOR;
-/** @deprecated Use getBoardData(gameMode).houseCost */
-export const HOUSE_COST = NORMAL_HOUSE_COST;
-/** @deprecated Use getBoardData(gameMode).rent */
-export const RENT = NORMAL_RENT;
-/** @deprecated Use getBoardData(gameMode).price */
-export const PRICE = NORMAL_PRICE;

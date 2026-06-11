@@ -1,6 +1,6 @@
 export { BoardTileFlavor, BoardTileSelectionTone, PropertyColor, SpaceType, TileEdge } from './game-board.enums';
 export type { BoardSpace, BoardPlayer, WalkingPlayer } from './game-board.types';
-export { BOARD, getBoardConfig, NORMAL_BOARD_CONFIG, DUEL_BOARD_CONFIG, getTileEdge, getTileOuterEdgePct, getWalkSteps, getBackwardWalkSteps, getTileCenter, getTileFlavor } from '@/shared/config/board-layout';
+export { getBoardConfig, NORMAL_BOARD_CONFIG, DUEL_BOARD_CONFIG, getTileEdge, getTileOuterEdgePct, getWalkSteps, getBackwardWalkSteps, getTileCenter, getTileFlavor } from '@/shared/config/board-layout';
 export type { BoardConfig } from '@/shared/config/board-layout';
 export { BoardContainer } from './components/BoardContainer';
 export { BoardTile } from './components/BoardTile';

@@ -64,12 +64,6 @@ function buildConfig(
   };
 }
 
-// ─── Normal board (positions 1–40) ───────────────────────────────────────────
-// City / region per color: Kyiv-Podil (brown), Kyiv-Obolon (cyan),
-// Kyiv-Solomyanka (pink), Kyiv-Pechersk (orange), Lviv (red),
-// Odesa (yellow), Kharkiv (green), Kyiv landmarks (blue).
-// Display names live in messages/{locale}.json under Board.tiles.normal.p1..p40.
-
 const NORMAL_SPACES: BoardSpace[] = [
   { pos: 1,  type: SpaceType.CORNER,   corner: CornerVariant.GO },
   { pos: 2,  type: SpaceType.PROPERTY, price: 60,  color: PropertyColor.BROWN },
@@ -138,15 +132,15 @@ export const NORMAL_BOARD_CONFIG: BoardConfig = buildConfig(
   { colStart: 2, colEnd: 11, rowStart: 2, rowEnd: 11 },
 );
 
-// ─── Duel board (positions 1–23) ─────────────────────────────────────────────
-// Compact 2-player board. Arranged as a C-shape on a 7×7 grid (0-indexed).
-// Display names in messages/{locale}.json under Board.tiles.duel.p1..p23.
+// ─── Duel board (positions 1–24) ─────────────────────────────────────────────
+// Compact 2-player board. Arranged as a full square perimeter on a 7×7 grid (0-indexed).
+// Display names in messages/{locale}.json under Board.tiles.duel.p1..p24.
 //
 // Grid layout (col, row):
 //   Bottom row  y=6: pos  1(6,6) 2(5,6) 3(4,6) 4(3,6) 5(2,6) 6(1,6) 7(0,6)
 //   Left col    x=0: pos  8(0,5) 9(0,4) 10(0,3) 11(0,2) 12(0,1) 13(0,0)
 //   Top row     y=0: pos 14(1,0) 15(2,0) 16(3,0) 17(4,0) 18(5,0) 19(6,0)
-//   Right col   x=6: pos 20(6,1) 21(6,2) 22(6,3) 23(6,4)
+//   Right col   x=6: pos 20(6,1) 21(6,2) 22(6,3) 23(6,4) 24(6,5)
 
 const DUEL_SPACES: BoardSpace[] = [
   { pos: 1,  type: SpaceType.CORNER,   corner: CornerVariant.GO },
@@ -172,6 +166,7 @@ const DUEL_SPACES: BoardSpace[] = [
   { pos: 21, type: SpaceType.CHEST },
   { pos: 22, type: SpaceType.PROPERTY, price: 300, color: PropertyColor.GREEN },
   { pos: 23, type: SpaceType.PROPERTY, price: 400, color: PropertyColor.BLUE },
+  { pos: 24, type: SpaceType.PROPERTY, price: 450, color: PropertyColor.BLUE },
 ];
 
 const DUEL_GRID_COORDS: Record<number, { col: number; row: number }> = {
@@ -198,6 +193,7 @@ const DUEL_GRID_COORDS: Record<number, { col: number; row: number }> = {
   21: { col: 6, row: 2 },
   22: { col: 6, row: 3 },
   23: { col: 6, row: 4 },
+  24: { col: 6, row: 5 },
 };
 
 export const DUEL_BOARD_CONFIG: BoardConfig = buildConfig(
@@ -330,14 +326,4 @@ export function getTileCenter(pos: number): { x: number; y: number } {
   const colWidth  = col === 0 || col === 10 ? W : NW;
   const rowHeight = row === 0 || row === 10 ? W : N;
   return { x: colStart + colWidth / 2, y: rowStart + rowHeight / 2 };
-}
-
-// ─── Legacy single-board export (kept for gradual migration of callers) ───────
-
-/** @deprecated Use NORMAL_BOARD_CONFIG.spaces instead. */
-export const BOARD = NORMAL_BOARD_CONFIG.spaces as BoardSpace[];
-
-/** @deprecated Use getTileEdge(pos, config). Defaults to normal board. */
-export function getTileEdgeLegacy(pos: number): TileEdge {
-  return getNormalTileEdge(pos);
 }

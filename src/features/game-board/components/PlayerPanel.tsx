@@ -4,7 +4,7 @@ import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
 import { TOKEN_COLORS } from '@/shared/config/constants';
-import { BOARD } from '@/shared/config/board-layout';
+import { NORMAL_BOARD_CONFIG } from '@/shared/config/board-layout';
 import { mortgageValue, buildingCost } from '@/shared/protocol/board-data';
 import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
@@ -30,7 +30,7 @@ const SORTED_BUYABLE_POSITIONS: number[] = [
 
 const SORTED_BUYABLE_SPACES: Array<{ pos: number; color: string }> = SORTED_BUYABLE_POSITIONS.map(
   (pos) => {
-    const space = BOARD.find((boardSpace) => boardSpace.pos === pos);
+    const space = NORMAL_BOARD_CONFIG.spacesByPosition[pos];
     return { pos, color: space ? getSpaceHeaderColor(space) : GAME_BOARD_COLORS.border };
   },
 );
@@ -72,12 +72,12 @@ interface BalanceDeltaEntry {
 
 function getOwnedProperties(player: Player) {
   return player.ownedPositions
-    .map((position) => BOARD.find((boardSpace) => boardSpace.pos === position))
+    .map((position) => NORMAL_BOARD_CONFIG.spacesByPosition[position])
     .filter((space): space is NonNullable<typeof space> => Boolean(space));
 }
 
 function getPositionPillColor(position: number) {
-  const space = BOARD.find((boardSpace) => boardSpace.pos === position);
+  const space = NORMAL_BOARD_CONFIG.spacesByPosition[position];
   return space ? getSpaceHeaderColor(space) : BOARD_TILE_COLORS.propertyBlue;
 }
 
@@ -163,7 +163,7 @@ export function PlayerPanel({ players, spaces, log, createdAt, onSurrender }: Pl
   const t = useTranslations('Player');
   const currentPlayer = players.find((player) => player.isActive);
   const sessionTimer  = useSessionTimer(createdAt);
-  const jailSpace = BOARD.find((space) => space.corner === CornerVariant.JAIL);
+  const jailSpace = NORMAL_BOARD_CONFIG.spacesByPosition[NORMAL_BOARD_CONFIG.jailPosition];
   const jailColor = jailSpace ? getSpaceHeaderColor(jailSpace) : BOARD_TILE_COLORS.propertyOrange;
   const [surrenderConfirming, setSurrenderConfirming] = useState(false);
 

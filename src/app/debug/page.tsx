@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { BOARD, NORMAL_BOARD_CONFIG, getTileEdge } from '@/shared/config/board-layout';
+import { NORMAL_BOARD_CONFIG, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '@/features/game-board/game-board.enums';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { BoardTile } from '@/features/game-board/components/BoardTile';
@@ -287,7 +287,7 @@ export default function DebugPage() {
             }}
           >
             {/* Tiles */}
-            {BOARD.map((space) => {
+            {NORMAL_BOARD_CONFIG.spaces.map((space) => {
               const { col, row } = NORMAL_BOARD_CONFIG.gridByPosition[space.pos];
               return (
                 <div key={space.pos} style={{ gridColumn: col + 1, gridRow: row + 1 }}>
