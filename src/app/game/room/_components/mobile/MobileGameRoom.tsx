@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CardFlipOverlay } from '@/features/card/components/CardFlipOverlay';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board/game-board.types';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import type { BoardTileSelectionTone } from '@/features/game-board/game-board.enums';
@@ -27,6 +28,7 @@ interface MobileBoardData {
   onSelectPosition: (pos: number) => void;
   viewerId?: string;
   createdAt?: string;
+  gameMode?: GameMode;
 }
 
 export type MobileGameRoomProps = GameCenterGridProps & MobileBoardData;
@@ -43,6 +45,7 @@ export function MobileGameRoom({
   onSelectPosition,
   viewerId,
   createdAt,
+  gameMode,
   // GameCenterGrid props
   isBuyDecisionForViewer,
   animatedDiceRollId,
@@ -152,6 +155,7 @@ export function MobileGameRoom({
         tileSelectionTones={tileSelectionTones}
         focusPositions={focusPositions}
         onSelectPosition={onSelectPosition}
+        gameMode={gameMode}
       />
 
       {/* Content area below the board strip. position:relative so overlays (trade, manage, card) are

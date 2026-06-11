@@ -388,6 +388,7 @@ export default function GameRoomPage() {
     onSelectPosition: trade.selectBoardPosition,
     viewerId: viewerPlayerId ?? undefined,
     createdAt: game.createdAt,
+    gameMode: game.gameMode,
   };
 
   const waitingProps = {
@@ -445,6 +446,7 @@ export default function GameRoomPage() {
               log={game.log}
               viewerId={viewerPlayerId ?? undefined}
               createdAt={game.createdAt}
+              gameMode={game.gameMode}
               onSurrender={() => dispatchCommand(CommandType.Surrender)}
             />
           </div>
@@ -483,6 +485,7 @@ export default function GameRoomPage() {
           focusPositions={boardFocusPositions}
           viewerId={viewerPlayerId ?? undefined}
           createdAt={game.createdAt}
+          gameMode={game.gameMode}
           onSurrender={() => dispatchCommand(CommandType.Surrender)}
         />
       )}
