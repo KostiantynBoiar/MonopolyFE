@@ -9,8 +9,8 @@ import { mortgageValue, buildingCost } from '@/shared/protocol/board-data';
 import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
 import { CornerVariant } from '../game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor } from '../game-board.colors';
-import { TokenShape } from '../token-shapes';
-import { TokenShapeSvg } from './TokenShapeSvg';
+import { TokenShape } from '@/features/BoardTile/token-shapes';
+import { TokenShapeSvg } from '@/features/BoardTile/components/TokenShapeSvg';
 
 // Buyable positions sorted by group — 28 total, laid out as a 7×4 rectangle.
 // Only the layout/order is hardcoded; each cell's colour is derived from BOARD

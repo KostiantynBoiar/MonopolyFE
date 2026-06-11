@@ -1,7 +1,7 @@
 import type { PlayerState } from '@/shared/protocol/game-state';
 import { NORMAL_COLOR_POSITIONS, NORMAL_POSITION_COLOR } from '@/shared/protocol/board-data';
 import { PropertyColor } from '@/shared/protocol/game-state.enums';
-import type { TokenShape } from '@/features/game-board/token-shapes';
+import type { TokenShape } from '@/features/BoardTile/token-shapes';
 
 export { PropertyColor };
 

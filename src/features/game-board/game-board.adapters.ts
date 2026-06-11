@@ -2,8 +2,8 @@ import type { Player } from '@/features/player-panel/player-panel.schema';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import type { GameState } from '@/shared/protocol/game-state';
 import { getPlayerPositions } from '@/shared/protocol/selectors';
-import type { BoardPlayer } from './game-board.types';
-import { resolveTokenShape } from './token-shapes';
+import type { BoardPlayer } from '@/features/BoardTile/boardTile.schema';
+import { resolveTokenShape } from '@/features/BoardTile/token-shapes';
 
 export function deriveSidebarPlayers(gs: GameState): Player[] {
   return gs.players.map((p) => ({

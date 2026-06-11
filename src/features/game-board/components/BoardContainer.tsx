@@ -9,9 +9,9 @@ import { GameMode } from '@/shared/protocol/game-state.enums';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
-import { BoardTile } from './BoardTile';
+import { BoardTile } from '@/features/BoardTile/components/BoardTile';
+import { TokenShapeSvg } from '@/features/BoardTile/components/TokenShapeSvg';
 import { PlayerPanel } from './PlayerPanel';
-import { TokenShapeSvg } from './TokenShapeSvg';
 
 // ─── Animated overlay token ───────────────────────────────────────────────────
 

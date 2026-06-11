@@ -1,20 +1,12 @@
 'use client';
 
-import type { KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import {
   BOARD_TILE_COLORS,
-  GAME_BOARD_COLORS,
-  SPACE_SURFACE_MAP,
-  SPACE_SYMBOL_MAP,
   getSpaceHeaderColor,
-} from '../../game-board.colors';
-import { SpaceType, TileEdge } from '../../game-board.enums';
-import type { BoardTileProps } from '../../game-board.types';
-import { GameMode } from '@/shared/protocol/game-state.enums';
-import { BuildingsMarker } from '../BuildingsMarker';
-import { PlayerMarker } from '../PlayerMarker';
+  SPACE_SURFACE_MAP,
+} from '../boardTile.colors';
 import {
   EDGE_HEADER,
   getContentPadding,
@@ -25,11 +17,17 @@ import {
   shadowOnColor,
   shadowOnLight,
   TILE_BAND_GLOSS,
-  TILE_INTERACTIVE,
   TILE_SHADOW,
-} from './constants';
-import { DimOverlay, MortgageOverlay, OwnershipOverlay, TileSheen } from './Overlays';
-import { SelectionRing } from './SelectionRing';
+} from '../boardTile.constants';
+import { TileEdge } from '../boardTile.enums';
+import { SpaceType } from '@/features/game-board/game-board.enums';
+import { SPACE_SYMBOL_MAP } from '../boardTile.colors';
+import type { BoardTileProps } from '../boardTile.schema';
+import { GameMode } from '@/shared/protocol/game-state.enums';
+import { BuildingsMarker } from './BuildingsMarker';
+import { MortgageOverlay, OwnershipOverlay } from './Overlays';
+import { PlayerMarker } from './PlayerMarker';
+import { TileBase } from './TileBase';
 import { TileText } from './TileText';
 
 export function PropertyTile({
@@ -40,24 +38,17 @@ export function PropertyTile({
   ownerColor,
   players,
   walkingPlayerIds,
-  isSelected = false,
-  selectionTone = null,
-  isDimmed = false,
+  isSelected,
+  selectionTone,
+  isDimmed,
   onSelect,
 }: BoardTileProps) {
   const tBoard   = useTranslations('Board') as unknown as (key: string) => string;
   const tileName = tBoard(`tiles.${gameMode}.p${space.pos}`);
 
-  const isSelectable  = Boolean(onSelect);
-  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (!onSelect || (event.key !== 'Enter' && event.key !== ' ')) return;
-    event.preventDefault();
-    onSelect();
-  };
-
   const propertyColor = space.color ? getSpaceHeaderColor(space) : undefined;
   const symbol        = SPACE_SYMBOL_MAP[space.type];
-  const surface       = SPACE_SURFACE_MAP[space.type] ?? GAME_BOARD_COLORS.tile;
+  const surface       = SPACE_SURFACE_MAP[space.type] ?? 'var(--board-tile)';
   const textColor     = getTileTextColor(space.type);
   const isVertical    = isVerticalEdge(edge);
   const isHorizontal  = edge === TileEdge.BOTTOM || edge === TileEdge.TOP;
@@ -72,25 +63,19 @@ export function PropertyTile({
         : 'flex-col justify-between';
 
   return (
-    <article
-      role={isSelectable ? 'button' : undefined}
-      tabIndex={isSelectable ? 0 : undefined}
-      aria-pressed={isSelectable ? isSelected : undefined}
-      onClick={onSelect}
-      onKeyDown={handleKeyDown}
-      className={cn(
-        'relative flex h-full w-full overflow-hidden rounded-[12px] border',
-        isSelectable && 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-ink',
-        isSelectable && TILE_INTERACTIVE,
-      )}
+    <TileBase
+      isSelected={isSelected}
+      selectionTone={selectionTone}
+      isDimmed={isDimmed}
+      onSelect={onSelect}
+      className="flex h-full w-full rounded-[12px]"
       style={{
         backgroundColor: surface,
-        borderColor:     GAME_BOARD_COLORS.tileBorder,
+        borderColor:     'var(--board-tile-border)',
         color:           textColor,
         boxShadow:       TILE_SHADOW,
       }}
     >
-      <TileSheen />
       {propertyColor && (
         <div
           className={cn(EDGE_HEADER[edge], 'z-[45]')}
@@ -127,12 +112,7 @@ export function PropertyTile({
           </>
         ) : (
           <>
-            <TileText
-              name={tileName}
-              price={space.price}
-              textColor={textColor}
-              doSplit={isHorizontal}
-            />
+            <TileText name={tileName} price={space.price} textColor={textColor} doSplit={isHorizontal} />
             {space.type !== SpaceType.PROPERTY && symbol && (
               <span
                 className="shrink-0 leading-none self-end"
@@ -148,10 +128,9 @@ export function PropertyTile({
           </>
         )}
       </div>
+
       {ownerColor && <OwnershipOverlay color={ownerColor} isMortgaged={ownership?.isMortgaged ?? false} />}
       {ownership?.isMortgaged && <MortgageOverlay />}
-      {isDimmed && <DimOverlay />}
-      <SelectionRing selected={isSelected} tone={selectionTone} />
-    </article>
+    </TileBase>
   );
 }

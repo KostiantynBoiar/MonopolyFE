@@ -12,7 +12,7 @@ import { GameMode } from '@/shared/protocol/game-state.enums';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import { TradeStatus } from '@/shared/protocol/game-state.enums';
-import { resolveTokenShape } from '@/features/game-board/token-shapes';
+import { resolveTokenShape } from '@/features/BoardTile/token-shapes';
 import {
   toTradeAsset,
   toTradeCounterparty,

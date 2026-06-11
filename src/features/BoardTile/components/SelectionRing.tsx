@@ -1,12 +1,12 @@
 'use client';
 
-import type { BoardTileSelectionTone } from '../../game-board.enums';
-import { BOARD_TILE_COLORS } from '../../game-board.colors';
-import { SELECTION_RING_COLOR } from './constants';
+import { BOARD_TILE_COLORS } from '../boardTile.colors';
+import { SELECTION_RING_COLOR } from '../boardTile.constants';
+import type { BoardTileSelectionTone } from '../boardTile.enums';
 
 interface SelectionRingProps {
   selected: boolean;
-  tone: BoardTileSelectionTone | null;
+  tone:     BoardTileSelectionTone | null;
 }
 
 export function SelectionRing({ selected, tone }: SelectionRingProps) {
@@ -26,7 +26,6 @@ export function SelectionRing({ selected, tone }: SelectionRingProps) {
       )}
       {selected && (
         <>
-          {/* Soft inner halo — clipped-safe glow that makes the active tile pop */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-[49]"
@@ -35,8 +34,6 @@ export function SelectionRing({ selected, tone }: SelectionRingProps) {
               boxShadow: 'inset 0 0 10px 2px rgba(228,192,106,0.55)',
             }}
           />
-          {/* Ring flush to the tile edge: a dark hairline at the very border for
-              contrast on light tiles, then the gold band just inside it. */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-[51]"

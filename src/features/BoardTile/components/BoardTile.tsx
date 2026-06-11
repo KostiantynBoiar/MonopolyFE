@@ -1,11 +1,11 @@
 'use client';
 
-import { BoardTileFlavor, CornerVariant } from '../../game-board.enums';
-import type { BoardTileProps } from '../../game-board.types';
+import { BoardTileFlavor, CornerVariant } from '../boardTile.enums';
+import type { BoardTileProps } from '../boardTile.schema';
 import { CornerTile } from './CornerTile';
 import { JailTile } from './JailTile';
-import { SpecialTile } from './SpecialTile';
 import { PropertyTile } from './PropertyTile';
+import { SpecialTile } from './SpecialTile';
 
 export function BoardTile(props: BoardTileProps) {
   if (props.flavor === BoardTileFlavor.CORNER) {

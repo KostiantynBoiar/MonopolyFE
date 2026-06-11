@@ -1,5 +1,9 @@
 export { PropertyColor } from '@/shared/protocol/game-state.enums';
 
+// Re-exported for backward compatibility with shared/config/board-layout and
+// other consumers that still import from this path.
+export { BoardTileFlavor, BoardTileSelectionTone, CornerVariant, TileEdge } from '@/features/BoardTile/boardTile.enums';
+
 export enum SpaceType {
   CORNER = 'corner',
   PROPERTY = 'property',
@@ -8,51 +12,4 @@ export enum SpaceType {
   CHANCE = 'chance',
   CHEST = 'chest',
   TAX = 'tax',
-}
-
-export enum TileTopStyle {
-  INK = 'bg-ink',
-  ORANGE = 'bg-band-orange',
-  CYAN = 'bg-band-cyan',
-  RED = 'bg-red',
-}
-
-export enum TileSymbol {
-  RAILROAD = '🚂',
-  UTILITY = '⚡',
-  CHANCE = '?',
-  CHEST = '📦',
-  TAX = '$',
-}
-
-export enum TileTopText {
-  NONE = '',
-  CHANCE = 'CHANCE',
-  CHEST = 'COMMUNITY CHEST',
-}
-
-export enum CornerVariant {
-  GO = 'go',
-  JAIL = 'jail',
-  PARKING = 'parking',
-  GOTO_JAIL = 'gotojail',
-}
-
-export enum BoardTileFlavor {
-  PROPERTY = 'property',
-  CORNER = 'corner',
-  SPECIAL = 'special',
-}
-
-export enum BoardTileSelectionTone {
-  TRADE_OFFER = 'trade_offer',
-  TRADE_REQUEST = 'trade_request',
-}
-
-export enum TileEdge {
-  BOTTOM = 'bottom',
-  LEFT = 'left',
-  TOP = 'top',
-  RIGHT = 'right',
-  CORNER = 'corner',
 }

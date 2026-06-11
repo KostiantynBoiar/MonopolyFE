@@ -3,10 +3,10 @@ export type { BoardSpace, BoardPlayer, WalkingPlayer } from './game-board.types'
 export { getBoardConfig, NORMAL_BOARD_CONFIG, DUEL_BOARD_CONFIG, getTileEdge, getTileOuterEdgePct, getWalkSteps, getBackwardWalkSteps, getTileCenter, getTileFlavor } from '@/shared/config/board-layout';
 export type { BoardConfig } from '@/shared/config/board-layout';
 export { BoardContainer } from './components/BoardContainer';
-export { BoardTile } from './components/BoardTile';
+export { BoardTile } from '@/features/BoardTile/components/BoardTile';
 export { deriveBoardPlayers, deriveSidebarPlayers } from './game-board.adapters';
-export { TokenShape, TOKEN_SHAPE_PATH, TOKEN_SHAPE_ORDER, resolveTokenShape } from './token-shapes';
-export { TokenShapeSvg } from './components/TokenShapeSvg';
+export { TokenShape, TOKEN_SHAPE_PATH, TOKEN_SHAPE_ORDER, resolveTokenShape } from '@/features/BoardTile/token-shapes';
+export { TokenShapeSvg } from '@/features/BoardTile/components/TokenShapeSvg';
 export { GAME_BOARD_COLORS, BOARD_TILE_COLORS, PROPERTY_COLOR_MAP } from './game-board.colors';
 export { useActionButtons } from './hooks';
 export type { OverlayId } from './hooks';

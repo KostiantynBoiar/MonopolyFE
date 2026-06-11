@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { NORMAL_BOARD_CONFIG, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '@/features/game-board/game-board.enums';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
-import { BoardTile } from '@/features/game-board/components/BoardTile';
-import type { BoardPlayer } from '@/features/game-board/game-board.types';
-import { TokenShape } from '@/features/game-board/token-shapes';
+import { BoardTile } from '@/features/BoardTile/components/BoardTile';
+import type { BoardPlayer } from '@/features/BoardTile/boardTile.schema';
+import { TokenShape } from '@/features/BoardTile/token-shapes';
 import type { PropertyState } from '@/shared/protocol/game-state';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 
