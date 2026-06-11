@@ -1,4 +1,4 @@
-import type { BoardSpaceType, CardKind, CardEffectType, DebtCreditorType, GameEventType, GameStatus, LogKind, PropertyColor, TradeStatus, TurnPhase, AuctionTargetKind, TokenColor, AdvanceToNearestSpaceType } from "./game-state.enums";
+import type { BoardSpaceType, CardKind, CardEffectType, DebtCreditorType, GameEventType, GameMode, GameStatus, LogKind, PropertyColor, TradeStatus, TurnPhase, AuctionTargetKind, TokenColor, AdvanceToNearestSpaceType } from "./game-state.enums";
 
 export type IsoDateString = string;
 
@@ -278,23 +278,26 @@ export interface LogEntry {
 // ======================================================
 
 export interface GameState {
-  gameId:      string;
-  sessionCode: string;
-  status:      GameStatus;
-  createdAt:   IsoDateString;
-  startedAt:   IsoDateString | null;
-  finishedAt:  IsoDateString | null;
-  winnerId:    string | null;
-  viewerId:    string;
-  players:     PlayerState[];
-  turn:        TurnState;
-  bank:        BankState;
-  spaces:      PropertyState[];
-  debt:        DebtState | null;
-  auction:     AuctionState | null;
-  trade:       TradeState | null;
-  activeCard:  ActiveCard | null;
-  bankruptcy:  BankruptcyState | null;
-  decks:       DeckState;
-  log:         LogEntry[];
+  gameId:                  string;
+  sessionCode:             string;
+  status:                  GameStatus;
+  gameMode:                GameMode;
+  createdAt:               IsoDateString;
+  startedAt:               IsoDateString | null;
+  finishedAt:              IsoDateString | null;
+  winnerId:                string | null;
+  viewerId:                string;
+  /** Epoch-ms deadline for sudden-death phase (duel only). Null when not in sudden death. */
+  suddenDeathDeadlineMs:   number | null;
+  players:                 PlayerState[];
+  turn:                    TurnState;
+  bank:                    BankState;
+  spaces:                  PropertyState[];
+  debt:                    DebtState | null;
+  auction:                 AuctionState | null;
+  trade:                   TradeState | null;
+  activeCard:              ActiveCard | null;
+  bankruptcy:              BankruptcyState | null;
+  decks:                   DeckState;
+  log:                     LogEntry[];
 }

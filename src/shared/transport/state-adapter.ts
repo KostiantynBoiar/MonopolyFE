@@ -31,6 +31,7 @@ import type {
   CardKind,
   TradeStatus} from '@/shared/protocol/game-state.enums';
 import {
+  GameMode,
   GameStatus,
   TurnPhase,
   DebtCreditorType,
@@ -239,11 +240,13 @@ export interface BeGameState {
   game_id: string;
   session_code: string;
   status: string;
+  game_mode?: string | null;
   created_at: string;
   started_at?: string | null;
   finished_at?: string | null;
   winner_id?: string | null;
   viewer_id?: string;
+  sudden_death_deadline_ms?: number | null;
   players: BePlayer[];
   turn: BeTurn;
   spaces: BeSpace[];
@@ -532,11 +535,13 @@ export function adaptGameStateFrame(payload: BeGameState, viewerUserId?: string)
     gameId: payload.game_id,
     sessionCode: payload.session_code,
     status: payload.status as GameStatus,
+    gameMode: (payload.game_mode as GameMode | null) ?? GameMode.NORMAL,
     createdAt: payload.created_at,
     startedAt: payload.started_at ?? null,
     finishedAt: payload.finished_at ?? null,
     winnerId: payload.winner_id ?? null,
     viewerId: viewerPlayerId ?? '',
+    suddenDeathDeadlineMs: payload.sudden_death_deadline_ms ?? null,
     players: payload.players.map(mapPlayer),
     turn: mapTurn(payload.turn),
     bank: {
@@ -568,11 +573,13 @@ export function emptySnapshot(): GameSnapshot {
     gameId: '',
     sessionCode: '',
     status: GameStatus.LOBBY,
+    gameMode: GameMode.NORMAL,
     createdAt: new Date(0).toISOString(),
     startedAt: null,
     finishedAt: null,
     winnerId: null,
     viewerId: '',
+    suddenDeathDeadlineMs: null,
     players: [],
     turn: {
       phase: TurnPhase.PRE_ROLL,

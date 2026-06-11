@@ -12,6 +12,7 @@ import {
 } from '../../game-board.colors';
 import { SpaceType, TileEdge } from '../../game-board.enums';
 import type { BoardTileProps } from '../../game-board.types';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { BuildingsMarker } from '../BuildingsMarker';
 import { PlayerMarker } from '../PlayerMarker';
 import {
@@ -34,6 +35,7 @@ import { TileText } from './TileText';
 export function PropertyTile({
   space,
   edge,
+  gameMode = GameMode.NORMAL,
   ownership,
   ownerColor,
   players,
@@ -44,7 +46,7 @@ export function PropertyTile({
   onSelect,
 }: BoardTileProps) {
   const tBoard   = useTranslations('Board') as unknown as (key: string) => string;
-  const tileName = tBoard(`tiles.p${space.pos}`);
+  const tileName = tBoard(`tiles.${gameMode}.p${space.pos}`);
 
   const isSelectable  = Boolean(onSelect);
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {

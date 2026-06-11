@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { BOARD, getGridPos, getTileEdge, getTileOuterEdgePct, getTileFlavor } from '@/shared/config/board-layout';
+import { getBoardConfig, getTileEdge, getTileOuterEdgePct, getTileFlavor } from '@/shared/config/board-layout';
+import type { BoardConfig } from '@/shared/config/board-layout';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
@@ -25,26 +27,27 @@ function AnimatedBoardToken({
   tokenColor,
   tokenShape,
   variant = WalkingAnimationVariant.NORMAL,
-}: WalkingPlayer) {
+  config,
+}: WalkingPlayer & { config: BoardConfig }) {
   const prevPosRef            = useRef(currentPos);
   const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
-    const prev  = prevPosRef.current;
-    const delta = Math.abs(currentPos - prev);
-    if (variant !== WalkingAnimationVariant.DRAG && delta > 20) {
-      // Wraparound — teleport without transition, then re-enable for next step
+    const prev       = prevPosRef.current;
+    const prevIdx    = config.positionIndexByPosition[prev] ?? 0;
+    const curIdx     = config.positionIndexByPosition[currentPos] ?? 0;
+    const delta      = Math.abs(curIdx - prevIdx);
+    if (variant !== WalkingAnimationVariant.DRAG && delta > config.positions.length / 2) {
       setAnimate(false);
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
     } else {
       setAnimate(true);
     }
     prevPosRef.current = currentPos;
-    // Only react to position changes; `variant` is read as the latest value, not a trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPos]);
 
-  const { x, y }             = getTileOuterEdgePct(currentPos);
+  const { x, y }             = getTileOuterEdgePct(currentPos, config);
   const { easing, duration } = ANIM[variant];
 
   return (
@@ -69,14 +72,10 @@ function AnimatedBoardToken({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-const BOARD_COLUMNS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
-const BOARD_ROWS = 'calc(var(--board-unit) * 2) repeat(9, var(--board-unit)) calc(var(--board-unit) * 2)';
-
 // ─── BoardContainer ───────────────────────────────────────────────────────────
 
 export function BoardContainer({
+  gameMode = GameMode.NORMAL,
   centerContent,
   centerSlots,
   spaces,
@@ -94,32 +93,26 @@ export function BoardContainer({
   onSurrender,
 }: BoardContainerProps) {
   const t = useTranslations('Board');
-  const boardSpaces = spaces ?? [];
-  const boardPlayers = players ?? [];
-  const hasSidebar = sidebarPlayers !== undefined;
+  const config        = getBoardConfig(gameMode);
+  const boardSpaces   = spaces ?? [];
+  const boardPlayers  = players ?? [];
+  const hasSidebar    = sidebarPlayers !== undefined;
   const ownershipByPosition = new Map(boardSpaces.map((space) => [space.position, space]));
-  // ownerId → token color, so each owned tile can show its owner's marker.
-  const colorByPlayerId = new Map(boardPlayers.map((player) => [player.id, player.tokenColor]));
-  const playersByPosition = new Map<number, typeof boardPlayers>();
+  const colorByPlayerId     = new Map(boardPlayers.map((player) => [player.id, player.tokenColor]));
+  const playersByPosition   = new Map<number, typeof boardPlayers>();
 
-  const walkingIds = new Set((walkingPlayers ?? []).map((player) => player.id));
+  const walkingIds      = new Set((walkingPlayers ?? []).map((player) => player.id));
   const focusedPositions = focusPositions ?? (
     focusPosition != null ? new Set([focusPosition]) : null
   );
 
   for (const player of boardPlayers) {
-    if (walkingIds.has(player.id)) {
-      continue;
-    }
-
-    if (player.isBankrupt) {
-      continue;
-    }
-
+    if (walkingIds.has(player.id)) continue;
+    if (player.isBankrupt) continue;
     playersByPosition.set(player.position, [...(playersByPosition.get(player.position) ?? []), player]);
   }
 
-  // ─── Layout ─────────────────────────────────────────────────────────────────
+  const { colStart, colEnd, rowStart, rowEnd } = config.centerGridArea;
 
   return (
     <div
@@ -140,15 +133,15 @@ export function BoardContainer({
                 ['--board-tile-width' as string]: 'var(--board-unit)',
                 ['--board-corner-size' as string]: 'calc(var(--board-unit) * 2)',
                 ['--board-edge-depth' as string]: 'calc(var(--board-unit) * 2)',
-                gridTemplateColumns: BOARD_COLUMNS,
-                gridTemplateRows: BOARD_ROWS,
+                gridTemplateColumns: config.gridTemplateCols,
+                gridTemplateRows:    config.gridTemplateRows,
                 gap: '2px',
                 backgroundColor: GAME_BOARD_COLORS.ink,
               }}
             >
-              {BOARD.map((space) => {
-                const { col, row } = getGridPos(space.pos);
-                const ownership = ownershipByPosition.get(space.pos) ?? null;
+              {config.spaces.map((space) => {
+                const { col, row } = config.gridByPosition[space.pos] ?? { col: 0, row: 0 };
+                const ownership  = ownershipByPosition.get(space.pos) ?? null;
                 const ownerColor = ownership?.ownerId
                   ? colorByPlayerId.get(ownership.ownerId) ?? null
                   : null;
@@ -160,8 +153,9 @@ export function BoardContainer({
                   >
                     <BoardTile
                       space={space}
-                      edge={getTileEdge(space.pos)}
+                      edge={getTileEdge(space.pos, config)}
                       flavor={getTileFlavor(space.type)}
+                      gameMode={gameMode}
                       ownership={ownership}
                       ownerColor={ownerColor}
                       players={playersByPosition.get(space.pos) ?? []}
@@ -178,8 +172,8 @@ export function BoardContainer({
               <div
                 className="relative flex items-center justify-center overflow-hidden text-center"
                 style={{
-                  gridColumn: '2 / 11',
-                  gridRow: '2 / 11',
+                  gridColumn: `${colStart} / ${colEnd}`,
+                  gridRow:    `${rowStart} / ${rowEnd}`,
                   margin: '4px',
                   borderRadius: '16px',
                   border: `1px solid ${GAME_BOARD_COLORS.center}`,
@@ -220,7 +214,7 @@ export function BoardContainer({
 
               {/* Animated overlay tokens for walking players */}
               {(walkingPlayers ?? []).map((player) => (
-                <AnimatedBoardToken key={player.id} {...player} />
+                <AnimatedBoardToken key={player.id} {...player} config={config} />
               ))}
             </div>
           </div>

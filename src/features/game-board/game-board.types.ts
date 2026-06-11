@@ -2,7 +2,7 @@ import { type ReactNode } from 'react';
 import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
-import type { PropertyColor } from '@/shared/protocol/game-state.enums';
+import type { GameMode, PropertyColor } from '@/shared/protocol/game-state.enums';
 import type { TileSymbol, TileTopStyle, TileTopText, SpaceType, CornerVariant, TileEdge, BoardTileFlavor, BoardTileSelectionTone } from './game-board.enums';
 import type { TokenShape } from './token-shapes';
 
@@ -15,6 +15,7 @@ export interface WalkingPlayer {
 }
 
 export interface BoardContainerProps {
+  gameMode?: GameMode;
   centerContent?: ReactNode;
   centerSlots?: BoardCenterSlots;
   spaces?: PropertyState[];
@@ -97,6 +98,7 @@ export interface BoardTileProps {
   space: BoardSpace;
   edge: TileEdge;
   flavor: BoardTileFlavor;
+  gameMode?: GameMode;
   ownership?: PropertyState | null;
   /** Resolved hex token color of the owning player, or null if unowned. */
   ownerColor?: string | null;

@@ -30,6 +30,11 @@ export enum PropertyColor {
 // ENUMS — GAME LIFECYCLE
 // ======================================================
 
+export enum GameMode {
+  NORMAL = 'normal',
+  DUEL   = 'duel',
+}
+
 export enum GameStatus {
   LOBBY       = 'lobby',
   IN_PROGRESS = 'in_progress',

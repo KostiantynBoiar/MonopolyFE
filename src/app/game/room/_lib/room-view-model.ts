@@ -7,7 +7,8 @@ import type { GameState, PlayerState } from '@/shared/protocol/game-state';
 import type { SessionDetail } from '@/shared/protocol/session';
 import type { WsChatEntry } from '@/stores/socket-store';
 import type { WalkState } from '@/stores/ui-store';
-import { BOARD } from '@/shared/config/board-layout';
+import { getBoardConfig } from '@/shared/config/board-layout';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import { TradeStatus } from '@/shared/protocol/game-state.enums';
@@ -102,8 +103,8 @@ export function buildTradeBuilderData(
     me: toTradePlayer(viewerPlayer),
     others,
     target,
-    offerAssets: [...tradeDraft.givePositions].map(toTradeAsset),
-    requestAssets: [...tradeDraft.getPositions].map(toTradeAsset),
+    offerAssets:   [...tradeDraft.givePositions].map((pos) => toTradeAsset(pos, game.gameMode)),
+    requestAssets: [...tradeDraft.getPositions].map((pos) => toTradeAsset(pos, game.gameMode)),
     giveMoney: tradeDraft.giveMoney,
     getMoney: tradeDraft.getMoney,
     giveCards: tradeDraft.giveCards,
@@ -116,12 +117,14 @@ export function resolveDeedSelection(
   selectedTile: number | null,
   viewerPosition: number | undefined,
   isViewerTurn: boolean,
+  gameMode: GameMode = GameMode.NORMAL,
 ): DeedSelectionView {
-  const pendingBuySpace = pendingBuyPosition != null ? (BOARD[pendingBuyPosition] ?? null) : null;
+  const { spacesByPosition, startPosition } = getBoardConfig(gameMode);
+  const pendingBuySpace        = pendingBuyPosition != null ? (spacesByPosition[pendingBuyPosition] ?? null) : null;
   const isBuyDecisionForViewer = Boolean(pendingBuySpace && isViewerTurn);
-  const selectedBoardPosition = selectedTile != null && BOARD[selectedTile] ? selectedTile : null;
-  const deedBrowsePosition = selectedBoardPosition ?? pendingBuyPosition ?? viewerPosition ?? 0;
-  const deedBrowseSpace = BOARD[deedBrowsePosition] ?? BOARD[0];
+  const selectedBoardPosition  = selectedTile != null && spacesByPosition[selectedTile] ? selectedTile : null;
+  const deedBrowsePosition     = selectedBoardPosition ?? pendingBuyPosition ?? viewerPosition ?? startPosition;
+  const deedBrowseSpace        = spacesByPosition[deedBrowsePosition] ?? spacesByPosition[startPosition]!;
   const highlightedBoardPosition = isBuyDecisionForViewer ? pendingBuyPosition : deedBrowsePosition;
   return {
     pendingBuySpace,

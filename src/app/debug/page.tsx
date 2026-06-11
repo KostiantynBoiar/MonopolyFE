@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { BOARD, getGridPos, getTileEdge } from '@/shared/config/board-layout';
+import { BOARD, NORMAL_BOARD_CONFIG, getTileEdge } from '@/shared/config/board-layout';
 import { BoardTileFlavor, SpaceType } from '@/features/game-board/game-board.enums';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { BoardTile } from '@/features/game-board/components/BoardTile';
@@ -27,7 +27,7 @@ function getTileFlavor(type: SpaceType): BoardTileFlavor {
 const OUTER_MARGIN = 0.35;
 
 function getTileOuterEdgePct(pos: number): { x: number; y: number } {
-  const { col, row } = getGridPos(pos);
+  const { col, row } = NORMAL_BOARD_CONFIG.gridByPosition[pos];
 
   const cx = col === 0 ? 1 : col === 10 ? 12 : col + 1.5;
   const cy = row === 0 ? 1 : row === 10 ? 12 : row + 1.5;
@@ -288,12 +288,12 @@ export default function DebugPage() {
           >
             {/* Tiles */}
             {BOARD.map((space) => {
-              const { col, row } = getGridPos(space.pos);
+              const { col, row } = NORMAL_BOARD_CONFIG.gridByPosition[space.pos];
               return (
                 <div key={space.pos} style={{ gridColumn: col + 1, gridRow: row + 1 }}>
                   <BoardTile
                     space={space}
-                    edge={getTileEdge(space.pos)}
+                    edge={getTileEdge(space.pos, NORMAL_BOARD_CONFIG)}
                     flavor={getTileFlavor(space.type)}
                     ownership={STATIC_OWNERSHIP.get(space.pos) ?? null}
                     players={STATIC_PLAYERS.get(space.pos) ?? []}

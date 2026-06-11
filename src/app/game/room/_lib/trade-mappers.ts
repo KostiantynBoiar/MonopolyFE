@@ -1,7 +1,8 @@
 import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade/trade-builder.types';
 import type { TradeParticipant } from '@/features/trade/trade.types';
-import { BOARD } from '@/shared/config/board-layout';
+import { getBoardConfig } from '@/shared/config/board-layout';
 import type { GameState, PlayerState } from '@/shared/protocol/game-state';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { getPlayerProperties } from '@/shared/protocol/selectors';
 
 export function toTradeParticipant(game: GameState, player: PlayerState): TradeParticipant {
@@ -30,6 +31,7 @@ export function toTradeCounterparty(game: GameState, player: PlayerState): Trade
   };
 }
 
-export function toTradeAsset(position: number): TradeAsset {
-  return { position, color: BOARD[position]?.color };
+export function toTradeAsset(position: number, gameMode: GameMode = GameMode.NORMAL): TradeAsset {
+  const { spacesByPosition } = getBoardConfig(gameMode);
+  return { position, color: spacesByPosition[position]?.color };
 }

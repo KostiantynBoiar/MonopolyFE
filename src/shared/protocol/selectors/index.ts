@@ -6,10 +6,7 @@
 
 import type { GameState, PlayerState, PropertyState } from '../game-state';
 import type { PropertyColor } from '../game-state.enums';
-import {
-  RENT, PRICE, HOUSE_COST, COLOR_POSITIONS, POSITION_COLOR,
-  RAILROAD_POSITIONS, UTILITY_POSITIONS,
-} from '../board-data';
+import { getBoardData } from '../board-data';
 
 // ── Minimal shape needed by property selectors ───────────────────────────────
 // Using Pick instead of full GameState lets board components call these
@@ -78,7 +75,8 @@ export function getPlayerPositions(state: GameState, playerId: string): number[]
 
 /** True if the player owns every property of the given color. */
 export function hasMonopoly(state: GameState, playerId: string, color: PropertyColor): boolean {
-  const positions = COLOR_POSITIONS[color];
+  const { colorPositions } = getBoardData(state.gameMode);
+  const positions = colorPositions[color];
   return positions.every((pos) => getOwner(state, pos) === playerId);
 }
 
@@ -91,27 +89,29 @@ export function getPropertyRent(state: GameState, position: number): number {
   const space = getProperty(state, position);
   if (!space || space.ownerId === null || space.isMortgaged) return 0;
 
-  if ((RAILROAD_POSITIONS as readonly number[]).includes(position)) {
-    const owned = RAILROAD_POSITIONS.filter(
+  const { railroadPositions, utilityPositions, rent, positionColor } = getBoardData(state.gameMode);
+
+  if ((railroadPositions as readonly number[]).includes(position)) {
+    const owned = railroadPositions.filter(
       (p) => getOwner(state, p) === space.ownerId,
     ).length;
     return 25 * Math.pow(2, owned - 1);
   }
 
-  if ((UTILITY_POSITIONS as readonly number[]).includes(position)) {
-    const owned = UTILITY_POSITIONS.filter(
+  if ((utilityPositions as readonly number[]).includes(position)) {
+    const owned = utilityPositions.filter(
       (p) => getOwner(state, p) === space.ownerId,
     ).length;
     return owned === 2 ? 10 : 4; // multiplier — caller multiplies by dice roll
   }
 
-  const rentRow = RENT[position];
+  const rentRow = rent[position];
   if (!rentRow) return 0;
 
   if (space.hotel) return rentRow[6];
   if (space.houses > 0) return rentRow[space.houses + 1]; // 1h→[2], 2h→[3], 3h→[4], 4h→[5]
 
-  const color = POSITION_COLOR[position];
+  const color = positionColor[position];
   if (color && hasMonopoly(state, space.ownerId, color)) return rentRow[1];
 
   return rentRow[0];
@@ -122,17 +122,18 @@ export function getPlayerNetWorth(state: GameState, playerId: string): number {
   const player = getPlayer(state, playerId);
   if (!player) return 0;
 
+  const { price, positionColor, houseCost } = getBoardData(state.gameMode);
   let worth = player.balance;
 
   for (const space of getPlayerProperties(state, playerId)) {
-    const price = PRICE[space.position] ?? 0;
-    worth += space.isMortgaged ? Math.floor(price / 2) : price;
+    const p = price[space.position] ?? 0;
+    worth += space.isMortgaged ? Math.floor(p / 2) : p;
 
     if (!space.isMortgaged && (space.houses > 0 || space.hotel)) {
-      const color = POSITION_COLOR[space.position];
-      const houseCost = color ? (HOUSE_COST[color] ?? 0) : 0;
+      const color = positionColor[space.position];
+      const hcost = color ? (houseCost[color] ?? 0) : 0;
       const buildingCount = space.hotel ? 5 : space.houses;
-      worth += Math.floor((houseCost * buildingCount) / 2);
+      worth += Math.floor((hcost * buildingCount) / 2);
     }
   }
 

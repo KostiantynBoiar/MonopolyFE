@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BOARD, getTileFlavor } from '@/shared/config/board-layout';
+import { getBoardConfig, getTileFlavor } from '@/shared/config/board-layout';
+import type { BoardConfig } from '@/shared/config/board-layout';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { TileEdge } from '@/features/game-board/game-board.enums';
 import { BoardTile } from '@/features/game-board/components/BoardTile';
 import { TokenShapeSvg } from '@/features/game-board/components/TokenShapeSvg';
@@ -22,14 +24,23 @@ const ANIM = {
 const TILE_W = 'clamp(60px, 17vw, 80px)';
 const TILE_GAP = '4px';
 
-function AnimatedMobileToken({ id: _id, currentPos, tokenColor, tokenShape, variant = WalkingAnimationVariant.NORMAL }: WalkingPlayer) {
+function AnimatedMobileToken({
+  id: _id,
+  currentPos,
+  tokenColor,
+  tokenShape,
+  variant = WalkingAnimationVariant.NORMAL,
+  config,
+}: WalkingPlayer & { config: BoardConfig }) {
   const prevPosRef            = useRef(currentPos);
   const [animate, setAnimate] = useState(true);
 
   useEffect(() => {
-    const prev  = prevPosRef.current;
-    const delta = Math.abs(currentPos - prev);
-    if (variant !== WalkingAnimationVariant.DRAG && delta > 20) {
+    const prev    = prevPosRef.current;
+    const prevIdx = config.positionIndexByPosition[prev] ?? 0;
+    const curIdx  = config.positionIndexByPosition[currentPos] ?? 0;
+    const delta   = Math.abs(curIdx - prevIdx);
+    if (variant !== WalkingAnimationVariant.DRAG && delta > config.positions.length / 2) {
       setAnimate(false);
       requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
     } else {
@@ -40,13 +51,14 @@ function AnimatedMobileToken({ id: _id, currentPos, tokenColor, tokenShape, vari
   }, [currentPos]);
 
   const { easing, duration } = ANIM[variant];
+  const stripIndex = config.positionIndexByPosition[currentPos] ?? 0;
 
   return (
     <div
       aria-hidden="true"
       style={{
         position:      'absolute',
-        left:          `calc(${currentPos} * (${TILE_W} + ${TILE_GAP}) + ${TILE_W} / 2)`,
+        left:          `calc(${stripIndex} * (${TILE_W} + ${TILE_GAP}) + ${TILE_W} / 2)`,
         top:           '50%',
         transform:     'translate(-50%, -50%)',
         transition:    animate ? `left ${duration}ms ${easing}` : 'none',
@@ -68,6 +80,7 @@ interface MobileBoardStripProps {
   tileSelectionTones?: Partial<Record<number, BoardTileSelectionTone>>;
   focusPositions?: Set<number> | null;
   onSelectPosition: (pos: number) => void;
+  gameMode?: GameMode;
 }
 
 export function MobileBoardStrip({
@@ -78,12 +91,14 @@ export function MobileBoardStrip({
   tileSelectionTones,
   focusPositions,
   onSelectPosition,
+  gameMode = GameMode.NORMAL,
 }: MobileBoardStripProps) {
+  const config = getBoardConfig(gameMode);
   const tileRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const ownershipByPosition = new Map(spaces.map((s) => [s.position, s]));
-  const colorByPlayerId = new Map(players.map((p) => [p.id, p.tokenColor]));
-  const playersByPosition = new Map<number, BoardPlayer[]>();
+  const colorByPlayerId     = new Map(players.map((p) => [p.id, p.tokenColor]));
+  const playersByPosition   = new Map<number, BoardPlayer[]>();
 
   const walkingIds = new Set(walkingPlayers.map((wp) => wp.id));
 
@@ -98,7 +113,6 @@ export function MobileBoardStrip({
 
   const walkingPos = walkingPlayers[0]?.currentPos ?? null;
 
-  // Auto-center selected tile (deed browse) or active walking position.
   useEffect(() => {
     const target = selectedPosition ?? null;
     if (target == null) return;
@@ -123,7 +137,7 @@ export function MobileBoardStrip({
         scrollbarWidth: 'none' as React.CSSProperties['scrollbarWidth'],
       }}
     >
-      {BOARD.map((space) => {
+      {config.spaces.map((space) => {
         const ownership = ownershipByPosition.get(space.pos) ?? null;
         const ownerColor = ownership?.ownerId
           ? (colorByPlayerId.get(ownership.ownerId) ?? null)
@@ -137,14 +151,10 @@ export function MobileBoardStrip({
               else tileRefs.current.delete(space.pos);
             }}
             style={{
-              // Fixed tile dimensions for the horizontal strip.
               width: 'clamp(60px,17vw,80px)',
               height: '84px',
               flexShrink: 0,
               scrollSnapAlign: 'center',
-              // Provide the board-unit CSS variable so PropertyTile's color band
-              // resolves correctly. 100% in height context = tile height (84px);
-              // 100% in padding context = tile width (clamp 60-80px).
               ['--board-unit' as string]: 'calc((100% - 24px) / 13)',
               ['--board-edge-depth' as string]: 'calc(var(--board-unit) * 2)',
             }}
@@ -153,6 +163,7 @@ export function MobileBoardStrip({
               space={space}
               edge={TileEdge.BOTTOM}
               flavor={getTileFlavor(space.type)}
+              gameMode={gameMode}
               ownership={ownership}
               ownerColor={ownerColor ?? undefined}
               players={playersByPosition.get(space.pos) ?? []}
@@ -166,7 +177,7 @@ export function MobileBoardStrip({
       })}
 
       {walkingPlayers.map((wp) => (
-        <AnimatedMobileToken key={wp.id} {...wp} />
+        <AnimatedMobileToken key={wp.id} {...wp} config={config} />
       ))}
     </div>
   );

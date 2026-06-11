@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/cn';
 import { CORNER_COLOR_MAP } from '../../game-board.colors';
 import { CornerVariant } from '../../game-board.enums';
 import type { BoardPlayer, BoardTileProps } from '../../game-board.types';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { TokenShapeSvg } from '../TokenShapeSvg';
 import {
   BOARD_TILE_COLORS,
@@ -44,6 +45,7 @@ function JailTokenRow({ players, size }: { players: BoardPlayer[]; size: string 
 
 export function JailTile({
   space,
+  gameMode = GameMode.NORMAL,
   players,
   isSelected = false,
   selectionTone = null,
@@ -151,7 +153,7 @@ export function JailTile({
       <SelectionRing selected={isSelected} tone={selectionTone} />
 
       {/* keep the tile name available to assistive tech without cluttering the art */}
-      <span className="sr-only">{tBoard(`tiles.p${space.pos}`)}</span>
+      <span className="sr-only">{tBoard(`tiles.${gameMode}.p${space.pos}`)}</span>
     </article>
   );
 }

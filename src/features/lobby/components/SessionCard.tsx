@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
 import type { SessionSummary } from '@/shared/protocol/session';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 
 function timeAgo(iso: string): string {
   const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -68,6 +69,11 @@ export function SessionCard({ session, onJoin, isJoining, disabled }: SessionCar
           )}>
             {session.ranked ? t('ranked') : t('unranked')}
           </span>
+          {session.game_mode === GameMode.DUEL && (
+            <span className="rounded-full border border-blue/50 px-1.5 py-px text-[10px] font-semibold text-blue">
+              {t('modeDuel')}
+            </span>
+          )}
         </p>
       </div>
 

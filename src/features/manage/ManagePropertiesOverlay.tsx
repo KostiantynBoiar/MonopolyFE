@@ -4,7 +4,8 @@ import { useTranslations } from 'next-intl';
 import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
-import { BOARD } from '@/shared/config/board-layout';
+import { getBoardConfig } from '@/shared/config/board-layout';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { useBoardTileName } from '@/features/game-board/board-tile-name';
 import { DeedWindow } from '@/features/deed/components/DeedWindow';
 
@@ -32,6 +33,7 @@ export interface ManagePropertiesOverlayProps {
   onUnmortgage:   (position: number) => void;
   onSellProperty?: (position: number) => void;
   onClose:        () => void;
+  gameMode?:      GameMode;
 }
 
 // ─── Shared action button ─────────────────────────────────────────────────────
@@ -77,9 +79,11 @@ export function ManagePropertiesOverlay({
   canBuildHouse, canBuildHotel, canMortgage, canUnmortgage,
   onBuildHouse, onBuildHotel, onSellHouse, onSellHotel,
   onMortgage, onUnmortgage, onSellProperty, onClose,
+  gameMode = GameMode.NORMAL,
 }: ManagePropertiesOverlayProps) {
   const t = useTranslations('Manage');
   const resolveTileName = useBoardTileName();
+  const { spacesByPosition } = getBoardConfig(gameMode);
   const dialog = useDialog<HTMLDivElement>({ onClose, label: t('title') });
 
   return (
@@ -136,7 +140,7 @@ export function ManagePropertiesOverlay({
         ) : (
           <div className="flex gap-3">
             {properties.map((p) => {
-              const space = BOARD[p.position];
+              const space = spacesByPosition[p.position];
               return (
                 <div key={p.position} className="flex shrink-0 flex-col gap-2">
                   {space ? (

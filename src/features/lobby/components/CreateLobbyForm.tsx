@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { Alert } from '@/shared/ui/Alert';
 import { createSession } from '@/shared/api/sessions';
 import { SessionVisibility } from '@/shared/protocol/session';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useRankedPreference } from '../hooks/useRankedPreference';
@@ -27,6 +28,7 @@ export function CreateLobbyForm({ onBack, onCreatePendingChange, disabled }: Cre
 
   const [visibility, setVisibility] = useState<SessionVisibility>(SessionVisibility.PUBLIC);
   const [ranked, setRanked] = useRankedPreference();
+  const [gameMode, setGameMode] = useState<GameMode>(GameMode.NORMAL);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +40,7 @@ export function CreateLobbyForm({ onBack, onCreatePendingChange, disabled }: Cre
     setError(null);
 
     try {
-      const { session } = await createSession({ visibility, ranked });
+      const { session } = await createSession({ visibility, ranked, game_mode: gameMode });
       resetSocket();
       setSession(session);
       router.push(`/game/room/${session.id}`);
@@ -91,6 +93,32 @@ export function CreateLobbyForm({ onBack, onCreatePendingChange, disabled }: Cre
           {visibility === SessionVisibility.PUBLIC
             ? t('publicDescription')
             : t('privateDescription')}
+        </p>
+      </div>
+
+      <div>
+        <p className="mb-2 font-mono text-xs font-semibold uppercase tracking-widest text-muted">
+          {t('gameModeLabel')}
+        </p>
+        <div className="flex gap-2">
+          {([GameMode.NORMAL, GameMode.DUEL] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setGameMode(value)}
+              className={cn(
+                'flex-1 rounded-sm border py-2 text-sm font-semibold transition-colors',
+                gameMode === value
+                  ? 'border-ink bg-ink text-paper hover:bg-navy-700 hover:text-white'
+                  : 'border-line-2 bg-surface text-ink hover:bg-paper',
+              )}
+            >
+              {value === GameMode.NORMAL ? t('modeNormal') : t('modeDuel')}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-muted">
+          {gameMode === GameMode.NORMAL ? t('modeNormalDescription') : t('modeDuelDescription')}
         </p>
       </div>
 

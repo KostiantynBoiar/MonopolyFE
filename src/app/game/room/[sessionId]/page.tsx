@@ -157,7 +157,7 @@ export default function GameRoomPage() {
     isBuyDecisionForViewer,
     highlightedBoardPosition,
     deedPanelSpace,
-  } = resolveDeedSelection(pendingBuyPosition, selectedTile, viewerPlayer?.position, isViewerTurn);
+  } = resolveDeedSelection(pendingBuyPosition, selectedTile, viewerPlayer?.position, isViewerTurn, game.gameMode);
   const tradeSelectionTones = useMemo(
     () => buildBoardSelectionTones(activeOverlay, tradeDraft, game),
     [activeOverlay, tradeDraft, game],

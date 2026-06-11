@@ -1,31 +1,35 @@
 import { SpaceType } from '@/features/game-board/game-board.enums';
-import { BOARD } from '@/shared/config/board-layout';
-import { RENT, buildingCost, mortgageValue } from '@/shared/protocol/board-data';
+import { getBoardConfig } from '@/shared/config/board-layout';
+import { getBoardData, buildingCost, mortgageValue } from '@/shared/protocol/board-data';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { DeedSpaceType } from './deed.enums';
 import type { DeedInfo } from './deed.types';
 
-export function getDeedInfo(position: number): DeedInfo | null {
-  const space = BOARD[position];
+export function getDeedInfo(position: number, gameMode: GameMode = GameMode.NORMAL): DeedInfo | null {
+  const { spacesByPosition } = getBoardConfig(gameMode);
+  const space = spacesByPosition[position];
   if (!space) return null;
 
+  const { rent } = getBoardData(gameMode);
+
   if (space.type === SpaceType.PROPERTY) {
-    const rent = RENT[position];           // [base, monopoly, 1h, 2h, 3h, 4h, hotel]
-    if (!rent) return null;
+    const rentRow = rent[position];
+    if (!rentRow) return null;
     return {
       position,
       spaceType: DeedSpaceType.PROPERTY,
       price: space.price!,
       color: space.color,
       rentRows: [
-        { labelKey: 'base',   amount: `M${rent[0]}` },
-        { labelKey: 'house1', amount: `M${rent[2]}` },
-        { labelKey: 'house2', amount: `M${rent[3]}` },
-        { labelKey: 'house3', amount: `M${rent[4]}` },
-        { labelKey: 'house4', amount: `M${rent[5]}` },
-        { labelKey: 'hotel',  amount: `M${rent[6]}` },
+        { labelKey: 'base',   amount: `M${rentRow[0]}` },
+        { labelKey: 'house1', amount: `M${rentRow[2]}` },
+        { labelKey: 'house2', amount: `M${rentRow[3]}` },
+        { labelKey: 'house3', amount: `M${rentRow[4]}` },
+        { labelKey: 'house4', amount: `M${rentRow[5]}` },
+        { labelKey: 'hotel',  amount: `M${rentRow[6]}` },
       ],
-      buildingCost: buildingCost(position),
-      mortgageValue: mortgageValue(position),
+      buildingCost: buildingCost(position, gameMode),
+      mortgageValue: mortgageValue(position, gameMode),
     };
   }
 
@@ -40,7 +44,7 @@ export function getDeedInfo(position: number): DeedInfo | null {
         { labelKey: 'railroad3', amount: 'M100' },
         { labelKey: 'railroad4', amount: 'M200' },
       ],
-      mortgageValue: mortgageValue(position),
+      mortgageValue: mortgageValue(position, gameMode),
     };
   }
 
@@ -53,7 +57,7 @@ export function getDeedInfo(position: number): DeedInfo | null {
         { labelKey: 'utility1',    amount: '4× dice' },
         { labelKey: 'utilityBoth', amount: '10× dice' },
       ],
-      mortgageValue: mortgageValue(position),
+      mortgageValue: mortgageValue(position, gameMode),
     };
   }
 

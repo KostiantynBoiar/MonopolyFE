@@ -10,6 +10,7 @@ import {
   SPACE_SYMBOL_MAP,
 } from '../../game-board.colors';
 import type { BoardTileProps } from '../../game-board.types';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { PlayerMarker } from '../PlayerMarker';
 import {
   getTilePadding,
@@ -27,6 +28,7 @@ import { SelectionRing } from './SelectionRing';
 export function SpecialTile({
   space,
   edge,
+  gameMode = GameMode.NORMAL,
   ownership,
   ownerColor,
   players,
@@ -37,7 +39,7 @@ export function SpecialTile({
   onSelect,
 }: BoardTileProps) {
   const tBoard   = useTranslations('Board') as unknown as (key: string) => string;
-  const tileName = tBoard(`tiles.p${space.pos}`);
+  const tileName = tBoard(`tiles.${gameMode}.p${space.pos}`);
 
   const isSelectable = Boolean(onSelect);
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {

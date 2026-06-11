@@ -6,6 +6,7 @@ import { cn } from '@/shared/lib/cn';
 import { CORNER_COLOR_MAP } from '../../game-board.colors';
 import { CornerVariant } from '../../game-board.enums';
 import type { BoardTileProps } from '../../game-board.types';
+import { GameMode } from '@/shared/protocol/game-state.enums';
 import { BuildingsMarker } from '../BuildingsMarker';
 import { PlayerMarker } from '../PlayerMarker';
 import {
@@ -26,6 +27,7 @@ import { SelectionRing } from './SelectionRing';
 export function CornerTile({
   space,
   edge,
+  gameMode = GameMode.NORMAL,
   ownership,
   players,
   walkingPlayerIds,
@@ -35,7 +37,7 @@ export function CornerTile({
   onSelect,
 }: BoardTileProps) {
   const tBoard    = useTranslations('Board') as unknown as (key: string) => string;
-  const tileName  = tBoard(`tiles.p${space.pos}`);
+  const tileName  = tBoard(`tiles.${gameMode}.p${space.pos}`);
   const justVisit = tBoard('justVisiting');
 
   const isSelectable = Boolean(onSelect);

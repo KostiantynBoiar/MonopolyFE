@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GameMode } from './game-state.enums';
 
 export enum SessionStatus {
   WAITING = 'waiting',
@@ -38,6 +39,7 @@ export interface SessionSummary {
   status: SessionStatus;
   visibility: SessionVisibility;
   ranked: boolean;
+  game_mode: GameMode;
   member_count: number;
   max_players: number;
   host: LobbyHost;
@@ -52,6 +54,7 @@ export interface SessionDetail extends SessionSummary {
 export interface CreateSessionInput {
   visibility: SessionVisibility;
   ranked: boolean;
+  game_mode: GameMode;
 }
 
 export interface JoinByCodeInput {
@@ -76,6 +79,7 @@ export const inviteCodeSchema = z
 export const createSessionSchema = z.object({
   visibility: z.nativeEnum(SessionVisibility),
   ranked: z.boolean(),
+  game_mode: z.nativeEnum(GameMode),
 });
 
 export const joinByCodeSchema = z.object({
