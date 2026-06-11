@@ -20,7 +20,7 @@ import type { ActiveCard } from '@/shared/protocol/game-state';
 import { CardEffectType } from '@/shared/protocol/game-state.enums';
 import { getWalkSteps } from '@/shared/config/board-layout';
 import { env } from '@/shared/config/env';
-import { getDeedInfo } from '@/features/deed';
+import { getDeedInfo } from '@/features/deed/deed.utils';
 import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
 import { logger } from '@/shared/lib/logger';
 import { useGameStore } from '@/stores/game-store';

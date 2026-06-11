@@ -1,4 +1,4 @@
-import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade/components/TradeBuilder';
+import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade/trade-builder.types';
 import type { TradeParticipant } from '@/features/trade/trade.types';
 import { BOARD } from '@/shared/config/board-layout';
 import type { GameState, PlayerState } from '@/shared/protocol/game-state';

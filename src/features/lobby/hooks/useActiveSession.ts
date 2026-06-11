@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSession } from '../api';
-import { SessionStatus } from '../lobby.enums';
-import type { SessionDetail } from '../lobby.types';
 import { useSessionStore } from '@/stores/session-store';
+import { getSession } from '@/shared/api/sessions';
+import { SessionStatus, type SessionDetail } from '@/shared/protocol/session';
 
 export interface ActiveSession {
   /** The validated session you currently belong to and can rejoin, or null. */

@@ -1,6 +1,6 @@
 import { PropertyColor, TokenColor } from '@/shared/protocol/game-state.enums';
 import type { SocketStatus } from '../socket';
-import { StatusDot } from '@/features/lobby/lobby.enums';
+import { StatusDot } from '@/shared/config/status-dot';
 
 // ─── Board scaling ────────────────────────────────────────────────────────────
 

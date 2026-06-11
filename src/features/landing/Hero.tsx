@@ -1,7 +1,10 @@
 import { getTranslations } from 'next-intl/server';
 import { BoardPreview } from './BoardPreview';
 import { JoinWithCode } from './JoinWithCode';
-import { Button, Container, Icon, StatusDot } from '@/shared/ui';
+import { Button } from '@/shared/ui/Button';
+import { Container } from '@/shared/ui/Container';
+import { Icon } from '@/shared/ui/Icon';
+import { StatusDot } from '@/shared/ui/StatusDot';
 
 interface HeroProps {
   onlineCount?: number;

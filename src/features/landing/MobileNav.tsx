@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Avatar, Button, Container, Icon } from '@/shared/ui';
+import { Avatar } from '@/shared/ui/Avatar';
+import { Button } from '@/shared/ui/Button';
+import { Container } from '@/shared/ui/Container';
+import { Icon } from '@/shared/ui/Icon';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function MobileNav() {

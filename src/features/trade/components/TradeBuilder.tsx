@@ -3,38 +3,13 @@
 import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
 import { useDialog } from '@/shared/hooks/useDialog';
-import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { useTranslations } from 'next-intl';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
-import { useBoardTileName } from '@/features/game-board';
+import { useBoardTileName } from '@/features/game-board/board-tile-name';
+import type { TradeAsset, TradeBuilderProps, TradeCounterparty } from '../trade-builder.types';
+import { clampTradeMoneyInput, isEmptyTradeOffer } from '../trade-builder.utils';
 
-export type TradePlayer = { id: string; name: string; balance: number; getOutOfJailCards: number };
-export type TradeCounterparty = TradePlayer & { getOutOfJailCards: number; propertyCount: number };
-export type TradeAsset = { position: number; color?: PropertyColor };
-
-export type TradeBuilderProps = {
-  me: TradePlayer;
-  others: TradeCounterparty[];
-  target: TradeCounterparty | null;
-  offerAssets: TradeAsset[];
-  requestAssets: TradeAsset[];
-  giveMoney: number;
-  getMoney: number;
-  giveCards: number;
-  getCards: number;
-  onGiveMoneyChange: (value: number) => void;
-  onGetMoneyChange: (value: number) => void;
-  onGiveCardsChange: (value: number) => void;
-  onGetCardsChange: (value: number) => void;
-  onClearOfferAssets: () => void;
-  onClearRequestAssets: () => void;
-  onPropose: () => void;
-  onClose: () => void;
-};
-
-function clampMoneyInput(value: string, max: number) {
-  return Math.max(0, Math.min(max, Math.floor(Number(value) || 0)));
-}
+export type { TradeAsset, TradeBuilderProps, TradeCounterparty, TradePlayer } from '../trade-builder.types';
 
 function MoneyInput({
   value,
@@ -52,7 +27,7 @@ function MoneyInput({
       max={max}
       value={value || ''}
       placeholder="0"
-      onChange={(event) => onChange(clampMoneyInput(event.target.value, max))}
+      onChange={(event) => onChange(clampTradeMoneyInput(event.target.value, max))}
       className="h-8 w-24 rounded border px-1.5 font-mono focus:outline-none"
       style={{ backgroundColor: GAME_BOARD_COLORS.surface, borderColor: GAME_BOARD_COLORS.border, color: GAME_BOARD_COLORS.text, fontSize: '1em' }}
     />
@@ -205,13 +180,14 @@ export function TradeBuilder({
   const t = useTranslations('Trade');
   // Non-modal: the builder needs the player to click their own/the target's tiles on the board.
   const dialog = useDialog<HTMLDivElement>({ onClose, label: t('builder.header'), modal: false });
-  const nothingOffered =
-    giveMoney === 0 &&
-    getMoney === 0 &&
-    giveCards === 0 &&
-    getCards === 0 &&
-    offerAssets.length === 0 &&
-    requestAssets.length === 0;
+  const nothingOffered = isEmptyTradeOffer({
+    giveMoney,
+    getMoney,
+    giveCards,
+    getCards,
+    offerAssets,
+    requestAssets,
+  });
 
   return (
     <div

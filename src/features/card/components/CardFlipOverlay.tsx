@@ -9,7 +9,7 @@ import {
   CARD_PROCEED_APPEAR_DELAY_MS,
 } from '@/shared/config/constants';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
-import { useBoardTileName } from '@/features/game-board';
+import { useBoardTileName } from '@/features/game-board/board-tile-name';
 import { useDialog } from '@/shared/hooks/useDialog';
 import { CardFlipState, CardKind } from '../card.enums';
 import { localizeCardEffect } from '../card.text';

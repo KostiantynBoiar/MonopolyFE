@@ -5,8 +5,8 @@ import { useDialog } from '@/shared/hooks/useDialog';
 import type { PropertyColor } from '@/shared/protocol/game-state.enums';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import { BOARD } from '@/shared/config/board-layout';
-import { useBoardTileName } from '@/features/game-board';
-import { DeedWindow } from '@/features/deed';
+import { useBoardTileName } from '@/features/game-board/board-tile-name';
+import { DeedWindow } from '@/features/deed/components/DeedWindow';
 
 export interface ManageProperty {
   position:    number;

@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { Alert } from '@/shared/ui';
+import { Alert } from '@/shared/ui/Alert';
+import { createSession } from '@/shared/api/sessions';
+import { SessionVisibility } from '@/shared/protocol/session';
 import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
-import { SessionVisibility } from '../lobby.enums';
-import { createSession } from '../api';
 import { useRankedPreference } from '../hooks/useRankedPreference';
 
 interface CreateLobbyFormProps {

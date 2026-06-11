@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, FormField, OrDivider } from '@/shared/ui';
+import { Button } from '@/shared/ui/Button';
+import { FormField } from '@/shared/ui/FormField';
+import { OrDivider } from '@/shared/ui/OrDivider';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTranslations } from 'next-intl';
 import { loginSchema } from '../auth.schema';

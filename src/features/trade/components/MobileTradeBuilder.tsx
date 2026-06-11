@@ -5,9 +5,10 @@ import { cn } from '@/shared/lib/cn';
 import { bandColors } from '@/shared/config/constants';
 import { useDialog } from '@/shared/hooks/useDialog';
 import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
-import { useBoardTileName } from '@/features/game-board';
+import { useBoardTileName } from '@/features/game-board/board-tile-name';
 import { useTranslations } from 'next-intl';
-import type { TradeBuilderProps, TradeAsset, TradeCounterparty } from './TradeBuilder';
+import type { TradeAsset, TradeBuilderProps, TradeCounterparty } from '../trade-builder.types';
+import { clampTradeMoneyInput, isEmptyTradeOffer } from '../trade-builder.utils';
 
 const C = GAME_BOARD_COLORS;
 const T = BOARD_TILE_COLORS;
@@ -66,7 +67,7 @@ function MoneyRow({
         max={max}
         value={value || ''}
         placeholder="0"
-        onChange={(e) => onChange(Math.max(0, Math.min(max, Math.floor(Number(e.target.value) || 0))))}
+        onChange={(e) => onChange(clampTradeMoneyInput(e.target.value, max))}
         className="h-10 flex-1 rounded-[8px] border border-line-2 bg-surface px-3 font-mono text-base text-ink focus:border-blue focus:outline-none"
       />
     </div>
@@ -189,10 +190,14 @@ export function MobileTradeBuilder({
   const [tab, setTab] = useState<'give' | 'get'>('give');
   const dialog = useDialog<HTMLDivElement>({ onClose, label: t('builder.header'), modal: false });
 
-  const nothingOffered =
-    giveMoney === 0 && getMoney === 0 &&
-    giveCards === 0 && getCards === 0 &&
-    offerAssets.length === 0 && requestAssets.length === 0;
+  const nothingOffered = isEmptyTradeOffer({
+    giveMoney,
+    getMoney,
+    giveCards,
+    getCards,
+    offerAssets,
+    requestAssets,
+  });
 
   const tabClass = (active: boolean) => cn(
     'flex-1 py-2.5 text-sm font-black uppercase tracking-[0.12em] transition-colors',

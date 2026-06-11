@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { Container } from '@/shared/ui';
+import { Container } from '@/shared/ui/Container';
 
 export async function SiteFooter() {
   const t = await getTranslations('Landing');

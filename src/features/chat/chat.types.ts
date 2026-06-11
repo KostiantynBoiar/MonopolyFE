@@ -1,10 +1,11 @@
 import type { TokenColor } from '@/shared/protocol/game-state.enums';
 import type { DiceRoll, LogEntry, TradeOffer } from '@/shared/protocol/game-state';
 import type { ActiveCard, AuctionState, TradeState } from '@/shared/protocol/game-state';
-import type { TradeParticipant, TradePlayer, TradeAsset } from '@/features/trade';
-import type { DeedInfo } from '@/features/deed';
-import type { AuctionPlayer } from '@/features/auction';
-import type { ManageProperty } from '@/features/manage';
+import type { AuctionPlayer } from '@/features/auction/auction.types';
+import type { DeedInfo } from '@/features/deed/deed.types';
+import type { ManageProperty } from '@/features/manage/ManagePropertiesOverlay';
+import type { TradeAsset, TradePlayer } from '@/features/trade/trade-builder.types';
+import type { TradeParticipant } from '@/features/trade/trade.types';
 import type { ActionKey } from './chat.enums';
 
 /**

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DeedInfo } from '@/features/deed';
+import type { DeedInfo } from '@/features/deed/deed.types';
 import type { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { ActiveCard, DiceRoll } from '@/shared/protocol/game-state';
 

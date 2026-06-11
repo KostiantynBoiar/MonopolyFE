@@ -3,13 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
-import { useBoardTileName } from '@/features/game-board';
+import { useBoardTileName } from '@/features/game-board/board-tile-name';
 import { TOKEN_COLORS } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import { renderGameEvent } from '@/shared/protocol/log';
-import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import { ChatWindowTab } from '../chat.enums';
 import type { ChatMessage, ChatWindowProps, StickerPack } from '../chat.types';
+import {
+  clampMessage,
+  dedupeAndSortChatMessages,
+  formatChatTime,
+  getStickerUrl,
+  isOwnMessage,
+  sameSender,
+} from '../chat.utils';
+import { StickerPicker, StickerPreview } from './StickerPicker';
 
 const C = GAME_BOARD_COLORS;
 const T = BOARD_TILE_COLORS;
@@ -26,33 +34,6 @@ const TRANSCRIPT_TEXTURE = {
   backgroundSize: '14px 14px',
 } as const;
 
-function formatTime(ts: number) {
-  return new Intl.DateTimeFormat('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(ts);
-}
-
-function getStickerUrl(text: string) {
-  const match = text.match(/^\[sticker:(.+?)\]$/);
-  return match?.[1] ?? null;
-}
-
-function isTgsSticker(url: string) {
-  return url.toLowerCase().endsWith('.tgs');
-}
-
-function clampMessage(text: string) {
-  return text.slice(0, 128);
-}
-
-function getActiveStyle(isActive: boolean) {
-  return {
-    backgroundColor: isActive ? T.propertyBlue : C.surface,
-    color: isActive ? T.altText : C.text,
-  };
-}
-
 function useStickerPacks() {
   const [packs, setPacks] = useState<StickerPack[]>([]);
 
@@ -64,116 +45,6 @@ function useStickerPacks() {
   }, []);
 
   return packs;
-}
-
-function StickerFallback({ size, label = 'TGS' }: { size: number; label?: string }) {
-  return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-[8px] border text-[11px] font-black uppercase tracking-[0.12em]"
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: C.panel,
-        borderColor: C.border,
-        color: C.muted,
-      }}
-      aria-hidden="true"
-    >
-      {label}
-    </div>
-  );
-}
-
-function StickerPreview({
-  url,
-  alt,
-  size,
-  loop = true,
-  autoplay = true,
-}: {
-  url: string;
-  alt: string;
-  size: number;
-  loop?: boolean;
-  autoplay?: boolean;
-}) {
-  const [failed, setFailed] = useState(false);
-
-  if (isTgsSticker(url)) {
-    return (
-      <TgsPlayer
-        src={url}
-        size={size}
-        loop={loop}
-        autoplay={autoplay}
-        fallback={<StickerFallback size={size} />}
-      />
-    );
-  }
-
-  if (failed) {
-    return <StickerFallback size={size} label="IMG" />;
-  }
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element -- remote sticker URL with onError fallback; next/image doesn't fit
-    <img
-      src={url}
-      alt={alt}
-      className="max-w-full object-contain"
-      style={{ width: size, height: size }}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
-function StickerCell({
-  file,
-  index,
-  onSelect,
-  packId,
-}: {
-  file: string;
-  index: number;
-  onSelect: (url: string) => void;
-  packId: string;
-}) {
-  const url = `/stickers/${packId}/${file}`;
-  const isTgs = isTgsSticker(file);
-  const [mounted, setMounted] = useState(!isTgs);
-
-  useEffect(() => {
-    if (!isTgs) return;
-
-    const mount = () => setMounted(true);
-    let idleId: number | null = null;
-    const timer = window.setTimeout(() => {
-      if ('requestIdleCallback' in window) {
-        idleId = window.requestIdleCallback(mount, { timeout: 300 });
-        return;
-      }
-
-      mount();
-    }, index * 30);
-
-    return () => {
-      window.clearTimeout(timer);
-      if (idleId != null) window.cancelIdleCallback(idleId);
-    };
-  }, [index, isTgs]);
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(url)}
-      className="flex w-full aspect-square items-center justify-center rounded-[10px] border transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
-      style={PANEL_BORDER_STYLE}
-    >
-      {isTgs && !mounted
-        ? <StickerFallback size={44} />
-        : <StickerPreview url={url} alt={file} size={44} loop={false} autoplay={false} />}
-    </button>
-  );
 }
 
 function ChatTabs({
@@ -291,7 +162,7 @@ function EventEntries({
               className="shrink-0 font-mono text-[10.5px] tabular-nums"
               style={{ color: C.muted }}
             >
-              {formatTime(new Date(entry.ts).getTime())}
+              {formatChatTime(new Date(entry.ts).getTime())}
             </span>
             <p
               className="min-w-0 flex-1 whitespace-pre-wrap"
@@ -304,18 +175,6 @@ function EventEntries({
       })}
     </div>
   );
-}
-
-function isOwnMessage(message: ChatMessage, viewerUserId?: string) {
-  return Boolean(viewerUserId && message.fromUserId === viewerUserId);
-}
-
-function sameSender(a: ChatMessage, b: ChatMessage) {
-  // Group by sender identity. Prefer user id; fall back to author label for
-  // log-sourced entries that carry no user id.
-  const keyA = a.fromUserId ?? `name:${a.author ?? ''}`;
-  const keyB = b.fromUserId ?? `name:${b.author ?? ''}`;
-  return keyA === keyB;
 }
 
 function MessageEntries({
@@ -396,7 +255,7 @@ function MessageEntries({
               {stickerUrl ? (
                 <div
                   className="drop-shadow-sm"
-                  title={`${formatTime(entry.ts)} | ${author}`}
+                  title={`${formatChatTime(entry.ts)} | ${author}`}
                 >
                   <StickerPreview url={stickerUrl} alt={stickerAlt} size={92} />
                 </div>
@@ -415,7 +274,7 @@ function MessageEntries({
                       ...(own ? { right: 'calc(100% + 8px)' } : { left: 'calc(100% + 8px)' }),
                     }}
                   >
-                    {formatTime(entry.ts)}
+                    {formatChatTime(entry.ts)}
                   </span>
                 </div>
               )}
@@ -423,60 +282,6 @@ function MessageEntries({
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function StickerPicker({
-  packs,
-  packIndex,
-  onPackChange,
-  onSelectSticker,
-}: {
-  packs: StickerPack[];
-  packIndex: number;
-  onPackChange: (index: number) => void;
-  onSelectSticker: (url: string) => void;
-}) {
-  const activePack = packs[packIndex];
-
-  return (
-    <div
-      className="absolute inset-x-0 bottom-[54px] top-0 z-30 flex flex-col rounded-[14px] border"
-      style={{
-        boxShadow: '0 8px 24px rgba(51,48,43,0.18)',
-        ...PANEL_BORDER_STYLE,
-      }}
-    >
-      {packs.length > 1 && (
-        <div className="flex shrink-0 gap-[4px] border-b p-2" style={{ borderColor: C.border }}>
-          {packs.map((pack, index) => (
-            <button
-              key={pack.id}
-              type="button"
-              onClick={() => onPackChange(index)}
-              className="rounded-full border px-2.5 py-1 text-[12px] font-semibold uppercase tracking-[0.14em] transition-colors"
-              style={{ ...getActiveStyle(index === packIndex), borderColor: C.border }}
-            >
-              {pack.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="grid grid-cols-5 gap-[2px] p-1.5">
-          {activePack?.stickers.map((file, index) => (
-            <StickerCell
-              key={`${activePack.id}-${file}`}
-              packId={activePack.id}
-              file={file}
-              index={index}
-              onSelect={onSelectSticker}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -607,12 +412,10 @@ export function ChatWindow({
   // Chat is sourced entirely from the client-persisted store (passed in as
   // externalMessages) — the backend doesn't persist chat, so the game log carries none.
   // Dedup by id and order by timestamp.
-  const displayMessages = useMemo(() => {
-    const seen = new Set<string>();
-    return (externalMessages ?? [])
-      .filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)))
-      .sort((a, b) => a.ts - b.ts);
-  }, [externalMessages]);
+  const displayMessages = useMemo(
+    () => dedupeAndSortChatMessages(externalMessages),
+    [externalMessages],
+  );
 
   // Unread badge: count new chat messages that arrive while not on the Chat tab.
   const prevChatLenRef = useRef(displayMessages.length);

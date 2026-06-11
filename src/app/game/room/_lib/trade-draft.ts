@@ -1,4 +1,4 @@
-import { BoardTileSelectionTone } from '@/features/game-board';
+import { BoardTileSelectionTone } from '@/features/game-board/game-board.enums';
 import type { GameState, PlayerState } from '@/shared/protocol/game-state';
 import { getPlayerProperties } from '@/shared/protocol/selectors';
 import { getSpaceOwnerId, isSpaceMortgaged } from './game-spaces';

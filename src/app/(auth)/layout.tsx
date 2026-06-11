@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Brand } from '@/shared/ui';
+import { Brand } from '@/shared/ui/Brand';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (

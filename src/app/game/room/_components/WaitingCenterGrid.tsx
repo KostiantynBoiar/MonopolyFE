@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChatWindow } from '@/features/chat/components/ChatWindow';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
-import { MemberRole } from '@/features/lobby';
+import { MemberRole } from '@/shared/protocol/session';
 import type { ChatMessage } from '@/features/chat/chat.types';
 import { SESSION_MIN_PLAYERS_TO_START } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
