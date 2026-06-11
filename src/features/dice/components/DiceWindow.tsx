@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import type { DiceRoll } from '@/shared/protocol/game-state';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { FAST_INTERVAL_MS, FAST_PHASE_MS, SLOW_INTERVAL_MS, DICE_SPIN_MS } from '@/shared/config/constants';
+import { useGameStore } from '@/stores/game-store';
+import { getBoardConfig } from '@/shared/config/board-layout';
 
 interface DiceWindowProps {
   diceRoll?: DiceRoll | null;
@@ -78,10 +80,12 @@ function DieFace({
 
 export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindowProps) {
   const t = useTranslations('Dice');
+  const gameMode = useGameStore((s) => s.snapshot.game.gameMode);
+  const diceCount = getBoardConfig(gameMode).diceCount;
   const [rolling, setRolling] = useState(false);
   const [justSettled, setJustSettled] = useState(false);
-  const die1 = diceRoll?.die1 ?? 1;
-  const die2 = diceRoll?.die2 ?? 1;
+  const die1 = diceRoll?.die1 || 1;
+  const die2 = diceRoll?.die2 || 1;
   const [displayDie1, setDisplayDie1] = useState(die1);
   const [displayDie2, setDisplayDie2] = useState(die2);
   const [settledRoll, setSettledRoll] = useState<DiceRoll>({
@@ -92,8 +96,8 @@ export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindow
   const visibleDie1 = rollId === 0 ? die1 : displayDie1;
   const visibleDie2 = rollId === 0 ? die2 : displayDie2;
   const visibleRoll = rollId === 0 ? { die1, die2, isDoubles: die1 === die2 } : settledRoll;
-  const total = visibleRoll.die1 + visibleRoll.die2;
-  const isDoubles = visibleRoll.isDoubles;
+  const total = diceCount === 1 ? visibleRoll.die1 : visibleRoll.die1 + visibleRoll.die2;
+  const isDoubles = diceCount === 2 && visibleRoll.isDoubles;
 
   // Tracks which rollId has already been animated so die1/die2 prop changes
   // (e.g. game state commit after End Turn) don't re-trigger the animation.
@@ -186,9 +190,11 @@ export function DiceWindow({ diceRoll, rollId = 0, compact = false }: DiceWindow
         {t('title')}
       </div>
 
-      <div className={`grid min-h-0 grid-cols-2 place-items-center gap-2 ${compact ? 'px-1 py-1' : 'px-2 py-2'}`}>
+      <div className={`grid min-h-0 place-items-center gap-2 ${diceCount === 1 ? 'grid-cols-1' : 'grid-cols-2'} ${compact ? 'px-1 py-1' : 'px-2 py-2'}`}>
         <DieFace value={visibleDie1} tilt="rotateX(10deg) rotateY(-14deg) rotateZ(-12deg)" rolling={rolling} justSettled={justSettled} side="left" />
-        <DieFace value={visibleDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
+        {diceCount === 2 && (
+          <DieFace value={visibleDie2} tilt="rotateX(8deg) rotateY(16deg) rotateZ(14deg)" rolling={rolling} justSettled={justSettled} side="right" />
+        )}
       </div>
 
       <div className={`flex flex-col items-center ${compact ? 'gap-0.5' : 'gap-1.5 pb-[2px]'}`}>

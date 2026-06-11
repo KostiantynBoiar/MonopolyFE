@@ -420,6 +420,7 @@ export default function GameRoomPage() {
             <BoardContainer
               centerContent={<WaitingCenterGrid {...waitingProps} />}
               sidebarPlayers={waitingSidebarPlayers}
+              gameMode={currentSession.game_mode}
             />
           </div>
         )

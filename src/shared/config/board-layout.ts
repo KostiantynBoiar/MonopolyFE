@@ -139,7 +139,7 @@ export const NORMAL_BOARD_CONFIG: BoardConfig = buildConfig(
 // Grid layout (col, row):
 //   Bottom row  y=6: pos  1(6,6) 2(5,6) 3(4,6) 4(3,6) 5(2,6) 6(1,6) 7(0,6)
 //   Left col    x=0: pos  8(0,5) 9(0,4) 10(0,3) 11(0,2) 12(0,1) 13(0,0)
-//   Top row     y=0: pos 14(1,0) 15(2,0) 16(3,0) 17(4,0) 18(5,0) 19(6,0)
+//   Top row     y=0: pos 14(1,0) 15(2,0) 16(3,0) 17(4,0) 18(5,0) 19(6,0)←corner
 //   Right col   x=6: pos 20(6,1) 21(6,2) 22(6,3) 23(6,4) 24(6,5)
 
 const DUEL_SPACES: BoardSpace[] = [
@@ -160,8 +160,8 @@ const DUEL_SPACES: BoardSpace[] = [
   { pos: 15, type: SpaceType.PROPERTY, price: 200, color: PropertyColor.ORANGE },
   { pos: 16, type: SpaceType.CHANCE },
   { pos: 17, type: SpaceType.PROPERTY, price: 220, color: PropertyColor.RED },
-  { pos: 18, type: SpaceType.CORNER,   corner: CornerVariant.GOTO_JAIL },
-  { pos: 19, type: SpaceType.PROPERTY, price: 240, color: PropertyColor.RED },
+  { pos: 18, type: SpaceType.PROPERTY, price: 240, color: PropertyColor.RED },
+  { pos: 19, type: SpaceType.CORNER,   corner: CornerVariant.GOTO_JAIL },
   { pos: 20, type: SpaceType.PROPERTY, price: 260, color: PropertyColor.YELLOW },
   { pos: 21, type: SpaceType.CHEST },
   { pos: 22, type: SpaceType.PROPERTY, price: 300, color: PropertyColor.GREEN },
@@ -201,7 +201,7 @@ export const DUEL_BOARD_CONFIG: BoardConfig = buildConfig(
   DUEL_SPACES,
   1,   // GO
   7,   // JAIL
-  18,  // GO-TO-JAIL
+  19,  // GO-TO-JAIL
   1,
   DUEL_GRID_COORDS,
   'repeat(7, 1fr)',

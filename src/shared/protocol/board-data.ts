@@ -90,7 +90,7 @@ export const DUEL_COLOR_POSITIONS: Readonly<Record<PropertyColor, readonly numbe
   [PropertyColor.CYAN]:   [6, 8],
   [PropertyColor.PINK]:   [9, 11],
   [PropertyColor.ORANGE]: [14, 15],
-  [PropertyColor.RED]:    [17, 19],
+  [PropertyColor.RED]:    [17, 18],
   [PropertyColor.YELLOW]: [20],
   [PropertyColor.GREEN]:  [22],
   [PropertyColor.BLUE]:   [23, 24],
@@ -123,7 +123,7 @@ export const DUEL_RENT: Readonly<Record<number, readonly [number, number, number
   14: [14,  28,  70,  200,  550,  750,  950],
   15: [16,  32,  80,  220,  600,  800,  1000],
   17: [18,  36,  90,  250,  700,  875,  1050],
-  19: [20,  40,  100, 300,  750,  925,  1100],
+  18: [20,  40,  100, 300,  750,  925,  1100],
   20: [22,  44,  110, 330,  800,  975,  1150],
   22: [26,  52,  130, 390,  900,  1100, 1275],
   23: [50,  100, 200, 600,  1400, 1700, 2000],
@@ -135,7 +135,7 @@ export const DUEL_PRICE: Readonly<Record<number, number>> = {
   5:  200, 6:  100, 8:  100,
   9:  140, 10: 150, 11: 140,
   14: 180, 15: 200,
-  17: 220,           19: 240,
+  17: 220, 18: 240,
   20: 260, 22: 300, 23: 400, 24: 450,
 };
 
