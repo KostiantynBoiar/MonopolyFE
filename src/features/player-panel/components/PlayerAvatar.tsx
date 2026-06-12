@@ -1,6 +1,6 @@
 import { TOKEN_COLORS } from '@/shared/config/constants';
-import { TokenShape } from '@/features/BoardTile/token-shapes';
-import { TokenShapeSvg } from '@/features/BoardTile/components/TokenShapeSvg';
+import { TokenShape } from '@/features/board-tile/token-shapes';
+import { TokenShapeSvg } from '@/features/board-tile/components/TokenShapeSvg';
 import type { Player } from '../player-panel.schema';
 
 export function PlayerAvatar({ player }: { player: Player }) {

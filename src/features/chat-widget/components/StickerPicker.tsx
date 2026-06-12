@@ -4,15 +4,11 @@ import { useEffect, useState } from 'react';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { TgsPlayer } from '@/shared/ui/TgsPlayer';
 import type { StickerPack } from '../chat.types';
+import { PANEL_BORDER_STYLE } from '../chat.constants';
 import { isTgsSticker } from '../chat.utils';
 
 const C = GAME_BOARD_COLORS;
 const T = BOARD_TILE_COLORS;
-
-const PANEL_BORDER_STYLE = {
-  borderColor: C.border,
-  backgroundColor: C.surface,
-} as const;
 
 function getActiveStyle(isActive: boolean) {
   return {

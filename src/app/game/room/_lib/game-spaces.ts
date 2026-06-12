@@ -1,4 +1,4 @@
-import type { ManageProperty } from '@/features/manage/ManagePropertiesOverlay';
+import type { ManageProperty } from '@/features/manage-overlay/ManagePropertiesOverlay';
 import { getBoardConfig } from '@/shared/config/board-layout';
 import type { GameState } from '@/shared/protocol/game-state';
 import { getPlayerProperties, getPropertyRent, hasMonopoly } from '@/shared/protocol/selectors';

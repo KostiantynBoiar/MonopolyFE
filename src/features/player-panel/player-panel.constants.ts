@@ -3,7 +3,7 @@
 // so it can never drift from the actual tile colours.
 import { NORMAL_BOARD_CONFIG } from '@/shared/config/board-layout';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
-import { getSpaceHeaderColor } from '@/features/BoardTile/boardTile.colors';
+import { getSpaceHeaderColor } from '@/features/board-tile/boardTile.colors';
 
 export const SORTED_BUYABLE_POSITIONS: number[] = [
   1, 3,

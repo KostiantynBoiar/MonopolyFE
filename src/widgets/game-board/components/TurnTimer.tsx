@@ -3,10 +3,6 @@
 import { useEffect, useState } from 'react';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 
-// The backend sends an absolute epoch-ms deadline; we tick locally against Date.now()
-// and re-sync automatically whenever a new snapshot updates the deadline prop. Minor
-// client/server clock skew is cosmetic — the backend enforces the real deadline.
-
 const URGENT_MS = 15_000;
 
 function remainingMs(deadlineMs: number | null, now = Date.now()): number {

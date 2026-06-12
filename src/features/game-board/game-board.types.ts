@@ -3,12 +3,12 @@ import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import type { GameMode } from '@/shared/protocol/game-state.enums';
-import type { BoardPlayer } from '@/features/BoardTile/boardTile.schema';
-import type { TokenShape } from '@/features/BoardTile/token-shapes';
+import type { BoardPlayer } from '@/features/board-tile/boardTile.schema';
+import type { TokenShape } from '@/features/board-tile/token-shapes';
 import type { BoardTileSelectionTone } from './game-board.enums';
 
 // Re-exported for consumers that still import from this path.
-export type { BoardPlayer, BoardSpace, BoardTileProps } from '@/features/BoardTile/boardTile.schema';
+export type { BoardPlayer, BoardSpace, BoardTileProps } from '@/features/board-tile/boardTile.schema';
 
 export interface WalkingPlayer {
   id: string;

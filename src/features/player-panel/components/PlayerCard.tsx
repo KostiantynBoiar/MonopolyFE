@@ -4,7 +4,7 @@ import { TOKEN_COLORS } from '@/shared/config/constants';
 import { NORMAL_BOARD_CONFIG } from '@/shared/config/board-layout';
 import { mortgageValue, buildingCost } from '@/shared/protocol/board-data';
 import { RatingBadge } from '@/shared/ui/RatingBadge';
-import { BOARD_TILE_COLORS, getSpaceHeaderColor } from '@/features/BoardTile/boardTile.colors';
+import { BOARD_TILE_COLORS, getSpaceHeaderColor } from '@/features/board-tile/boardTile.colors';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { Player } from '../player-panel.schema';
 import type { BalanceDeltaEntry } from './BalanceDelta';

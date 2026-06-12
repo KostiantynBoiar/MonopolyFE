@@ -6,7 +6,7 @@ export {
   SPACE_SYMBOL_MAP,
   SPACE_SURFACE_MAP,
   getSpaceHeaderColor,
-} from '@/features/BoardTile/boardTile.colors';
+} from '@/features/board-tile/boardTile.colors';
 
 export const GAME_BOARD_COLORS = {
   ink:       'var(--board-ink)',

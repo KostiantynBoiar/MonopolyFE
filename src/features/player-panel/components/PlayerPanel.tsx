@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
 import { NORMAL_BOARD_CONFIG } from '@/shared/config/board-layout';
 import { useBalanceChange } from '@/shared/hooks/useBalanceChange';
-import { BOARD_TILE_COLORS, getSpaceHeaderColor } from '@/features/BoardTile/boardTile.colors';
+import { BOARD_TILE_COLORS, getSpaceHeaderColor } from '@/features/board-tile/boardTile.colors';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { Player } from '../player-panel.schema';
 import type { BalanceDeltaEntry } from './BalanceDelta';

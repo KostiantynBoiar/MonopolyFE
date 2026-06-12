@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BOARD_TILE_COLORS } from '@/features/BoardTile/boardTile.colors';
+import { BOARD_TILE_COLORS } from '@/features/board-tile/boardTile.colors';
 
 export function StatusPill({
   children,

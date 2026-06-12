@@ -7,7 +7,7 @@ import { GAME_BOARD_COLORS, BOARD_TILE_COLORS } from '@/features/game-board/game
 import { getBoardConfig } from '@/shared/config/board-layout';
 import { GameMode } from '@/shared/protocol/game-state.enums';
 import { useBoardTileName } from '@/features/game-board/board-tile-name';
-import { DeedWindow } from '@/features/deed/components/DeedWindow';
+import { DeedWindow } from '@/features/deed-widget/components/DeedWindow';
 
 export interface ManageProperty {
   position:    number;

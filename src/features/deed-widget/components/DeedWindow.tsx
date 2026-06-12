@@ -3,86 +3,13 @@
 import { useLayoutEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useGameStore } from '@/stores/game-store';
-import type { BoardSpace } from '@/features/game-board/game-board.types';
-import { CornerVariant, SpaceType } from '@/features/game-board/game-board.enums';
+import { SpaceType } from '@/features/game-board/game-board.enums';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS, getSpaceHeaderColor, getSpaceHeaderTextColor } from '@/features/game-board/game-board.colors';
-import type { DeedInfo } from '../deed.types';
-import { DeedSpaceType } from '../deed.enums';
+import type { DeedWindowProps } from '../deed.types';
 import { getDeedInfo } from '../deed.utils';
-
-// ─── Props ────────────────────────────────────────────────────────────────────
-
-interface BuildingState {
-  houses: number;
-  hotel:  boolean;
-}
-
-interface DeedWindowProps {
-  space: BoardSpace;              // tile selected by the user (browse mode)
-  decisionSpace?: BoardSpace | null; // when set: player just landed here — forces buy/auction UI
-  onBuy?: () => void;
-  onAuction?: () => void;
-  canAct?: boolean;              // true only for the viewer who may answer a buy decision
-  canBuy?: boolean;
-  viewOnly?: boolean;
-  compact?: boolean;              // smaller typography to fit constrained height containers
-  ownership?: BuildingState | null; // when set in viewOnly: renders a buildings strip at the bottom
-}
-
-type DeedTranslator = (key: string, values?: Record<string, string | number>) => string;
-
-// Shared modern button chrome — matches the action buttons + chat/dice widgets.
-const DEED_BTN =
-  'rounded-[12px] border text-sm font-black uppercase tracking-[0.06em] will-change-transform transition-[transform,box-shadow,opacity] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:-translate-y-[2px] enabled:active:translate-y-0 enabled:active:scale-[0.97]';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getRentTitle(deed: DeedInfo, t: DeedTranslator) {
-  switch (deed.spaceType) {
-    case DeedSpaceType.RAILROAD: return t('rentTitle.railroad');
-    case DeedSpaceType.UTILITY:  return t('rentTitle.utility');
-    default:                     return t('rentTitle.default');
-  }
-}
-
-function formatLabel(key: string, t: DeedTranslator) {
-  const MAP: Record<string, string> = {
-    base:        t('row.base'),
-    house1:      t('row.house1'),
-    house2:      t('row.house2'),
-    house3:      t('row.house3'),
-    house4:      t('row.house4'),
-    hotel:       t('row.hotel'),
-    railroad1:   t('row.railroad1'),
-    railroad2:   t('row.railroad2'),
-    railroad3:   t('row.railroad3'),
-    railroad4:   t('row.railroad4'),
-    utility1:    t('row.utility1'),
-    utilityBoth: t('row.utilityBoth'),
-  };
-  return MAP[key] ?? key;
-}
-
-function getCornerText(corner: CornerVariant | undefined, t: DeedTranslator) {
-  switch (corner) {
-    case CornerVariant.GO:        return { eyebrow: t('corner.eyebrow'), title: t('corner.go.title'), value: t('corner.go.value') };
-    case CornerVariant.JAIL:      return { eyebrow: t('corner.eyebrow'), title: t('corner.jail.title'), value: t('corner.jail.value') };
-    case CornerVariant.PARKING:   return { eyebrow: t('corner.eyebrow'), title: t('corner.parking.title'), value: t('corner.parking.value') };
-    case CornerVariant.GOTO_JAIL: return { eyebrow: t('corner.eyebrow'), title: t('corner.gotoJail.title'), value: t('corner.gotoJail.value') };
-    default:                      return { eyebrow: t('corner.eyebrow'), title: t('corner.default.title'), value: t('corner.default.value') };
-  }
-}
-
-function getSpecialText(space: BoardSpace, t: DeedTranslator) {
-  switch (space.type) {
-    case SpaceType.CHANCE: return t('special.chance');
-    case SpaceType.CHEST:  return t('special.chest');
-    case SpaceType.TAX:    return t('special.tax', { amount: space.price ?? 0 });
-    default:               return t('special.default');
-  }
-}
-
-// ─── DeedWindow ───────────────────────────────────────────────────────────────
+import { getRentTitle, formatLabel, getCornerText, getSpecialText } from '../deed.helpers';
+import { DEED_BTN } from '../deed.constants';
+import { BuildingsStrip } from './BuildingsStrip';
 
 export function DeedWindow({
   space,
@@ -96,12 +23,10 @@ export function DeedWindow({
   ownership,
 }: DeedWindowProps) {
   const t = useTranslations('Deed');
-
   const tBoard = useTranslations('Board') as unknown as (key: string) => string;
   const gameMode = useGameStore((s) => s.snapshot.game.gameMode);
 
   const isDecisionMode = Boolean(decisionSpace);
-  // In decision mode show the landed-on space; otherwise show the browsed space.
   const activeSpace = decisionSpace ?? space;
   const spaceName = tBoard(`tiles.${gameMode}.p${activeSpace.pos}`);
 
@@ -111,18 +36,15 @@ export function DeedWindow({
   const cornerText     = activeSpace.type === SpaceType.CORNER ? getCornerText(activeSpace.corner, t) : null;
   const specialText    = !isDeed && !cornerText ? getSpecialText(activeSpace, t) : null;
   const isSpecialCard  = Boolean(specialText);
-  // Actions are visible only when this viewer can answer the active buy decision.
   const showActions    = canAct && (isDecisionMode || !viewOnly) && isDeed && activeSpace.price != null;
-  // Buildings strip: only in viewOnly when ownership data is supplied and there's something to show.
   const showBuildings  = viewOnly && isDeed && ownership != null && (ownership.hotel || ownership.houses > 0);
-  const useViewOnlyDeedShell = viewOnly && isDeed && !isDecisionMode;
-  const renderBuildingsInsideInfo = showBuildings && !showActions;
+  const useViewOnlyDeedShell        = viewOnly && isDeed && !isDecisionMode;
+  const renderBuildingsInsideInfo   = showBuildings && !showActions;
   const nonDeedTitle   = cornerText?.title ?? specialText ?? t('special.default');
   const headerColor    = getSpaceHeaderColor(activeSpace);
   const headerTextColor = getSpaceHeaderTextColor(activeSpace);
 
   const headerTextRef = useRef<HTMLParagraphElement>(null);
-
   useLayoutEffect(() => {
     const el = headerTextRef.current;
     if (!el) return;
@@ -139,9 +61,6 @@ export function DeedWindow({
     }
   }, [spaceName, compact]);
 
-  // Rent-rows auto-fit: pick the largest font that fits the available height so
-  // the list never overflows (esp. full color sets with 5 rows in a short cell).
-  // Re-measured on container resize since the board scales with the viewport.
   const rentRowsRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = rentRowsRef.current;
@@ -153,7 +72,6 @@ export function DeedWindow({
         el.style.fontSize = `${px}px`;
         if (el.scrollHeight <= el.clientHeight) return;
       }
-      // Still overflowing at minimum font — collapse gaps as last resort.
       el.style.rowGap = '0px';
     };
     fit();
@@ -162,7 +80,6 @@ export function DeedWindow({
     return () => observer.disconnect();
   }, [compact, showActions, renderBuildingsInsideInfo, activeSpace.pos]);
 
-  // Decision mode uses a gold accent border to signal urgency.
   const outerBorder = isDecisionMode ? BOARD_TILE_COLORS.propertyYellow : GAME_BOARD_COLORS.border;
 
   return (
@@ -262,37 +179,7 @@ export function DeedWindow({
             </div>
 
             {renderBuildingsInsideInfo && ownership && (
-              <div
-                className="mt-auto flex items-center justify-center gap-1 rounded-[10px] px-2 py-2"
-                style={{ backgroundColor: headerColor }}
-              >
-                {ownership.hotel ? (
-                  <div
-                    title={t('building.hotel')}
-                    style={{
-                      width: 16, height: 16,
-                      backgroundColor: '#8B2020',
-                      borderRadius: 3,
-                      border: '1.5px solid rgba(255,255,255,0.88)',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
-                    }}
-                  />
-                ) : (
-                  Array.from({ length: ownership.houses }).map((_, i) => (
-                    <div
-                      key={i}
-                      title={t('building.houseNumber', { count: i + 1 })}
-                      style={{
-                        width: 12, height: 12,
-                        backgroundColor: '#1A6B3A',
-                        borderRadius: 2,
-                        border: '1.5px solid rgba(255,255,255,0.88)',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
-                      }}
-                    />
-                  ))
-                )}
-              </div>
+              <BuildingsStrip ownership={ownership} backgroundColor={headerColor} className="mt-auto" />
             )}
           </div>
         ) : (
@@ -340,39 +227,9 @@ export function DeedWindow({
         </div>
       )}
 
-      {/* Buildings strip — shown in viewOnly mode when ownership data is provided */}
+      {/* Buildings strip — shown in viewOnly mode when ownership is provided */}
       {showBuildings && ownership && !renderBuildingsInsideInfo && (
-        <div
-          className="flex items-center justify-center gap-1 rounded-[10px] px-2 py-2"
-          style={{ backgroundColor: headerColor }}
-        >
-          {ownership.hotel ? (
-            <div
-              title={t('building.hotel')}
-              style={{
-                width: 16, height: 16,
-                backgroundColor: '#8B2020',
-                borderRadius: 3,
-                border: '1.5px solid rgba(255,255,255,0.88)',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
-              }}
-            />
-          ) : (
-            Array.from({ length: ownership.houses }).map((_, i) => (
-              <div
-                key={i}
-                title={t('building.houseNumber', { count: i + 1 })}
-                style={{
-                  width: 12, height: 12,
-                  backgroundColor: '#1A6B3A',
-                  borderRadius: 2,
-                  border: '1.5px solid rgba(255,255,255,0.88)',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.45)',
-                }}
-              />
-            ))
-          )}
-        </div>
+        <BuildingsStrip ownership={ownership} backgroundColor={headerColor} />
       )}
     </section>
   );

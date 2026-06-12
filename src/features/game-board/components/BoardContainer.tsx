@@ -1,78 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { getBoardConfig, getTileEdge, getTileOuterEdgePct, getTileFlavor } from '@/shared/config/board-layout';
-import type { BoardConfig } from '@/shared/config/board-layout';
-import { WalkingAnimationVariant } from '@/shared/protocol/animation';
+import { getBoardConfig, getTileEdge, getTileFlavor } from '@/shared/config/board-layout';
 import { GameMode } from '@/shared/protocol/game-state.enums';
-import { WALK_STEP_DURATION_MS, CARD_WALK_STEP_DURATION_MS, JAIL_CORNER_DRAG_DURATION_MS } from '@/shared/config/constants';
-import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
-import { GAME_BOARD_COLORS } from '../game-board.colors';
-import { BoardTile } from '@/features/BoardTile/components/BoardTile';
-import { TokenShapeSvg } from '@/features/BoardTile/components/TokenShapeSvg';
+import { BoardTile } from '@/features/board-tile/components/BoardTile';
 import { PlayerPanel } from '@/features/player-panel';
-
-// ─── Animated overlay token ───────────────────────────────────────────────────
-
-const ANIM = {
-  [WalkingAnimationVariant.NORMAL]: { easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)', duration: WALK_STEP_DURATION_MS },
-  [WalkingAnimationVariant.FAST]: { easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.90)', duration: CARD_WALK_STEP_DURATION_MS },
-  [WalkingAnimationVariant.DRAG]: { easing: 'cubic-bezier(0.16, 0.84, 0.24, 1)', duration: JAIL_CORNER_DRAG_DURATION_MS },
-} as const;
-
-function AnimatedBoardToken({
-  id,
-  currentPos,
-  tokenColor,
-  tokenShape,
-  variant = WalkingAnimationVariant.NORMAL,
-  config,
-}: WalkingPlayer & { config: BoardConfig }) {
-  const prevPosRef            = useRef(currentPos);
-  const [animate, setAnimate] = useState(true);
-
-  useEffect(() => {
-    const prev       = prevPosRef.current;
-    const prevIdx    = config.positionIndexByPosition[prev] ?? 0;
-    const curIdx     = config.positionIndexByPosition[currentPos] ?? 0;
-    const delta      = Math.abs(curIdx - prevIdx);
-    if (variant !== WalkingAnimationVariant.DRAG && delta > config.positions.length / 2) {
-      setAnimate(false);
-      requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
-    } else {
-      setAnimate(true);
-    }
-    prevPosRef.current = currentPos;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPos]);
-
-  const { x, y }             = getTileOuterEdgePct(currentPos, config);
-  const { easing, duration } = ANIM[variant];
-
-  return (
-    <div
-      key={id}
-      aria-hidden="true"
-      style={{
-        position:      'absolute',
-        left:          `${x}%`,
-        top:           `${y}%`,
-        transform:     'translate(-50%, -50%)',
-        transition:    animate
-          ? `left ${duration}ms ${easing}, top ${duration}ms ${easing}`
-          : 'none',
-        zIndex:        60,
-        pointerEvents: 'none',
-        willChange:    'left, top',
-      }}
-    >
-      <TokenShapeSvg shape={tokenShape} color={tokenColor} size="clamp(20px, 2.6vmin, 38px)" />
-    </div>
-  );
-}
-
-// ─── BoardContainer ───────────────────────────────────────────────────────────
+import type { BoardContainerProps } from '../game-board.types';
+import { GAME_BOARD_COLORS } from '../game-board.colors';
+import { AnimatedBoardToken } from './AnimatedBoardToken';
 
 export function BoardContainer({
   gameMode = GameMode.NORMAL,
@@ -101,7 +36,7 @@ export function BoardContainer({
   const colorByPlayerId     = new Map(boardPlayers.map((player) => [player.id, player.tokenColor]));
   const playersByPosition   = new Map<number, typeof boardPlayers>();
 
-  const walkingIds      = new Set((walkingPlayers ?? []).map((player) => player.id));
+  const walkingIds       = new Set((walkingPlayers ?? []).map((player) => player.id));
   const focusedPositions = focusPositions ?? (
     focusPosition != null ? new Set([focusPosition]) : null
   );
@@ -212,7 +147,6 @@ export function BoardContainer({
                 </div>
               </div>
 
-              {/* Animated overlay tokens for walking players */}
               {(walkingPlayers ?? []).map((player) => (
                 <AnimatedBoardToken key={player.id} {...player} config={config} />
               ))}
