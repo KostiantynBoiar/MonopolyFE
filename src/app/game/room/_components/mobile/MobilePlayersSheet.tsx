@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { PlayerPanel } from '@/features/game-board/components/PlayerPanel';
-import type { Player } from '@/features/player-panel/player-panel.schema';
+import { PlayerPanel, type Player } from '@/features/player-panel';
 import type { LogEntry } from '@/shared/protocol/game-state';
 import { GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 

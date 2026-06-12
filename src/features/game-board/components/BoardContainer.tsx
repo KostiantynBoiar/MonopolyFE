@@ -11,7 +11,7 @@ import type { BoardContainerProps, WalkingPlayer } from '../game-board.types';
 import { GAME_BOARD_COLORS } from '../game-board.colors';
 import { BoardTile } from '@/features/BoardTile/components/BoardTile';
 import { TokenShapeSvg } from '@/features/BoardTile/components/TokenShapeSvg';
-import { PlayerPanel } from './PlayerPanel';
+import { PlayerPanel } from '@/features/player-panel';
 
 // ─── Animated overlay token ───────────────────────────────────────────────────
 
