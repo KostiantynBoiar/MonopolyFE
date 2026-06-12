@@ -1,10 +1,10 @@
 'use client';
 
-import { AuctionOverlay } from '@/features/auction/components/AuctionOverlay';
-import { DebtOverlay } from '@/features/bankruptcy/DebtOverlay';
-import type { ChatMessage } from '@/features/chat/chat.types';
-import { ChatWindow } from '@/features/chat/components/ChatWindow';
-import { JailOverlay } from '@/features/jail/JailOverlay';
+import { AuctionOverlay } from '@/features/auction-overlay/components/AuctionOverlay';
+import { DebtOverlay } from '@/features/indebt-overlay/DebtOverlay';
+import type { ChatMessage } from '@/features/chat-widget/chat.types';
+import { ChatWindow } from '@/features/chat-widget/components/ChatWindow';
+import { JailOverlay } from '@/features/jail-overlay/JailOverlay';
 import { useBoardTileName } from '@/features/game-board/board-tile-name';
 import type { AuctionState, DebtState, DiceRoll, JailStatus, LogEntry } from '@/shared/protocol/game-state';
 import { AuctionTargetKind, TurnPhase } from '@/shared/protocol/game-state.enums';

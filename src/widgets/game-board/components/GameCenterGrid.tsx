@@ -1,9 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { CardFlipOverlay } from '@/features/card/components/CardFlipOverlay';
-import { DeedWindow } from '@/features/deed/components/DeedWindow';
-import { DiceWindow } from '@/features/dice/components/DiceWindow';
+import { CardFlipOverlay } from '@/features/special-card-overlay/components/CardFlipOverlay';
+import { DeedWindow } from '@/features/deed-widget/components/DeedWindow';
+import { DiceWindow } from '@/features/dice-widget/components/DiceWindow';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import type { ActiveCard } from '@/shared/protocol/game-state';

@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { DiceWindow } from '@/features/dice/components/DiceWindow';
-import { DeedWindow } from '@/features/deed/components/DeedWindow';
+import { DiceWindow } from '@/features/dice-widget/components/DiceWindow';
+import { DeedWindow } from '@/features/deed-widget/components/DeedWindow';
 import { BOARD_TILE_COLORS } from '@/features/game-board/game-board.colors';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import type { DiceRoll } from '@/shared/protocol/game-state';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CardFlipOverlay } from '@/features/card/components/CardFlipOverlay';
+import { CardFlipOverlay } from '@/features/special-card-overlay/components/CardFlipOverlay';
 import type { BoardPlayer, WalkingPlayer } from '@/features/game-board/game-board.types';
 import { GameMode } from '@/shared/protocol/game-state.enums';
 import type { Player } from '@/features/player-panel/player-panel.schema';

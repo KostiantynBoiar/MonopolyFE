@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { BoardContainer } from '@/features/game-board/components/BoardContainer';
 import { deriveBoardPlayers, deriveSidebarPlayers } from '@/features/game-board/game-board.adapters';
 import { SessionStatus } from '@/shared/protocol/session';
 import { useBoardSfx } from '@/shared/hooks/useBoardSfx';
 import { useOnWsError } from '@/shared/hooks/useOnWsError';
 import { useRequireAuth } from '@/shared/hooks/useRequireAuth';
+import { useIsMobile } from '@/shared/hooks/useIsMobile';
 import { getViewerPlayer } from '@/shared/protocol/selectors';
 import { GameStatus } from '@/shared/protocol/game-state.enums';
 import type { TradeOffer } from '@/shared/protocol/game-state';
@@ -22,16 +22,13 @@ import { useSessionStore } from '@/stores/session-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useChatStore } from '@/stores/chat-store';
 import { useUiStore } from '@/stores/ui-store';
-import { useIsMobile } from '@/shared/hooks/useIsMobile';
+import {
+  ActiveOverlay,
+  GameBoardWidget,
+  RoomPhase,
+  type GameBoardWidgetProps,
+} from '@/widgets/game-board';
 import { useGameDispatch } from '../useGameDispatch';
-import { ActiveOverlay } from '../_components/FullOverlay';
-import { GameCenterGrid } from '../_components/GameCenterGrid';
-import { WaitingCenterGrid } from '../_components/WaitingCenterGrid';
-import { EmptyGameState, FinishedGameState } from '../_components/RoomStates';
-import { MobileGameRoom } from '../_components/mobile/MobileGameRoom';
-import { MobileWaitingRoom } from '../_components/mobile/MobileWaitingRoom';
-import { MobileFinishedState } from '../_components/mobile/MobileFinishedState';
-import { MobileEmptyState } from '../_components/mobile/MobileEmptyState';
 import { useRoomSession } from '../_hooks/useRoomSession';
 import { useTradeDraft } from '../_hooks/useTradeDraft';
 import { getManageProperties } from '../_lib/game-spaces';
@@ -97,15 +94,13 @@ export default function GameRoomPage() {
 
   const viewerPlayer = useMemo(() => getViewerPlayer(game, user?.id), [game, user?.id]);
 
-  // When the viewer goes bankrupt and the game continues, flag the session store
-  // so the lobby's useActiveSession knows not to offer a "back to game" shortcut
-  // and will let the player join a new game.
   const setViewerBankruptInSession = useSessionStore((s) => s.setViewerBankruptInSession);
   useEffect(() => {
     if (viewerPlayer?.isBankrupt && game.status === GameStatus.IN_PROGRESS) {
       setViewerBankruptInSession();
     }
   }, [viewerPlayer?.isBankrupt, game.status, setViewerBankruptInSession]);
+
   const viewerPlayerId = viewerPlayer?.id ?? (game.viewerId || null);
 
   const trade = useTradeDraft({ game, viewerPlayer, viewerPlayerId, activeOverlay, setSelectedTile });
@@ -113,24 +108,10 @@ export default function GameRoomPage() {
 
   const boardPlayers = useMemo(() => deriveBoardPlayers(game), [game]);
   const sidebarPlayers = useMemo(() => deriveSidebarPlayers(game), [game]);
-
-  const waitingSidebarPlayers = useMemo(
-    () => buildWaitingSidebarPlayers(currentSession),
-    [currentSession],
-  );
-
-  const walkingPlayers = useMemo(
-    () => buildWalkingPlayers(game, walkState),
-    [game, walkState],
-  );
-
-  const manageProperties = useMemo(
-    () => getManageProperties(game, viewerPlayerId),
-    [game, viewerPlayerId],
-  );
-
+  const waitingSidebarPlayers = useMemo(() => buildWaitingSidebarPlayers(currentSession), [currentSession]);
+  const walkingPlayers = useMemo(() => buildWalkingPlayers(game, walkState), [game, walkState]);
+  const manageProperties = useMemo(() => getManageProperties(game, viewerPlayerId), [game, viewerPlayerId]);
   const tradeParticipants = useMemo(() => buildTradeParticipants(game), [game]);
-
   const tradeBuilderData = useMemo(
     () => buildTradeBuilderData(game, viewerPlayer, tradeDraft),
     [game, tradeDraft, viewerPlayer],
@@ -140,9 +121,6 @@ export default function GameRoomPage() {
     () => new Map(game.players.map((p) => [p.userId, p.token])),
     [game.players],
   );
-
-  // Chat history comes from the client-persisted store (survives refresh/reconnect).
-  // Ownership is decided in ChatWindow via fromUserId; token only drives the sender dot.
   const chatMessages = useMemo(
     () => buildChatMessages(chatBySession[sessionId] ?? [], tokenByUserId),
     [chatBySession, sessionId, tokenByUserId],
@@ -152,12 +130,14 @@ export default function GameRoomPage() {
   const activeCard = activeAnimationCard ?? game.activeCard;
   const pendingBuyPosition = game.turn.pendingBuyPosition;
   const isViewerTurn = Boolean(viewerPlayerId && game.turn.currentPlayerId === viewerPlayerId);
+
   const {
     pendingBuySpace,
     isBuyDecisionForViewer,
     highlightedBoardPosition,
     deedPanelSpace,
   } = resolveDeedSelection(pendingBuyPosition, selectedTile, viewerPlayer?.position, isViewerTurn, game.gameMode);
+
   const tradeSelectionTones = useMemo(
     () => buildBoardSelectionTones(activeOverlay, tradeDraft, game),
     [activeOverlay, tradeDraft, game],
@@ -169,25 +149,24 @@ export default function GameRoomPage() {
   const boardFocusPositions = isBuyDecisionForViewer && pendingBuyPosition != null
     ? new Set([pendingBuyPosition])
     : tradeFocusPositions;
+
   const canRoll = (permissions.canRoll || permissions.canRollInJail) && !isRolling && !isTimelineRunning;
-  const canManagePendingBuyShortfall = Boolean(
-    pendingBuySpace &&
-    isViewerTurn &&
-    manageProperties.length > 0 &&
-    viewerPlayer &&
-    pendingBuySpace.price != null &&
-    viewerPlayer.balance < pendingBuySpace.price,
-  );
   const canManage =
     permissions.canBuildHouse ||
     permissions.canBuildHotel ||
     permissions.canMortgage ||
     permissions.canUnmortgage ||
     manageProperties.length > 0 ||
-    canManagePendingBuyShortfall;
+    Boolean(
+      pendingBuySpace &&
+      isViewerTurn &&
+      manageProperties.length > 0 &&
+      viewerPlayer &&
+      pendingBuySpace.price != null &&
+      viewerPlayer.balance < pendingBuySpace.price,
+    );
 
-  // On mobile: when the walk animation finishes for the viewer's own token, clear the
-  // manually-selected tile so the board strip auto-scrolls to the landing position.
+  // Clear selected tile when the viewer's walk animation finishes on mobile
   const prevWalkStateRef = useRef(walkState);
   useEffect(() => {
     const prev = prevWalkStateRef.current;
@@ -229,7 +208,6 @@ export default function GameRoomPage() {
 
   const handleTradePropose = useCallback(() => {
     if (!tradeDraft.targetId) return;
-
     const offer: TradeOffer = {
       money: tradeDraft.giveMoney,
       positions: [...tradeDraft.givePositions],
@@ -240,7 +218,6 @@ export default function GameRoomPage() {
       positions: [...tradeDraft.getPositions],
       getOutOfJailCards: tradeDraft.getCards,
     };
-
     dispatch({ type: CommandType.StartTrade, targetId: tradeDraft.targetId, offer, request });
     handleCloseOverlay();
   }, [dispatch, handleCloseOverlay, tradeDraft]);
@@ -257,9 +234,7 @@ export default function GameRoomPage() {
 
   // ─── Boot guards ──────────────────────────────────────────────────────────
 
-  if (!ready || isLoading) {
-    return <FullScreenSpinner />;
-  }
+  if (!ready || isLoading) return <FullScreenSpinner />;
 
   if (loadError) {
     return (
@@ -282,214 +257,171 @@ export default function GameRoomPage() {
     );
   }
 
+  // ─── Phase determination ───────────────────────────────────────────────────
+
   const isWaitingSession =
-    currentSession?.status === SessionStatus.WAITING ||
+    currentSession.status === SessionStatus.WAITING ||
     (game.status === GameStatus.LOBBY && game.players.length === 0);
   const isFinishedSession =
-    currentSession?.status === SessionStatus.FINISHED ||
+    currentSession.status === SessionStatus.FINISHED ||
     game.status === GameStatus.FINISHED;
   const winnerName = resolveWinnerName(game);
 
-  // ─── Shared prop objects ──────────────────────────────────────────────────
+  // ─── Shared board display data ─────────────────────────────────────────────
 
-  const centerProps = {
-    // Layout
-    isBuyDecisionForViewer,
-    animatedDiceRollId,
-    deedPanelSpace,
-    pendingBuySpace,
-    // Button states
-    canRoll,
-    canBuyProperty: permissions.canBuyProperty,
-    canManage,
-    canEndTurn: permissions.canEndTurn,
-    canTrade: permissions.canTrade,
-    hasOtherTraders: Boolean(tradeBuilderData?.others.length),
-    isRolling,
-    isViewerTurn,
-    roundNumber: game.turn.roundNumber,
-    turnDeadlineMs: game.turn.turnDeadlineMs,
-    canSurrender: permissions.canSurrender,
-    // Button handlers
-    onRoll: handleRoll,
-    onEndTurn: () => dispatchCommand(CommandType.EndTurn),
-    onManageOpen: () => setActiveOverlay(ActiveOverlay.MANAGE),
-    onTradeOpen: handleTradeOpen,
-    onBuy: handleBuy,
-    onAuction: handlePassBuy,
-    onSurrender: () => dispatchCommand(CommandType.Surrender),
-    // CenterPanel props
-    activeCard,
-    pendingInteractionPlayerId: pendingAnimationInteraction?.affectedPlayerId ?? null,
-    viewerPlayerId,
-    debt: game.debt,
-    auction: game.auction,
-    auctionPlayers: game.players.map((p) => ({ id: p.id, name: p.displayName })),
-    turnPhase: game.turn.phase,
-    jailStatus: viewerPlayer?.jailStatus ?? null,
-    diceRoll,
-    canPayDebt: permissions.canPayDebt,
-    canBidAuction: permissions.canBidAuction,
-    canRollInJail: permissions.canRollInJail,
-    canPayJailFine: permissions.canPayJailFine,
-    canUseJailCard: permissions.canUseJailCard,
-    log: game.log,
-    chatMessages,
-    viewerToken: viewerPlayer?.token,
-    viewerUserId: user?.id,
-    onCardProceed: handleCardProceed,
-    onPayDebt: () => dispatchCommand(CommandType.PayDebt),
-    onManage: () => setActiveOverlay(ActiveOverlay.MANAGE),
-    onBankrupt: () => dispatchCommand(CommandType.DeclareBankruptcy),
-    onBidAuction: (amount: number) => dispatch({ type: CommandType.BidAuction, amount }),
-    onPayJailFine: () => dispatchCommand(CommandType.PayJailFine),
-    onUseJailCard: () => dispatchCommand(CommandType.UseJailCard),
-    onSendMessage: sendChat,
-    onSendSticker: sendSticker,
-    // FullOverlay props
-    trade: game.trade,
-    tradeProposer: tradeParticipants.proposer,
-    tradeTarget: tradeParticipants.target,
-    activeOverlay,
-    manageProperties,
-    canBuildHouse: permissions.canBuildHouse,
-    canBuildHotel: permissions.canBuildHotel,
-    canMortgage: permissions.canMortgage,
-    canUnmortgage: permissions.canUnmortgage,
-    tradeBuilderData,
-    onTradeAccept: () => dispatch({ type: CommandType.AcceptTrade, tradeId: game.trade!.id }),
-    onTradeReject: () => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id }),
-    onTradeCancel: () => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id }),
-    onBuildHouse: (position: number) => dispatch({ type: CommandType.BuildHouse, position }),
-    onBuildHotel: (position: number) => dispatch({ type: CommandType.BuildHotel, position }),
-    onSellHouse: (position: number) => dispatch({ type: CommandType.SellHouse, position }),
-    onSellHotel: (position: number) => dispatch({ type: CommandType.SellHotel, position }),
-    onMortgage: (position: number) => dispatch({ type: CommandType.Mortgage, position }),
-    onUnmortgage: (position: number) => dispatch({ type: CommandType.Unmortgage, position }),
-    onSellProperty: (position: number) => dispatch({ type: CommandType.SellProperty, position }),
-    onCloseOverlay: handleCloseOverlay,
-    onTradeGiveMoneyChange: trade.onGiveMoneyChange,
-    onTradeGetMoneyChange: trade.onGetMoneyChange,
-    onTradeGiveCardsChange: trade.onGiveCardsChange,
-    onTradeGetCardsChange: trade.onGetCardsChange,
-    onTradeClearOfferAssets: trade.onClearOfferAssets,
-    onTradeClearRequestAssets: trade.onClearRequestAssets,
-    onTradePropose: handleTradePropose,
-  };
-
-  const mobileBoardData = {
+  const boardDisplayData = {
     spaces: game.spaces,
-    players: boardPlayers,
+    boardPlayers,
     walkingPlayers,
     sidebarPlayers,
+    log: game.log,
     selectedPosition: highlightedBoardPosition,
     tileSelectionTones: tradeSelectionTones,
-    focusPositions: tradeFocusPositions,
+    focusPositions: boardFocusPositions,
     onSelectPosition: trade.selectBoardPosition,
     viewerId: viewerPlayerId ?? undefined,
     createdAt: game.createdAt,
     gameMode: game.gameMode,
+    onSurrender: () => dispatchCommand(CommandType.Surrender),
   };
 
-  const waitingProps = {
-    inviteCode: currentSession.invite_code,
-    memberCount: currentSession.member_count,
-    maxPlayers: currentSession.max_players,
-    yourRole: currentSession.your_role,
-    messages: chatMessages,
-    viewerUserId: user?.id,
-    onSendMessage: sendChat,
-    onSendSticker: sendSticker,
-    onLeave: handleLeaveRoom,
-    onStart: handleStartGame,
-    isLeaving,
-    isStarting,
-  };
+  // ─── Widget props by phase ─────────────────────────────────────────────────
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  let widgetProps: GameBoardWidgetProps;
+
+  if (isWaitingSession) {
+    widgetProps = {
+      phase: RoomPhase.WAITING,
+      gameMode: currentSession.game_mode,
+      waitingSidebarPlayers,
+      waiting: {
+        inviteCode: currentSession.invite_code,
+        memberCount: currentSession.member_count,
+        maxPlayers: currentSession.max_players,
+        yourRole: currentSession.your_role,
+        messages: chatMessages,
+        viewerUserId: user?.id,
+        onSendMessage: sendChat,
+        onSendSticker: sendSticker,
+        onLeave: handleLeaveRoom,
+        onStart: handleStartGame,
+        isLeaving,
+        isStarting,
+      },
+    };
+  } else if (isFinishedSession) {
+    widgetProps = {
+      phase: RoomPhase.FINISHED,
+      ...boardDisplayData,
+      winnerName,
+      isLeaving,
+      onLeave: handleLeaveRoom,
+    };
+  } else if (game.players.length === 0) {
+    widgetProps = {
+      phase: RoomPhase.EMPTY,
+      gameMode: game.gameMode,
+      sessionCode: currentSession.invite_code,
+      wsStatus: status,
+    };
+  } else {
+    widgetProps = {
+      phase: RoomPhase.PLAYING,
+      ...boardDisplayData,
+      center: {
+        // Layout
+        isBuyDecisionForViewer,
+        animatedDiceRollId,
+        deedPanelSpace,
+        pendingBuySpace,
+        // Button states
+        canRoll,
+        canBuyProperty: permissions.canBuyProperty,
+        canManage,
+        canEndTurn: permissions.canEndTurn,
+        canTrade: permissions.canTrade,
+        hasOtherTraders: Boolean(tradeBuilderData?.others.length),
+        isRolling,
+        isViewerTurn,
+        roundNumber: game.turn.roundNumber,
+        turnDeadlineMs: game.turn.turnDeadlineMs,
+        canSurrender: permissions.canSurrender,
+        // Button handlers
+        onRoll: handleRoll,
+        onEndTurn: () => dispatchCommand(CommandType.EndTurn),
+        onManageOpen: () => setActiveOverlay(ActiveOverlay.MANAGE),
+        onTradeOpen: handleTradeOpen,
+        onBuy: handleBuy,
+        onAuction: handlePassBuy,
+        onSurrender: () => dispatchCommand(CommandType.Surrender),
+        // Card overlay
+        activeCard,
+        pendingInteractionPlayerId: pendingAnimationInteraction?.affectedPlayerId ?? null,
+        onCardProceed: handleCardProceed,
+        // CenterPanel
+        viewerPlayerId,
+        debt: game.debt,
+        auction: game.auction,
+        auctionPlayers: game.players.map((p) => ({ id: p.id, name: p.displayName })),
+        turnPhase: game.turn.phase,
+        jailStatus: viewerPlayer?.jailStatus ?? null,
+        diceRoll,
+        canPayDebt: permissions.canPayDebt,
+        canBidAuction: permissions.canBidAuction,
+        canRollInJail: permissions.canRollInJail,
+        canPayJailFine: permissions.canPayJailFine,
+        canUseJailCard: permissions.canUseJailCard,
+        log: game.log,
+        chatMessages,
+        viewerToken: viewerPlayer?.token,
+        viewerUserId: user?.id,
+        onPayDebt: () => dispatchCommand(CommandType.PayDebt),
+        onManage: () => setActiveOverlay(ActiveOverlay.MANAGE),
+        onBankrupt: () => dispatchCommand(CommandType.DeclareBankruptcy),
+        onBidAuction: (amount: number) => dispatch({ type: CommandType.BidAuction, amount }),
+        onPayJailFine: () => dispatchCommand(CommandType.PayJailFine),
+        onUseJailCard: () => dispatchCommand(CommandType.UseJailCard),
+        onSendMessage: sendChat,
+        onSendSticker: sendSticker,
+        // FullOverlay
+        trade: game.trade,
+        tradeProposer: tradeParticipants.proposer,
+        tradeTarget: tradeParticipants.target,
+        activeOverlay,
+        manageProperties,
+        canBuildHouse: permissions.canBuildHouse,
+        canBuildHotel: permissions.canBuildHotel,
+        canMortgage: permissions.canMortgage,
+        canUnmortgage: permissions.canUnmortgage,
+        tradeBuilderData,
+        onTradeAccept: () => dispatch({ type: CommandType.AcceptTrade, tradeId: game.trade!.id }),
+        onTradeReject: () => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id }),
+        onTradeCancel: () => dispatch({ type: CommandType.RejectTrade, tradeId: game.trade!.id }),
+        onBuildHouse: (position: number) => dispatch({ type: CommandType.BuildHouse, position }),
+        onBuildHotel: (position: number) => dispatch({ type: CommandType.BuildHotel, position }),
+        onSellHouse: (position: number) => dispatch({ type: CommandType.SellHouse, position }),
+        onSellHotel: (position: number) => dispatch({ type: CommandType.SellHotel, position }),
+        onMortgage: (position: number) => dispatch({ type: CommandType.Mortgage, position }),
+        onUnmortgage: (position: number) => dispatch({ type: CommandType.Unmortgage, position }),
+        onSellProperty: (position: number) => dispatch({ type: CommandType.SellProperty, position }),
+        onCloseOverlay: handleCloseOverlay,
+        onTradeGiveMoneyChange: trade.onGiveMoneyChange,
+        onTradeGetMoneyChange: trade.onGetMoneyChange,
+        onTradeGiveCardsChange: trade.onGiveCardsChange,
+        onTradeGetCardsChange: trade.onGetCardsChange,
+        onTradeClearOfferAssets: trade.onClearOfferAssets,
+        onTradeClearRequestAssets: trade.onClearRequestAssets,
+        onTradePropose: handleTradePropose,
+      },
+    };
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
     <main className={`relative h-screen min-h-0 w-full overflow-hidden bg-paper${isScreenShaking ? ' ws-error-screen-shake' : ''}`}>
       <WsErrorBanner error={wsError} onDismiss={clearWsError} />
-
-      {isWaitingSession ? (
-        isMobile ? (
-          <MobileWaitingRoom {...waitingProps} />
-        ) : (
-          <div className="h-full min-h-0 p-[4px]">
-            <BoardContainer
-              centerContent={<WaitingCenterGrid {...waitingProps} />}
-              sidebarPlayers={waitingSidebarPlayers}
-              gameMode={currentSession.game_mode}
-            />
-          </div>
-        )
-      ) : isFinishedSession ? (
-        isMobile ? (
-          <MobileFinishedState
-            winnerName={winnerName}
-            onLeave={handleLeaveRoom}
-            isLeaving={isLeaving}
-          />
-        ) : (
-          <div className="h-full min-h-0 p-[4px]">
-            <BoardContainer
-              centerContent={(
-                <FinishedGameState
-                  winnerName={winnerName}
-                  onLeave={handleLeaveRoom}
-                  isLeaving={isLeaving}
-                />
-              )}
-              spaces={game.spaces}
-              players={boardPlayers}
-              sidebarPlayers={sidebarPlayers}
-              log={game.log}
-              viewerId={viewerPlayerId ?? undefined}
-              createdAt={game.createdAt}
-              gameMode={game.gameMode}
-              onSurrender={() => dispatchCommand(CommandType.Surrender)}
-            />
-          </div>
-        )
-      ) : game.players.length === 0 ? (
-        isMobile ? (
-          <MobileEmptyState
-            sessionCode={currentSession.invite_code}
-            status={status}
-          />
-        ) : (
-          <div className="h-full min-h-0 p-[4px]">
-            <BoardContainer
-              centerContent={(
-                <EmptyGameState
-                  sessionCode={currentSession.invite_code}
-                  status={status}
-                />
-              )}
-            />
-          </div>
-        )
-      ) : isMobile ? (
-        <MobileGameRoom {...centerProps} {...mobileBoardData} />
-      ) : (
-        <BoardContainer
-          centerContent={<GameCenterGrid {...centerProps} />}
-          spaces={game.spaces}
-          players={boardPlayers}
-          walkingPlayers={walkingPlayers}
-          sidebarPlayers={sidebarPlayers}
-          log={game.log}
-          selectedPosition={highlightedBoardPosition}
-          tileSelectionTones={tradeSelectionTones}
-          onSelectPosition={trade.selectBoardPosition}
-          focusPositions={boardFocusPositions}
-          viewerId={viewerPlayerId ?? undefined}
-          createdAt={game.createdAt}
-          gameMode={game.gameMode}
-          onSurrender={() => dispatchCommand(CommandType.Surrender)}
-        />
-      )}
+      <GameBoardWidget {...widgetProps} />
     </main>
   );
 }

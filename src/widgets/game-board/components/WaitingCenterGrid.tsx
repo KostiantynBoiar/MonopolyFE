@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChatWindow } from '@/features/chat/components/ChatWindow';
+import { ChatWindow } from '@/features/chat-widget/components/ChatWindow';
 import { BOARD_TILE_COLORS, GAME_BOARD_COLORS } from '@/features/game-board/game-board.colors';
 import { MemberRole } from '@/shared/protocol/session';
-import type { ChatMessage } from '@/features/chat/chat.types';
+import type { ChatMessage } from '@/features/chat-widget/chat.types';
 import { SESSION_MIN_PLAYERS_TO_START } from '@/shared/config/constants';
 import { LogKind } from '@/shared/protocol/game-state.enums';
 import type { LogEntry } from '@/shared/protocol/game-state';
@@ -34,7 +34,7 @@ async function copyToClipboard(text: string) {
   document.body.removeChild(textarea);
 }
 
-interface WaitingCenterGridProps {
+export interface WaitingCenterGridProps {
   inviteCode: string;
   memberCount: number;
   maxPlayers: number;

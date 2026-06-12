@@ -10,7 +10,7 @@ import {
   withToggledPosition,
   type TradeDraftState,
 } from '../_lib/trade-draft';
-import { ActiveOverlay } from '../_components/FullOverlay';
+import { ActiveOverlay } from '@/widgets/game-board';
 
 interface UseTradeDraftArgs {
   game: GameState;

@@ -1,8 +1,8 @@
-import type { ChatMessage } from '@/features/chat/chat.types';
+import type { ChatMessage } from '@/features/chat-widget/chat.types';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import type { WalkingPlayer } from '@/features/game-board/game-board.types';
 import type { Player } from '@/features/player-panel/player-panel.schema';
-import type { TradeBuilderData } from '../_components/FullOverlay';
+import type { TradeBuilderData } from '@/widgets/game-board';
 import type { GameState, PlayerState } from '@/shared/protocol/game-state';
 import type { SessionDetail } from '@/shared/protocol/session';
 import type { WsChatEntry } from '@/stores/socket-store';
@@ -12,7 +12,7 @@ import { GameMode } from '@/shared/protocol/game-state.enums';
 import { TOKEN_COLORS, TOKEN_ORDER } from '@/shared/config/constants';
 import { WalkingAnimationVariant } from '@/shared/protocol/animation';
 import { TradeStatus } from '@/shared/protocol/game-state.enums';
-import { resolveTokenShape } from '@/features/BoardTile/token-shapes';
+import { resolveTokenShape } from '@/features/board-tile/token-shapes';
 import {
   toTradeAsset,
   toTradeCounterparty,
@@ -24,7 +24,7 @@ import {
   buildTradeSelectionTones,
   type TradeDraftState,
 } from './trade-draft';
-import { ActiveOverlay } from '../_components/FullOverlay';
+import { ActiveOverlay } from '@/widgets/game-board';
 
 export interface TradeParticipantsView {
   proposer: ReturnType<typeof toTradeParticipant> | null;

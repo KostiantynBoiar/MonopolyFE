@@ -3,12 +3,12 @@
 import {
   ManagePropertiesOverlay,
   type ManageProperty,
-} from '@/features/manage/ManagePropertiesOverlay';
-import { TradeBuilder } from '@/features/trade/components/TradeBuilder';
-import { MobileTradeBuilder } from '@/features/trade/components/MobileTradeBuilder';
-import { TradeOverlay } from '@/features/trade/components/TradeOverlay';
-import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade/trade-builder.types';
-import type { TradeParticipant } from '@/features/trade/trade.types';
+} from '@/features/manage-overlay/ManagePropertiesOverlay';
+import { TradeBuilder } from '@/features/trade-overlay/components/TradeBuilder';
+import { MobileTradeBuilder } from '@/features/trade-overlay/components/MobileTradeBuilder';
+import { TradeOverlay } from '@/features/trade-overlay/components/TradeOverlay';
+import type { TradeAsset, TradeCounterparty, TradePlayer } from '@/features/trade-overlay/trade-builder.types';
+import type { TradeParticipant } from '@/features/trade-overlay/trade.types';
 import type { TradeState } from '@/shared/protocol/game-state';
 import { TradeStatus } from '@/shared/protocol/game-state.enums';
 
