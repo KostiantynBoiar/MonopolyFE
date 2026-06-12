@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, leaveSession, startGame } from '@/shared/api/sessions';
+import { getSession, joinSession, leaveSession, startGame } from '@/shared/api/sessions';
 import { SessionStatus, type SessionDetail } from '@/shared/protocol/session';
 import { GameStatus } from '@/shared/protocol/game-state.enums';
 import { withTimeout } from '@/shared/lib/withTimeout';
@@ -76,7 +76,13 @@ export function useRoomSession(sessionId: string, ready: boolean): RoomSession {
       setLoadError(null);
       setLoadedSessionId(null);
 
-      withTimeout(getSession(sessionId), SESSION_RESTORE_TIMEOUT_MS, 'Could not load the room session.')
+      withTimeout(
+        getSession(sessionId).then(({ session }) =>
+          session.your_role === null ? joinSession(sessionId) : { session },
+        ),
+        SESSION_RESTORE_TIMEOUT_MS,
+        'Could not load the room session.',
+      )
         .then(({ session }) => {
           if (!active) return;
           setSession(session);

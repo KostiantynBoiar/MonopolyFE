@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/shared/ui/Button';
 import { FormField } from '@/shared/ui/FormField';
 import { OrDivider } from '@/shared/ui/OrDivider';
@@ -15,6 +15,7 @@ import { OAuthButtons } from './OAuthButtons';
 export function LoginForm() {
   const t = useTranslations('Auth');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, error, clearError } = useAuthStore();
   const [fields, setFields] = useState<LoginInput>({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<Partial<LoginInput>>({});
@@ -40,7 +41,8 @@ export function LoginForm() {
     }
     try {
       await login(parsed.data.email, parsed.data.password);
-      router.push('/lobby');
+      const from = searchParams.get('from');
+      router.push(from?.startsWith('/') ? from : '/lobby');
     } catch {
       // error is stored in the auth store
     }

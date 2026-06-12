@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 
 /**
@@ -17,6 +17,7 @@ export function useRequireAuth() {
   const { token, user } = useAuthStore();
   const [hydrated, setHydrated] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Mark client-side hydration complete after first paint
   useEffect(() => {
@@ -26,9 +27,10 @@ export function useRequireAuth() {
 
   useEffect(() => {
     if (hydrated && !token) {
-      router.replace('/login');
+      const from = encodeURIComponent(pathname);
+      router.replace(`/login?from=${from}`);
     }
-  }, [hydrated, token, router]);
+  }, [hydrated, token, router, pathname]);
 
   return {
     ready:  hydrated && !!token,
