@@ -7,7 +7,7 @@ import type { BoardPlayer, WalkingPlayer } from '@/features/game-board';
 import type { BoardTileSelectionTone } from '@/features/game-board/game-board.enums';
 import type { Player } from '@/features/player-panel/player-panel.schema';
 import type { LogEntry, PropertyState } from '@/shared/protocol/game-state';
-import { GameMode } from '@/shared/protocol/game-state.enums';
+import type { GameMode } from '@/shared/protocol/game-state.enums';
 import { GameCenterGrid } from './components/GameCenterGrid';
 import type { GameCenterGridProps } from './components/GameCenterGrid';
 import { WaitingCenterGrid } from './components/WaitingCenterGrid';

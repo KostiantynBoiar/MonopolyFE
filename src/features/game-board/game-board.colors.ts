@@ -22,7 +22,7 @@ export const GAME_BOARD_COLORS = {
   special:   'var(--board-special)',
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function getSpaceHeaderTextColor(_space?: unknown): string {
   return 'var(--prop-alt-text)';
 }

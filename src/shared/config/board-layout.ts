@@ -281,7 +281,6 @@ export function getTileOuterEdgePct(pos: number, config: BoardConfig): { x: numb
 
   if (config.gameMode === GameMode.DUEL) {
     const GRID_SIZE = 7;
-    const MARGIN = 0.4;
     const raw_x = (g.col + 0.5) / GRID_SIZE * 100;
     const raw_y = (g.row + 0.5) / GRID_SIZE * 100;
     // Nudge tokens toward their tile's outer edge for visual clarity
