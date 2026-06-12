@@ -134,11 +134,12 @@ export const NORMAL_BOARD_CONFIG: BoardConfig = buildConfig(
 
 // ─── Duel board (positions 1–24) ─────────────────────────────────────────────
 // Compact 2-player board. Arranged as a full square perimeter on a 7×7 grid (0-indexed).
+// Corners: GO(1), JAIL(7), PARKING(13), GOTO_JAIL(19). 5 non-corner tiles per side.
 // Display names in messages/{locale}.json under Board.tiles.duel.p1..p24.
 //
 // Grid layout (col, row):
 //   Bottom row  y=6: pos  1(6,6) 2(5,6) 3(4,6) 4(3,6) 5(2,6) 6(1,6) 7(0,6)
-//   Left col    x=0: pos  8(0,5) 9(0,4) 10(0,3) 11(0,2) 12(0,1) 13(0,0)
+//   Left col    x=0: pos  8(0,5) 9(0,4) 10(0,3) 11(0,2) 12(0,1) 13(0,0)←corner
 //   Top row     y=0: pos 14(1,0) 15(2,0) 16(3,0) 17(4,0) 18(5,0) 19(6,0)←corner
 //   Right col   x=6: pos 20(6,1) 21(6,2) 22(6,3) 23(6,4) 24(6,5)
 
@@ -146,27 +147,27 @@ const DUEL_SPACES: BoardSpace[] = [
   { pos: 1,  type: SpaceType.CORNER,   corner: CornerVariant.GO },
   { pos: 2,  type: SpaceType.PROPERTY, price: 60,  color: PropertyColor.BROWN },
   { pos: 3,  type: SpaceType.CHANCE },
-  { pos: 4,  type: SpaceType.PROPERTY, price: 60,  color: PropertyColor.BROWN },
-  { pos: 5,  type: SpaceType.RAILROAD, price: 200 },
-  { pos: 6,  type: SpaceType.PROPERTY, price: 100, color: PropertyColor.CYAN },
+  { pos: 4,  type: SpaceType.PROPERTY, price: 80,  color: PropertyColor.BROWN },
+  { pos: 5,  type: SpaceType.TAX,      price: 100 },
+  { pos: 6,  type: SpaceType.RAILROAD, price: 200 },
   { pos: 7,  type: SpaceType.CORNER,   corner: CornerVariant.JAIL },
-  { pos: 8,  type: SpaceType.PROPERTY, price: 100, color: PropertyColor.CYAN },
-  { pos: 9,  type: SpaceType.PROPERTY, price: 140, color: PropertyColor.PINK },
+  { pos: 8,  type: SpaceType.PROPERTY, price: 120, color: PropertyColor.CYAN },
+  { pos: 9,  type: SpaceType.CHANCE },
   { pos: 10, type: SpaceType.UTILITY,  price: 150 },
   { pos: 11, type: SpaceType.PROPERTY, price: 140, color: PropertyColor.PINK },
-  { pos: 12, type: SpaceType.CHEST },
+  { pos: 12, type: SpaceType.CHANCE },
   { pos: 13, type: SpaceType.CORNER,   corner: CornerVariant.PARKING },
-  { pos: 14, type: SpaceType.PROPERTY, price: 180, color: PropertyColor.ORANGE },
-  { pos: 15, type: SpaceType.PROPERTY, price: 200, color: PropertyColor.ORANGE },
-  { pos: 16, type: SpaceType.CHANCE },
-  { pos: 17, type: SpaceType.PROPERTY, price: 220, color: PropertyColor.RED },
-  { pos: 18, type: SpaceType.PROPERTY, price: 240, color: PropertyColor.RED },
+  { pos: 14, type: SpaceType.PROPERTY, price: 160, color: PropertyColor.PINK },
+  { pos: 15, type: SpaceType.RAILROAD, price: 200 },
+  { pos: 16, type: SpaceType.PROPERTY, price: 180, color: PropertyColor.ORANGE },
+  { pos: 17, type: SpaceType.CHANCE },
+  { pos: 18, type: SpaceType.PROPERTY, price: 200, color: PropertyColor.ORANGE },
   { pos: 19, type: SpaceType.CORNER,   corner: CornerVariant.GOTO_JAIL },
-  { pos: 20, type: SpaceType.PROPERTY, price: 260, color: PropertyColor.YELLOW },
-  { pos: 21, type: SpaceType.CHEST },
-  { pos: 22, type: SpaceType.PROPERTY, price: 300, color: PropertyColor.GREEN },
-  { pos: 23, type: SpaceType.PROPERTY, price: 400, color: PropertyColor.BLUE },
-  { pos: 24, type: SpaceType.PROPERTY, price: 450, color: PropertyColor.BLUE },
+  { pos: 20, type: SpaceType.PROPERTY, price: 220, color: PropertyColor.RED },
+  { pos: 21, type: SpaceType.TAX,      price: 75 },
+  { pos: 22, type: SpaceType.UTILITY,  price: 150 },
+  { pos: 23, type: SpaceType.PROPERTY, price: 260, color: PropertyColor.RED },
+  { pos: 24, type: SpaceType.PROPERTY, price: 280, color: PropertyColor.YELLOW },
 ];
 
 const DUEL_GRID_COORDS: Record<number, { col: number; row: number }> = {
@@ -182,13 +183,13 @@ const DUEL_GRID_COORDS: Record<number, { col: number; row: number }> = {
   10: { col: 0, row: 3 },
   11: { col: 0, row: 2 },
   12: { col: 0, row: 1 },
-  13: { col: 0, row: 0 },  // FREE PARKING corner
+  13: { col: 0, row: 0 },  // PARKING corner
   14: { col: 1, row: 0 },
   15: { col: 2, row: 0 },
   16: { col: 3, row: 0 },
   17: { col: 4, row: 0 },
-  18: { col: 5, row: 0 },  // GO-TO-JAIL corner
-  19: { col: 6, row: 0 },
+  18: { col: 5, row: 0 },
+  19: { col: 6, row: 0 },  // GOTO_JAIL corner
   20: { col: 6, row: 1 },
   21: { col: 6, row: 2 },
   22: { col: 6, row: 3 },
@@ -201,7 +202,7 @@ export const DUEL_BOARD_CONFIG: BoardConfig = buildConfig(
   DUEL_SPACES,
   1,   // GO
   7,   // JAIL
-  19,  // GO-TO-JAIL
+  19,  // GOTO_JAIL
   1,
   DUEL_GRID_COORDS,
   'repeat(7, 1fr)',
