@@ -14,6 +14,9 @@ import { GameMode, PropertyColor } from './game-state.enums';
 
 export const NORMAL_RAILROAD_POSITIONS = [6, 16, 26, 36] as const;
 export const NORMAL_UTILITY_POSITIONS  = [13, 29] as const;
+export const NORMAL_CHANCE_POSITIONS   = [8, 23, 37] as const;
+export const NORMAL_CHEST_POSITIONS    = [3, 18, 34] as const;
+export const NORMAL_TAX_AMOUNTS: Readonly<Record<number, number>> = { 5: 200, 39: 100 };
 
 export const NORMAL_COLOR_POSITIONS: Readonly<Record<PropertyColor, readonly number[]>> = {
   [PropertyColor.BROWN]:  [2, 4],
@@ -79,21 +82,21 @@ export const NORMAL_PRICE: Readonly<Record<number, number>> = {
   38: 350,           40: 400,
 };
 
-// ─── Duel board economics (positions 1..23) ───────────────────────────────────
-// YELLOW/GREEN/BLUE each have one property — owning it equals an instant monopoly.
+// ─── Duel board economics (positions 1..24) ───────────────────────────────────
+// CYAN and YELLOW have one street each — owning it is an instant monopoly.
 
-export const DUEL_RAILROAD_POSITIONS = [5] as const;
-export const DUEL_UTILITY_POSITIONS  = [10] as const;
+export const DUEL_RAILROAD_POSITIONS = [6, 15] as const;
+export const DUEL_UTILITY_POSITIONS  = [10, 22] as const;
 
 export const DUEL_COLOR_POSITIONS: Readonly<Record<PropertyColor, readonly number[]>> = {
   [PropertyColor.BROWN]:  [2, 4],
-  [PropertyColor.CYAN]:   [6, 8],
-  [PropertyColor.PINK]:   [9, 11],
-  [PropertyColor.ORANGE]: [14, 15],
-  [PropertyColor.RED]:    [17, 18],
-  [PropertyColor.YELLOW]: [20],
-  [PropertyColor.GREEN]:  [22],
-  [PropertyColor.BLUE]:   [23, 24],
+  [PropertyColor.CYAN]:   [8],
+  [PropertyColor.PINK]:   [11, 14],
+  [PropertyColor.ORANGE]: [16, 18],
+  [PropertyColor.RED]:    [20, 23],
+  [PropertyColor.YELLOW]: [24],
+  [PropertyColor.GREEN]:  [],
+  [PropertyColor.BLUE]:   [],
 };
 
 export const DUEL_POSITION_COLOR: Readonly<Partial<Record<number, PropertyColor>>> = Object.fromEntries(
@@ -109,34 +112,33 @@ export const DUEL_HOUSE_COST: Readonly<Partial<Record<PropertyColor, number>>> =
   [PropertyColor.ORANGE]: 100,
   [PropertyColor.RED]:    150,
   [PropertyColor.YELLOW]: 150,
-  [PropertyColor.GREEN]:  200,
-  [PropertyColor.BLUE]:   200,
 };
 
+export const DUEL_CHANCE_POSITIONS = [3, 9, 12, 17] as const;
+export const DUEL_CHEST_POSITIONS  = [] as const;
+export const DUEL_TAX_AMOUNTS: Readonly<Record<number, number>> = { 5: 100, 21: 75 };
+
+// Rent format: [bare, monopoly, 1h, 2h, 3h, 4h, hotel]
+// monopoly = bare × 2 (standard rule); remaining values from backend _rent() call.
 export const DUEL_RENT: Readonly<Record<number, readonly [number, number, number, number, number, number, number]>> = {
-  2:  [2,   4,   10,  30,   90,   160,  250],
-  4:  [4,   8,   20,  60,   180,  320,  450],
-  6:  [6,   12,  30,  90,   270,  400,  550],
-  8:  [6,   12,  30,  90,   270,  400,  550],
-  9:  [10,  20,  50,  150,  450,  625,  750],
+  2:  [4,   8,   20,  60,   180,  320,  450],
+  4:  [6,   12,  30,  90,   270,  400,  550],
+  8:  [8,   16,  40,  100,  300,  450,  600],
   11: [10,  20,  50,  150,  450,  625,  750],
-  14: [14,  28,  70,  200,  550,  750,  950],
-  15: [16,  32,  80,  220,  600,  800,  1000],
-  17: [18,  36,  90,  250,  700,  875,  1050],
-  18: [20,  40,  100, 300,  750,  925,  1100],
-  20: [22,  44,  110, 330,  800,  975,  1150],
-  22: [26,  52,  130, 390,  900,  1100, 1275],
-  23: [50,  100, 200, 600,  1400, 1700, 2000],
-  24: [70,  140, 300, 900,  2000, 2200, 2500],
+  14: [12,  24,  60,  180,  500,  700,  900],
+  16: [14,  28,  70,  200,  550,  750,  950],
+  18: [16,  32,  80,  220,  600,  800,  1000],
+  20: [18,  36,  90,  250,  700,  875,  1050],
+  23: [22,  44,  110, 330,  800,  975,  1150],
+  24: [24,  48,  120, 360,  850,  1025, 1200],
 };
 
 export const DUEL_PRICE: Readonly<Record<number, number>> = {
-  2:  60,  4:  60,
-  5:  200, 6:  100, 8:  100,
-  9:  140, 10: 150, 11: 140,
-  14: 180, 15: 200,
-  17: 220, 18: 240,
-  20: 260, 22: 300, 23: 400, 24: 450,
+  2:  60,  4:  80,
+  6:  200, 8:  120,
+  10: 150, 11: 140, 14: 160,
+  15: 200, 16: 180, 18: 200,
+  20: 220, 22: 150, 23: 260, 24: 280,
 };
 
 // ─── BoardData bundle ──────────────────────────────────────────────────────────
@@ -144,6 +146,9 @@ export const DUEL_PRICE: Readonly<Record<number, number>> = {
 export interface BoardData {
   readonly railroadPositions: readonly number[];
   readonly utilityPositions:  readonly number[];
+  readonly chancePositions:   readonly number[];
+  readonly chestPositions:    readonly number[];
+  readonly taxAmounts:        Readonly<Record<number, number>>;
   readonly colorPositions:    Readonly<Record<PropertyColor, readonly number[]>>;
   readonly positionColor:     Readonly<Partial<Record<number, PropertyColor>>>;
   readonly houseCost:         Readonly<Partial<Record<PropertyColor, number>>>;
@@ -154,6 +159,9 @@ export interface BoardData {
 const NORMAL_BOARD_DATA: BoardData = {
   railroadPositions: NORMAL_RAILROAD_POSITIONS,
   utilityPositions:  NORMAL_UTILITY_POSITIONS,
+  chancePositions:   NORMAL_CHANCE_POSITIONS,
+  chestPositions:    NORMAL_CHEST_POSITIONS,
+  taxAmounts:        NORMAL_TAX_AMOUNTS,
   colorPositions:    NORMAL_COLOR_POSITIONS,
   positionColor:     NORMAL_POSITION_COLOR,
   houseCost:         NORMAL_HOUSE_COST,
@@ -164,6 +172,9 @@ const NORMAL_BOARD_DATA: BoardData = {
 const DUEL_BOARD_DATA: BoardData = {
   railroadPositions: DUEL_RAILROAD_POSITIONS,
   utilityPositions:  DUEL_UTILITY_POSITIONS,
+  chancePositions:   DUEL_CHANCE_POSITIONS,
+  chestPositions:    DUEL_CHEST_POSITIONS,
+  taxAmounts:        DUEL_TAX_AMOUNTS,
   colorPositions:    DUEL_COLOR_POSITIONS,
   positionColor:     DUEL_POSITION_COLOR,
   houseCost:         DUEL_HOUSE_COST,

@@ -1,5 +1,6 @@
 import { BoardTileFlavor, CornerVariant, SpaceType, TileEdge } from '@/features/game-board/game-board.enums';
-import { GameMode, PropertyColor } from '@/shared/protocol/game-state.enums';
+import { GameMode } from '@/shared/protocol/game-state.enums';
+import { getBoardData } from '@/shared/protocol/board-data';
 import type { BoardSpace } from '@/features/game-board/game-board.types';
 import { N, NW, W } from '@/shared/config/constants';
 
@@ -64,48 +65,41 @@ function buildConfig(
   };
 }
 
-const NORMAL_SPACES: BoardSpace[] = [
-  { pos: 1,  type: SpaceType.CORNER,   corner: CornerVariant.GO },
-  { pos: 2,  type: SpaceType.PROPERTY, price: 60,  color: PropertyColor.BROWN },
-  { pos: 3,  type: SpaceType.CHEST },
-  { pos: 4,  type: SpaceType.PROPERTY, price: 60,  color: PropertyColor.BROWN },
-  { pos: 5,  type: SpaceType.TAX,      price: 200 },
-  { pos: 6,  type: SpaceType.RAILROAD, price: 200 },
-  { pos: 7,  type: SpaceType.PROPERTY, price: 100, color: PropertyColor.CYAN },
-  { pos: 8,  type: SpaceType.CHANCE },
-  { pos: 9,  type: SpaceType.PROPERTY, price: 100, color: PropertyColor.CYAN },
-  { pos: 10, type: SpaceType.PROPERTY, price: 120, color: PropertyColor.CYAN },
-  { pos: 11, type: SpaceType.CORNER,   corner: CornerVariant.JAIL },
-  { pos: 12, type: SpaceType.PROPERTY, price: 140, color: PropertyColor.PINK },
-  { pos: 13, type: SpaceType.UTILITY,  price: 150 },
-  { pos: 14, type: SpaceType.PROPERTY, price: 140, color: PropertyColor.PINK },
-  { pos: 15, type: SpaceType.PROPERTY, price: 160, color: PropertyColor.PINK },
-  { pos: 16, type: SpaceType.RAILROAD, price: 200 },
-  { pos: 17, type: SpaceType.PROPERTY, price: 180, color: PropertyColor.ORANGE },
-  { pos: 18, type: SpaceType.CHEST },
-  { pos: 19, type: SpaceType.PROPERTY, price: 180, color: PropertyColor.ORANGE },
-  { pos: 20, type: SpaceType.PROPERTY, price: 200, color: PropertyColor.ORANGE },
-  { pos: 21, type: SpaceType.CORNER,   corner: CornerVariant.PARKING },
-  { pos: 22, type: SpaceType.PROPERTY, price: 220, color: PropertyColor.RED },
-  { pos: 23, type: SpaceType.CHANCE },
-  { pos: 24, type: SpaceType.PROPERTY, price: 220, color: PropertyColor.RED },
-  { pos: 25, type: SpaceType.PROPERTY, price: 240, color: PropertyColor.RED },
-  { pos: 26, type: SpaceType.RAILROAD, price: 200 },
-  { pos: 27, type: SpaceType.PROPERTY, price: 260, color: PropertyColor.YELLOW },
-  { pos: 28, type: SpaceType.PROPERTY, price: 260, color: PropertyColor.YELLOW },
-  { pos: 29, type: SpaceType.UTILITY,  price: 150 },
-  { pos: 30, type: SpaceType.PROPERTY, price: 280, color: PropertyColor.YELLOW },
-  { pos: 31, type: SpaceType.CORNER,   corner: CornerVariant.GOTO_JAIL },
-  { pos: 32, type: SpaceType.PROPERTY, price: 300, color: PropertyColor.GREEN },
-  { pos: 33, type: SpaceType.PROPERTY, price: 300, color: PropertyColor.GREEN },
-  { pos: 34, type: SpaceType.CHEST },
-  { pos: 35, type: SpaceType.PROPERTY, price: 320, color: PropertyColor.GREEN },
-  { pos: 36, type: SpaceType.RAILROAD, price: 200 },
-  { pos: 37, type: SpaceType.CHANCE },
-  { pos: 38, type: SpaceType.PROPERTY, price: 350, color: PropertyColor.BLUE },
-  { pos: 39, type: SpaceType.TAX,      price: 100 },
-  { pos: 40, type: SpaceType.PROPERTY, price: 400, color: PropertyColor.BLUE },
-];
+const NORMAL_CORNERS: Record<number, CornerVariant> = {
+   1: CornerVariant.GO,
+  11: CornerVariant.JAIL,
+  21: CornerVariant.PARKING,
+  31: CornerVariant.GOTO_JAIL,
+};
+
+const DUEL_CORNERS: Record<number, CornerVariant> = {
+   1: CornerVariant.GO,
+   7: CornerVariant.JAIL,
+  13: CornerVariant.PARKING,
+  19: CornerVariant.GOTO_JAIL,
+};
+
+function buildSpaces(count: number, corners: Record<number, CornerVariant>, gameMode: GameMode): BoardSpace[] {
+  const data = getBoardData(gameMode);
+  const railroadSet = new Set(data.railroadPositions);
+  const utilitySet  = new Set(data.utilityPositions);
+  const chanceSet   = new Set(data.chancePositions);
+  const chestSet    = new Set(data.chestPositions);
+  return Array.from({ length: count }, (_, i) => {
+    const pos = i + 1;
+    if (pos in corners)            return { pos, type: SpaceType.CORNER,   corner: corners[pos] };
+    if (chanceSet.has(pos))        return { pos, type: SpaceType.CHANCE };
+    if (chestSet.has(pos))         return { pos, type: SpaceType.CHEST };
+    if (pos in data.taxAmounts)    return { pos, type: SpaceType.TAX,      price: data.taxAmounts[pos] };
+    if (railroadSet.has(pos))      return { pos, type: SpaceType.RAILROAD, price: data.price[pos] };
+    if (utilitySet.has(pos))       return { pos, type: SpaceType.UTILITY,  price: data.price[pos] };
+    const color = data.positionColor[pos];
+    if (color)                     return { pos, type: SpaceType.PROPERTY, price: data.price[pos], color };
+    throw new Error(`buildSpaces: no rule for position ${pos} on ${gameMode} board`);
+  });
+}
+
+const NORMAL_SPACES: BoardSpace[] = buildSpaces(40, NORMAL_CORNERS, GameMode.NORMAL);
 
 /** Normal board grid position (0-indexed col/row in the 11×11 desktop grid). */
 function normalGridPos(pos: number): { col: number; row: number } {
@@ -143,32 +137,7 @@ export const NORMAL_BOARD_CONFIG: BoardConfig = buildConfig(
 //   Top row     y=0: pos 14(1,0) 15(2,0) 16(3,0) 17(4,0) 18(5,0) 19(6,0)←corner
 //   Right col   x=6: pos 20(6,1) 21(6,2) 22(6,3) 23(6,4) 24(6,5)
 
-const DUEL_SPACES: BoardSpace[] = [
-  { pos: 1,  type: SpaceType.CORNER,   corner: CornerVariant.GO },
-  { pos: 2,  type: SpaceType.PROPERTY, price: 60,  color: PropertyColor.BROWN },
-  { pos: 3,  type: SpaceType.CHANCE },
-  { pos: 4,  type: SpaceType.PROPERTY, price: 80,  color: PropertyColor.BROWN },
-  { pos: 5,  type: SpaceType.TAX,      price: 100 },
-  { pos: 6,  type: SpaceType.RAILROAD, price: 200 },
-  { pos: 7,  type: SpaceType.CORNER,   corner: CornerVariant.JAIL },
-  { pos: 8,  type: SpaceType.PROPERTY, price: 120, color: PropertyColor.CYAN },
-  { pos: 9,  type: SpaceType.CHANCE },
-  { pos: 10, type: SpaceType.UTILITY,  price: 150 },
-  { pos: 11, type: SpaceType.PROPERTY, price: 140, color: PropertyColor.PINK },
-  { pos: 12, type: SpaceType.CHANCE },
-  { pos: 13, type: SpaceType.CORNER,   corner: CornerVariant.PARKING },
-  { pos: 14, type: SpaceType.PROPERTY, price: 160, color: PropertyColor.PINK },
-  { pos: 15, type: SpaceType.RAILROAD, price: 200 },
-  { pos: 16, type: SpaceType.PROPERTY, price: 180, color: PropertyColor.ORANGE },
-  { pos: 17, type: SpaceType.CHANCE },
-  { pos: 18, type: SpaceType.PROPERTY, price: 200, color: PropertyColor.ORANGE },
-  { pos: 19, type: SpaceType.CORNER,   corner: CornerVariant.GOTO_JAIL },
-  { pos: 20, type: SpaceType.PROPERTY, price: 220, color: PropertyColor.RED },
-  { pos: 21, type: SpaceType.TAX,      price: 75 },
-  { pos: 22, type: SpaceType.UTILITY,  price: 150 },
-  { pos: 23, type: SpaceType.PROPERTY, price: 260, color: PropertyColor.RED },
-  { pos: 24, type: SpaceType.PROPERTY, price: 280, color: PropertyColor.YELLOW },
-];
+const DUEL_SPACES: BoardSpace[] = buildSpaces(24, DUEL_CORNERS, GameMode.DUEL);
 
 const DUEL_GRID_COORDS: Record<number, { col: number; row: number }> = {
    1: { col: 6, row: 6 },  // GO corner
